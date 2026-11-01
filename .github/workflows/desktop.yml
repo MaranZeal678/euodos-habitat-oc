@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   macos:
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 40
     permissions:
       contents: write  # only used to attach the .dmg to a release on tag pushes
