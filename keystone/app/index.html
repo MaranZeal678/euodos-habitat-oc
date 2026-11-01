@@ -44,6 +44,8 @@ code, th { font-family: var(--mono); }
 th { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 header { padding: 28px 24px 8px; max-width: 1280px; margin: 0 auto; }
 header h1 { margin: 0; font-size: 28px; letter-spacing: -0.015em; }
+.masthead { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; max-width: 860px; }
+.masthead .btn { text-decoration: none; font-size: 14px; }
 header p { margin: 4px 0 0; color: var(--text-secondary); max-width: 860px; }
 nav { position: sticky; top: 0; z-index: 1000; background: var(--surface-0); border-bottom: 1px solid var(--border); }
 nav div { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
@@ -99,7 +101,7 @@ a { color: var(--brand); text-underline-offset: 2px; }
 </head>
 <body>
 <header>
-  <h1>Keystone <a href="/demo" class="btn" style="font-size:13px;vertical-align:middle;margin-left:10px;text-decoration:none">▶ Mission control demo</a></h1>
+  <div class="masthead"><h1>Keystone</h1><a href="/demo" class="btn">Open the mission-control demo</a></div>
   <p>An agentic operating system for Habitat for Humanity Orange County's <b>Keys to 100</b>. It finds land with a CNN, keeps families housed with a Monte Carlo mortgage designer, sizes the capital gap on real HMDA data, and improves itself through gated champion/challenger loops. UCI Merage Center for Real Estate × Habitat OC Impact Lab.</p>
 </header>
 <nav><div id="tabs"></div></nav>
