@@ -9,6 +9,8 @@ omit =
     keystone/data/*
     keystone/demo/build_assets.py
     keystone/models/site_score.py
+    # the desktop window entry point: the macOS desktop workflow runs the bundled app end to end (--smoke)
+    keystone/desktop.py
 # Not reached by tests either, by design: the training paths inside runtime modules (market_gap.load/fit/main,
 # homekeeper.build_portfolio/run, cnn training) read raw HMDA files and image chips that are not in git. The CI gate
 # (75%) is the measured floor of everything else, so coverage cannot silently regress.

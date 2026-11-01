@@ -19,7 +19,9 @@ datas = [
 LIVE_SCAN_ONLY = ("keystone.models.cnn", "keystone.models.site_score", "keystone.data", "keystone.pipeline",
                   "keystone.demo", "keystone.cli")
 hidden = [m for m in collect_submodules("keystone") if not m.startswith(LIVE_SCAN_ONLY)]
-hidden += collect_submodules("uvicorn") + collect_submodules("mcp")
+hidden += collect_submodules("uvicorn")
+# mcp.cli is the optional `mcp` command (needs the [cli] extra) and exits on import without it; the app never uses it
+hidden += collect_submodules("mcp", filter=lambda name: not name.startswith("mcp.cli"))
 
 a = Analysis(  # noqa: F821
     [str(ROOT / "keystone" / "desktop.py")],
