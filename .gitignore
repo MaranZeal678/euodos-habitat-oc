@@ -19,3 +19,4 @@ artifacts/chip_check.png
 artifacts/siteplan_check.png
 artifacts/parking_unet_20261031_155914.pt
 .DS_Store
+.gstack/

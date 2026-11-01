@@ -147,11 +147,16 @@ let FEAT, COUNTY, PORT, TRACE, CAP, OC;
 const S = { county: 0, countyFade: 1, sites: [], month: 0, familyMode: false, pulse: 0, homesSited: 0, beacons: 0, ocLine: 0 };
 
 // ------------------------------------------------------------------ data
+async function getJSON(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`${url} answered ${r.status}`);
+  return r.json();
+}
 async function load() {
   [FEAT, COUNTY, PORT, TRACE, CAP] = await Promise.all([
-    fetch("/static/demo/featured.json").then(r => r.json()), fetch("/static/demo/county.json").then(r => r.json()),
-    fetch("/static/demo/portfolio.json").then(r => r.json()), fetch("/api/demo/trace").then(r => r.json()).catch(() => null),
-    fetch("/api/demo/capital").then(r => r.json()), fetch("/static/demo/oc_boundary.json").then(r => r.json())]).then(x => { OC = x.pop(); return x; });
+    getJSON("/static/demo/featured.json"), getJSON("/static/demo/county.json"),
+    getJSON("/static/demo/portfolio.json"), getJSON("/api/demo/trace").catch(() => null),  // the agent rail is optional
+    getJSON("/api/demo/capital"), getJSON("/static/demo/oc_boundary.json")]).then(x => { OC = x.pop(); return x; });
   await Promise.all(FEAT.map(async (f, k) => {
     const img = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = src; });
     const [rgb, mask, outline] = await Promise.all([img(f.img_rgb), img(f.img_mask), img(f.img_outline)]);
@@ -478,9 +483,26 @@ $("#bPrev").onclick = () => jumpTo(si - 1);
 $("#bRe").onclick = () => jumpTo(0);
 addEventListener("keydown", e => { if (e.key === " ") { e.preventDefault(); $("#bPlay").click(); } if (e.key === "ArrowRight") $("#bNext").click(); if (e.key === "ArrowLeft") $("#bPrev").click(); if (e.key.toLowerCase() === "r") $("#bRe").click(); });
 
+function webglAvailable() {
+  try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; }
+}
+// Never leave the audience on a spinner: explain what failed and play the recorded demo instead.
+function fallback(reason) {
+  $("#start")?.remove();
+  $("#loading").innerHTML = `<div style="display:grid;gap:14px;justify-items:center;max-width:960px;padding:24px;text-align:center">
+    <div style="font:600 20px var(--display);color:var(--ink)">The live 3D demo can't run in this browser</div>
+    <div style="max-width:680px">${esc(reason)} Here is the same demo, recorded from the running product.</div>
+    <video src="/static/demo/keystone_demo_720p.mp4" controls autoplay muted playsinline style="width:min(960px,90vw);border-radius:8px;border:1px solid var(--line)"></video>
+    <div><a href="/" style="color:var(--teal)">Open the dashboard</a> · turn on hardware acceleration and reload to see it live</div></div>`;
+}
 (async () => {
-  initMap();
-  await load();
+  if (!webglAvailable()) return fallback("WebGL is turned off or unavailable here (common with remote desktops and some projector PCs).");
+  try {
+    initMap();
+    await load();
+  } catch (e) {
+    return fallback(`The demo data didn't load (${e && e.message ? e.message : e}).`);
+  }
   buildGrids(); buildSteps();
   if (TRACE) $("#railsub").textContent = `Replaying run ${TRACE.id} · graded ${TRACE.grade.score.toFixed(2)} · ${TRACE.events.filter(e => e.type === "tool").length} MCP calls`;
   $("#loading").remove();
