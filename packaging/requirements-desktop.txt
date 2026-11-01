@@ -1,0 +1,4 @@
+# desktop app build: the serving stack (no torch) plus the native window and the bundler
+-r ../requirements.txt
+pywebview==6.2.1
+pyinstaller==6.22.3

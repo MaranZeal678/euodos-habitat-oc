@@ -56,14 +56,14 @@ def sites_search(city: Annotated[str, Field(max_length=60)] | None = None, min_u
 def sites_inspect(apn: Annotated[str, Field(pattern=r"^[0-9A-Za-z-]{3,20}$", description="assessor parcel number, e.g. 588-081-21")],
                   keep_parking_share: Annotated[float, Field(ge=0, le=0.95)] = 0.5) -> dict:
     """Re-run the parking CNN live on one parcel's NAIP imagery with a different parking-retention share."""
-    from keystone.models.site_score import score_site
     raw = json.loads((config.DATA / "faith_sites.json").read_text())
     site = next((s for s in raw if s.get("apn") == apn), None)
     if site is None:
         return {"error": f"APN {apn} not in faith-site inventory"}
-    try:
+    try:  # the live scan needs torch + rasterio (absent from the desktop build) and remote imagery
+        from keystone.models.site_score import score_site
         out = score_site(site, keep_parking_share=keep_parking_share)
-    except Exception as e:  # noqa: BLE001 - imagery is remote; without it, fall back to the stored offline scan
+    except Exception as e:  # noqa: BLE001 - without them, fall back to the stored offline scan
         stored = next((s for s in _sites() if s.get("apn") == apn and "cnn_error" not in s), None)
         if stored is None:
             return {"error": f"live imagery unavailable ({type(e).__name__}) and no stored scan for APN {apn}"}

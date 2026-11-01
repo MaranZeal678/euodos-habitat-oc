@@ -6,6 +6,7 @@ data/raw/source_docs/). Other regions keep their data under data/<region_id>/ an
 """
 import json
 import os
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -18,7 +19,8 @@ ARTIFACTS = ROOT / "artifacts" if _DEFAULT else ROOT / "artifacts" / REGION_ID  
 # Runtime state the product writes as it works: agent runs, skills, lessons, sandbox audit. Point KEYSTONE_STATE_DIR
 # at a persistent disk in production; child processes (the stdio MCP server) inherit it, so tests stay isolated too.
 STATE = Path(os.environ["KEYSTONE_STATE_DIR"]).resolve() if os.environ.get("KEYSTONE_STATE_DIR") else ARTIFACTS
-for _d in (DATA_RAW, DATA, ARTIFACTS, STATE):
+# inside the packaged app the code, data and models are read-only bundle contents; only STATE is ever written
+for _d in (STATE,) if getattr(sys, "frozen", False) else (DATA_RAW, DATA, ARTIFACTS, STATE):
     _d.mkdir(parents=True, exist_ok=True)
 
 OC_BBOX = tuple(REGION["bbox"])  # lon_min, lat_min, lon_max, lat_max (name kept for compatibility)

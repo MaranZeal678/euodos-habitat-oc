@@ -23,3 +23,5 @@ artifacts/sandbox_audit.jsonl
 artifacts/skills/
 artifacts/memory/
 .coverage
+packaging/build/
+packaging/dist/

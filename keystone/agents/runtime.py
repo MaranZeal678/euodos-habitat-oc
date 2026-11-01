@@ -13,7 +13,6 @@ import asyncio
 import contextvars
 import json
 import os
-import sys
 import time
 import uuid
 from contextlib import AsyncExitStack
@@ -22,6 +21,7 @@ from typing import Any
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
 
+from keystone import launch
 from keystone.agents import memory
 from keystone.agents.specs import SPECS
 from keystone.config import ROOT, STATE
@@ -58,8 +58,8 @@ class Hierarchy:
     # ------------------------------------------------------------ MCP plumbing
     async def __aenter__(self):
         self.stack = AsyncExitStack()
-        params = StdioServerParameters(command=sys.executable, args=["-m", "keystone.mcp_server.server"], cwd=str(ROOT),
-                                       env={**os.environ, "PYTHONPATH": str(ROOT)})
+        command, args = launch.mcp_server_cmd()
+        params = StdioServerParameters(command=command, args=args, cwd=str(ROOT), env={**os.environ, "PYTHONPATH": str(ROOT)})
         r, w = await self.stack.enter_async_context(stdio_client(params))
         self.mcp = await self.stack.enter_async_context(ClientSession(r, w))
         await self.mcp.initialize()

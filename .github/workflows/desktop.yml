@@ -1,0 +1,44 @@
+# Builds the Keystone macOS app on Apple Silicon, smoke-tests the bundled app headless (sandbox, MCP child, a graded
+# agent mission), and publishes Keystone-<version>.dmg: as a build artifact on every push, and as a GitHub Release
+# asset when a v* tag is pushed.
+name: desktop
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 40
+    permissions:
+      contents: write  # only used to attach the .dmg to a release on tag pushes
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
+      - name: Install the desktop build stack
+        run: |
+          uv venv --python 3.13 .venv
+          uv pip install --python .venv/bin/python -r packaging/requirements-desktop.txt
+      - name: Build Keystone.app, smoke-test it, and make the .dmg
+        run: packaging/build_macos.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Keystone-macos-arm64
+          path: |
+            packaging/dist/Keystone-*.dmg
+            packaging/dist/Keystone-*.dmg.sha256
+          retention-days: 30
+      - name: Attach to the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --title "Keystone $GITHUB_REF_NAME" --notes-file packaging/RELEASE_NOTES.md
+          gh release upload "$GITHUB_REF_NAME" packaging/dist/Keystone-*.dmg packaging/dist/Keystone-*.dmg.sha256 --clobber

@@ -25,6 +25,7 @@ import sys
 import tempfile
 import time
 
+from keystone import launch
 from keystone.config import ROOT, STATE
 
 AUDIT = STATE / "sandbox_audit.jsonl"
@@ -152,11 +153,11 @@ def run_python(code, timeout=90, agent="unknown"):
     env = {"PATH": "/usr/bin:/bin", "HOME": workdir, "TMPDIR": workdir, "MPLCONFIGDIR": workdir, "MPLBACKEND": "Agg", "PYTHONPATH": str(ROOT),
            "OMP_NUM_THREADS": "1", "PYTHONDONTWRITEBYTECODE": "1"}
     roots = _read_roots(workdir)
-    py = [sys.executable, "-I", "-c",
-          # rlimits are set inside the child (preexec_fn is unsafe in the threaded MCP server)
-          ("import resource, sys; resource.setrlimit(resource.RLIMIT_CPU, (60, 60)); "
-           "resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 2**20, 50 * 2**20)); "
-           f"sys.path.insert(0, {str(ROOT)!r}); exec(compile(open({script!r}).read(), 'main.py', 'exec'))")]
+    py = launch.python_code_cmd(
+        # rlimits are set inside the child (preexec_fn is unsafe in the threaded MCP server)
+        "import resource, sys; resource.setrlimit(resource.RLIMIT_CPU, (60, 60)); "
+        "resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 2**20, 50 * 2**20)); "
+        f"sys.path.insert(0, {str(ROOT)!r}); exec(compile(open({script!r}).read(), 'main.py', 'exec'))")
     private = _private_state()
     if sys.platform == "darwin" and shutil.which("sandbox-exec"):
         rules = " ".join(f'(subpath "{r}")' for r in roots) + f' (literal "{ROOT}") (literal "/")'
