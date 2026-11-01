@@ -18,8 +18,8 @@ jobs:
     permissions:
       contents: write  # only used to attach the .dmg to a release on tag pushes
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
         with:
           version: "0.11.26"
       - name: Install the desktop build stack
@@ -28,7 +28,7 @@ jobs:
           uv pip install --python .venv/bin/python -r packaging/requirements-desktop.txt
       - name: Build Keystone.app, smoke-test it, and make the .dmg
         run: packaging/build_macos.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: Keystone-macos-arm64
           path: |
