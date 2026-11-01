@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Keystone · Keys to 100</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
 <style>
@@ -13,8 +14,12 @@
   --surface-0: #f4f3ef; --surface-1: #fcfcfb; --border: #e2e0d8;
   --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
   --series-1: #2a78d6; --seq-low: #9ec5f4; --seq-high: #184f95;
-  --good: #1a7f37; --serious: #c4321f; --accent-bg: #eaf2fc;
+  --good: #1a7f37; --serious: #c4321f; --accent-bg: #e3f1ed;
   --grid: #ecebe6;
+  --brand: #0f6b5c; --brand-ink: #ffffff;  /* Keystone teal, shared with the demo and the brief */
+  --display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -22,7 +27,7 @@
     --surface-0: #111110; --surface-1: #1a1a19; --border: #2e2d2a;
     --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
     --series-1: #3987e5; --seq-low: #1c5cab; --seq-high: #9ec5f4;
-    --good: #4cc26a; --serious: #ff6b57; --accent-bg: #16253a; --grid: #262523;
+    --good: #4cc26a; --serious: #ff6b57; --accent-bg: #12302a; --grid: #262523; --brand: #2ee6be; --brand-ink: #04211b;
   }
 }
 :root[data-theme="dark"] {
@@ -30,19 +35,21 @@
   --surface-0: #111110; --surface-1: #1a1a19; --border: #2e2d2a;
   --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
   --series-1: #3987e5; --seq-low: #1c5cab; --seq-high: #9ec5f4;
-  --good: #4cc26a; --serious: #ff6b57; --accent-bg: #16253a; --grid: #262523;
+  --good: #4cc26a; --serious: #ff6b57; --accent-bg: #12302a; --grid: #262523; --brand: #2ee6be; --brand-ink: #04211b;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--surface-0); color: var(--text-primary);
-  font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary); font: 16px/1.55 var(--body); }
+h1, h2, h3, .tile .v, .gcol .own { font-family: var(--display); }
+code, th { font-family: var(--mono); }
+th { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 header { padding: 28px 24px 8px; max-width: 1280px; margin: 0 auto; }
-header h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+header h1 { margin: 0; font-size: 28px; letter-spacing: -0.015em; }
 header p { margin: 4px 0 0; color: var(--text-secondary); max-width: 860px; }
 nav { position: sticky; top: 0; z-index: 1000; background: var(--surface-0); border-bottom: 1px solid var(--border); }
 nav div { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
 nav button { background: none; border: 0; padding: 12px 12px; color: var(--text-secondary); font: inherit; cursor: pointer;
   border-bottom: 2px solid transparent; white-space: nowrap; }
-nav button.on { color: var(--text-primary); border-bottom-color: var(--series-1); font-weight: 600; }
+nav button.on { color: var(--text-primary); border-bottom-color: var(--brand); font-weight: 600; }
 main { max-width: 1280px; margin: 0 auto; padding: 16px; }
 section { display: none; } section.on { display: block; }
 .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
@@ -68,8 +75,8 @@ input[aria-invalid="true"] { border-color: var(--serious); outline: 1px solid va
 input, select { width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-0);
   color: var(--text-primary); font: inherit; margin-top: 2px; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 12px; }
-.btn { background: var(--series-1); color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
-.btn.ghost { background: transparent; color: var(--series-1); border: 1px solid var(--series-1); }
+.btn { background: var(--brand); color: var(--brand-ink); border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); color: var(--text-secondary); }
 .pill.good { color: var(--good); border-color: var(--good); } .pill.bad { color: var(--serious); border-color: var(--serious); }
 .tree { font-size: 13px; }
@@ -86,7 +93,7 @@ svg text { fill: var(--text-secondary); font-size: 11px; }
 .arch .card { margin: 0; } .arch ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-secondary); }
 code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .muted { color: var(--text-muted); }
-a { color: var(--series-1); }
+a { color: var(--brand); text-underline-offset: 2px; }
 </style>
 </head>
 <body>
