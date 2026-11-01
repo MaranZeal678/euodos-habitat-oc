@@ -57,7 +57,7 @@ def run(limit=None, max_acres=30):
     def safe(s):
         try:
             return score_site(s)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - one bad parcel is recorded as cnn_error, the batch continues
             return {**{k: v for k, v in s.items() if not k.endswith("_geojson")}, "cnn_error": str(e)[:200]}
 
     with ThreadPoolExecutor(4) as ex:

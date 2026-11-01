@@ -1,10 +1,9 @@
-import json
-
 import pytest
 
 from keystone import tools
 from keystone.agents import evals
-from keystone.models import registry, sustainability as sus
+from keystone.models import registry
+from keystone.models import sustainability as sus
 from keystone.sandbox.runner import run_python
 
 
@@ -14,10 +13,10 @@ def tmp_registry(tmp_path, monkeypatch):
 
 
 def test_gate_promotes_retires_and_rejects(tmp_registry):
-    a = registry.propose("m", "a", {"auc": 0.70, "fair": 0.02}, {}, primary="auc")
-    b = registry.propose("m", "b", {"auc": 0.72, "fair": 0.02}, {}, primary="auc", guardrails={"fair": 0.005})
+    registry.propose("m", "a", {"auc": 0.70, "fair": 0.02}, {}, primary="auc")
+    registry.propose("m", "b", {"auc": 0.72, "fair": 0.02}, {}, primary="auc", guardrails={"fair": 0.005})
     c = registry.propose("m", "c", {"auc": 0.80, "fair": 0.09}, {}, primary="auc", guardrails={"fair": 0.005})
-    d = registry.propose("m", "d", {"auc": 0.721, "fair": 0.02}, {}, primary="auc", min_gain=0.01)
+    registry.propose("m", "d", {"auc": 0.721, "fair": 0.02}, {}, primary="auc", min_gain=0.01)
     statuses = [e["status"] for e in registry.history("m")]
     assert statuses == ["retired", "champion", "rejected", "rejected"]
     assert registry.champion("m")["path"] == "b"

@@ -20,9 +20,8 @@ from pydantic import BaseModel
 from keystone import config, tools
 from keystone.agents import evals
 from keystone.agents.runtime import RUNS, Hierarchy
-from keystone.models import registry
-
 from keystone.mcp_server.server import app as mcp_server
+from keystone.models import registry
 
 TOKEN = os.environ.get("KEYSTONE_API_TOKEN")
 mcp_app = mcp_server.streamable_http_app(streamable_http_path="/", stateless_http=True,

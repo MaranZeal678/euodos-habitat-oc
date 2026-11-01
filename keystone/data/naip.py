@@ -9,9 +9,9 @@ from pyproj import Transformer
 from pystac_client import Client
 from rasterio.features import rasterize
 from rasterio.windows import from_bounds
-from shapely.geometry import Point, box, mapping, shape
-from shapely.strtree import STRtree
+from shapely.geometry import Point, mapping, shape
 from shapely.ops import transform as shp_transform
+from shapely.strtree import STRtree
 
 from keystone.config import DATA, OC_BBOX
 

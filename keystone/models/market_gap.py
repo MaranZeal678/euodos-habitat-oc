@@ -71,12 +71,12 @@ def gap_report(d):
     reasons = den["denial_reason-1"].map(DENIAL_REASONS).value_counts()
     return {
         "year": int(d.year.iloc[0]),
-        "applications": int(len(d)),
-        "low_income_applications": int(len(low)),
+        "applications": len(d),
+        "low_income_applications": len(low),
         "low_income_share_of_applications": round(len(low) / len(d), 3),
         "low_income_denial_rate": round(float(low.denied.mean()), 3),
         "all_denial_rate": round(float(d.denied.mean()), 3),
-        "low_income_denied": int(len(den)),
+        "low_income_denied": len(den),
         "low_income_denial_reasons": {k: int(v) for k, v in reasons.items()},
         "median_price_low_income_approved_k": float(low[low.denied == 0].value_k.median()),
         "median_income_low_income_applicants_k": float(low.income_k.median()),
@@ -93,7 +93,7 @@ def fairness_gap(d, p):
 
 
 def fit(train_df, seed=0, **hp):
-    params = dict(max_iter=300, learning_rate=0.05, max_leaf_nodes=31, l2_regularization=1.0) | hp
+    params = {"max_iter": 300, "learning_rate": 0.05, "max_leaf_nodes": 31, "l2_regularization": 1.0} | hp
     m = HistGradientBoostingClassifier(random_state=seed, categorical_features=[FEATURES.index("loan_type")], **params)
     m.fit(train_df[FEATURES], train_df.denied)
     return m, params
@@ -104,7 +104,7 @@ def evaluate(m, test_df):
     fg, groups = fairness_gap(test_df, p)
     return {"auc": round(float(roc_auc_score(test_df.denied, p)), 4),
             "brier": round(float(brier_score_loss(test_df.denied, p)), 4),
-            "fairness_gap": fg, "fairness_by_group": groups, "n_test": int(len(test_df))}
+            "fairness_gap": fg, "fairness_by_group": groups, "n_test": len(test_df)}
 
 
 def propose(train_years, test_year, frames, **hp):

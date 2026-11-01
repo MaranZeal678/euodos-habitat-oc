@@ -83,7 +83,7 @@ def main():
             raise SystemExit("demo page never became ready (is the server on :8000 running?)")
         page.add_style_tag(content="#controls { display: none !important; }")  # no playback buttons in the video
         page.evaluate(f"document.querySelector('#start')?.remove(); {'goto(0)' if a.start_step == 0 else f'jumpTo({a.start_step})'}; play();")
-        total = page.evaluate("STEPS.slice(%d).reduce((s, x) => s + x.dur, 0)" % a.start_step) + 1500
+        total = page.evaluate(f"STEPS.slice({a.start_step}).reduce((s, x) => s + x.dur, 0)") + 1500
         if a.seconds:
             total = min(total, a.seconds * 1000)
         n = int(total / dt)

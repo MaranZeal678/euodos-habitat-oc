@@ -196,7 +196,7 @@ class ClaudePolicy:
                     else:
                         out = json.dumps(await self.h.call_tool(agent, b.name, b.input, depth), default=str)[:30000]
                     return {"type": "tool_result", "tool_use_id": b.id, "content": out}
-                except Exception as e:  # report tool failures to the model instead of crashing the run
+                except Exception as e:  # noqa: BLE001 - any tool failure goes back to the model as an is_error result
                     return {"type": "tool_result", "tool_use_id": b.id, "content": f"error: {e}", "is_error": True}
 
             results = await asyncio.gather(*(run_call(b) for b in calls))

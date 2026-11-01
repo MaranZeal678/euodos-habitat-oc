@@ -10,7 +10,7 @@ Outer layer: search over mortgage designs for the one that maximizes 10-year sus
 All hazard parameters are labelled assumptions (no public Habitat loan-performance data exists);
 they are exposed so agents can run sensitivity analyses in the sandbox.
 """
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from itertools import product
 
 import numpy as np

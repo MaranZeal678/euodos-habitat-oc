@@ -4,10 +4,10 @@ Tool names are namespaced `<domain>_<action>` and return compact, high-signal JS
 tools for agents", 2025). Nothing here has side effects outside artifacts/, so no tool needs a consent gate.
 """
 import json
-from dataclasses import asdict
 
 from keystone import config, research, skills
-from keystone.models import capital, registry, sustainability as sus
+from keystone.models import capital, registry
+from keystone.models import sustainability as sus
 
 _SITES = None
 

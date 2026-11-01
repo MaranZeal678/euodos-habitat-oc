@@ -6,7 +6,7 @@ import json
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
-from shapely.geometry import Polygon, shape, mapping
+from shapely.geometry import Polygon, mapping, shape
 
 from keystone.config import DATA, DATA_RAW, REGION
 
@@ -76,7 +76,7 @@ def build():
         if f:
             p = f["properties"]
             parcel = shape(f["geometry"])
-            g = lambda k: p.get(F[k]) if F.get(k) else None  # noqa: E731
+            g = lambda k: p.get(F[k]) if F.get(k) else None
             out.update({
                 "apn": g("apn"), "address": g("address"),
                 "city": (g("city") or "").replace(" CA", "").strip().title(),

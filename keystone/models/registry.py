@@ -7,7 +7,7 @@ primary metric on the same frozen holdout by at least `min_gain`, and passes any
 """
 import json
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from keystone.config import ARTIFACTS
 
@@ -46,7 +46,7 @@ def propose(name, path, metrics, params, primary, higher_is_better=True, min_gai
     champ = champs[-1] if champs else None  # same object as in `entries`, so retiring it persists
     entry = {"version": new_version(), "path": path, "metrics": metrics, "params": params,
              "primary": primary, "data_version": data_version,
-             "created": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+             "created": datetime.now(UTC).isoformat(timespec="seconds")}
     reasons = []
     if champ is None:
         decision = True

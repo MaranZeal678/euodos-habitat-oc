@@ -13,10 +13,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from shapely.geometry import Polygon, box
 from shapely.strtree import STRtree
+from torch import nn
 
 from keystone.config import ARTIFACTS, DATA, DATA_RAW
 from keystone.data import naip
@@ -68,7 +68,7 @@ def build_dataset(n_pos=520, n_rand=160, seed=7):
             hits = [polys[i] for i in tree.query(box(*b))]
             y = naip.rasterize_polys(hits, (CHIP_PX, CHIP_PX), tf, crs)
             return arr, y, c
-        except Exception as e:  # network hiccups: skip chip
+        except Exception as e:  # noqa: BLE001 - a bad chip (network, nodata, CRS) is skipped, never fatal to the dataset
             print("skip", c, e, file=sys.stderr)
             return None
 
@@ -163,7 +163,7 @@ def train(epochs=30, width=24, lr=2e-3, seed=0, tag=None):
         if ep % 5 == 4 or ep == epochs - 1:
             print(f"epoch {ep + 1}/{epochs} loss {tot / len(tr):.4f} holdout {evaluate(model, X[te], Y[te])}")
     metrics = evaluate(model, X[te], Y[te])
-    params = {"epochs": epochs, "width": width, "lr": lr, "seed": seed, "n_train": int(len(tr)), "n_holdout": int(n_te)}
+    params = {"epochs": epochs, "width": width, "lr": lr, "seed": seed, "n_train": len(tr), "n_holdout": int(n_te)}
     path = ARTIFACTS / f"parking_unet_{tag or registry.new_version()}.pt"
     torch.save({"state": model.state_dict(), "width": width}, path)
     # 136 holdout chips: require a real gain, not noise

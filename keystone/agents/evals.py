@@ -35,7 +35,6 @@ def mission_text(m):
 def grade(report, tool_results, mission):
     g = {}
     plans = [t["result"] for t in tool_results if t["tool"] == "capital_plan"]
-    searches = [t["result"] for t in tool_results if t["tool"] == "sites_search"]
     sited = max([p.get("homes_sited", 0) for p in plans] + [0])
     nums = [int(n.replace(",", "")) for n in re.findall(r"(\d[\d,]*) units vs target", report)]
     shortlisted = max(nums + [0])
@@ -52,7 +51,6 @@ def grade(report, tool_results, mission):
     g["sensitivity_run"] = any(t["tool"] == "sandbox_run_python" and t["result"].get("ok") and t["agent"] == "capital_lead"
                                for t in tool_results)
     g["fairness_reported"] = "fairness" in report.lower()
-    site_units = [s["units_townhome"] for r in searches for s in r.get("sites", [])]
     g["diversified_sites"] = bool(re.search(r"\| (\d+) \|\n", report)) and not any(
         int(u) > 30 for u in re.findall(r"\| [\d.]+ \| (\d+) \|", report))
     score = sum(g.values()) / len(g)

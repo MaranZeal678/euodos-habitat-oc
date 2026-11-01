@@ -1,0 +1,6 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["keystone"],
+  "pythonVersion": "3.13"
+}

@@ -12,7 +12,6 @@ Each generation:
 import argparse
 import asyncio
 import json
-import os
 
 from keystone.agents import evals, memory
 from keystone.agents.runtime import Hierarchy, _has_credentials

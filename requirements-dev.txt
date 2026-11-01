@@ -1,0 +1,5 @@
+# dev: health checks (CLAUDE.md ## Health Stack)
+-r requirements-ml.txt
+ruff==0.17.3
+pyright==1.1.414
+vulture==2.16

@@ -70,9 +70,9 @@ def run_python(code, timeout=90, agent="unknown"):
            "OMP_NUM_THREADS": "1", "PYTHONDONTWRITEBYTECODE": "1"}
     py = [sys.executable, "-I", "-c",
           # rlimits are set inside the child (preexec_fn is unsafe in the threaded MCP server)
-          "import resource, sys; resource.setrlimit(resource.RLIMIT_CPU, (60, 60)); "
-          "resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 2**20, 50 * 2**20)); "
-          f"sys.path.insert(0, {str(ROOT)!r}); exec(compile(open({script!r}).read(), 'main.py', 'exec'))"]
+          ("import resource, sys; resource.setrlimit(resource.RLIMIT_CPU, (60, 60)); "
+           "resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 2**20, 50 * 2**20)); "
+           f"sys.path.insert(0, {str(ROOT)!r}); exec(compile(open({script!r}).read(), 'main.py', 'exec'))")]
     if sys.platform == "darwin" and shutil.which("sandbox-exec"):
         cmd, kind = ["sandbox-exec", "-p", SEATBELT.format(workdir=os.path.realpath(workdir))] + py, "seatbelt"
     elif shutil.which("bwrap"):
@@ -83,7 +83,7 @@ def run_python(code, timeout=90, agent="unknown"):
         _audit(agent, code, result, t0)
         return result
     try:
-        p = subprocess.run(cmd, cwd=workdir, env=env, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(cmd, check=False, cwd=workdir, env=env, capture_output=True, text=True, timeout=timeout)
         result = {"ok": p.returncode == 0, "stdout": p.stdout[-20_000:], "stderr": p.stderr[-5_000:],
                   "returncode": p.returncode, "sandbox": kind}
         if not result["ok"] and not result["stderr"]:
