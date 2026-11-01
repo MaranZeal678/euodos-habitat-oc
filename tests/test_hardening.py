@@ -100,8 +100,12 @@ def test_sandbox_cannot_read_outside_its_allowlist(tmp_path):
     assert not r["ok"] and "sk-live-canary" not in r["stdout"]
     r = run_python(f"import os\nprint(os.listdir({str(tmp_path)!r}))")
     assert not r["ok"] and "credentials" not in r["stdout"]
-    r = run_python(f"import os\nprint(os.listdir({os.path.expanduser('~')!r}))")
-    assert not r["ok"]
+    home = os.path.expanduser("~")
+    r = run_python(f"import os\nprint('\\n'.join(os.listdir({home!r})))")
+    if r["ok"]:  # Linux: bwrap creates bare parent folders for its mounts; nothing else of the real home may show
+        from keystone.sandbox import runner
+        mounts = {p[len(home) + 1:].split("/")[0] for p in runner._read_roots(str(tmp_path)) if p.startswith(home + "/")}
+        assert set(r["stdout"].split()) <= mounts, set(r["stdout"].split()) - mounts
     if os.environ.get("KEYSTONE_REQUIRE_OS_SANDBOX"):  # CI: refusing to run is not good enough, the sandbox must exist
         assert run_python("print(1)")["sandbox"] in ("seatbelt", "bubblewrap")
 
@@ -245,17 +249,17 @@ def test_sandbox_output_flood_is_capped_and_cannot_exhaust_memory():
 
 
 def test_sandbox_children_never_outlive_the_run():
-    import os
+    import subprocess
     import time as _time
     r = run_python("import os, sys, time\npid = getattr(os, 'fo' + 'rk')()\n"
                    "if pid == 0:\n    os.setsid(); time.sleep(30); sys.exit(0)\nprint(pid)")
-    pid = r["stdout"].strip()
-    if pid.isdigit():  # Linux: fork works inside the pid namespace, which dies with the run
-        _time.sleep(0.5)
-        with pytest.raises(ProcessLookupError):
-            os.kill(int(pid), 0)
-    else:  # macOS: fork itself is denied
+    if sys.platform == "darwin":  # fork itself is denied by the seatbelt profile
         assert not r["ok"] and "Operation not permitted" in r["stderr"]
+    # Linux: fork works inside a private pid namespace (so the printed pid means nothing on the host); what matters is
+    # that no process of the run survives it. Every sandboxed process carries its work dir (keystone_sbx_) in its argv.
+    _time.sleep(0.5)
+    left = subprocess.run(["pgrep", "-f", "keystone_sbx_"], check=False, capture_output=True, text=True).stdout.split()
+    assert left == [], f"sandbox processes survived the run: {left}"
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="exec allowlist is a seatbelt rule; Linux relies on the namespace")

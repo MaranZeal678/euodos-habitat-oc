@@ -171,9 +171,12 @@ def run_python(code, timeout=90, agent="unknown"):
         for r in [*roots, "/lib", "/lib64", "/etc"]:
             if os.path.exists(r) and r != os.path.realpath(workdir):
                 binds += ["--ro-bind", r, r]
-        for d in private:  # runtime state under a bound root is masked with an empty tmpfs
-            if any(d == r or d.startswith(r.rstrip("/") + "/") for r in roots) and os.path.isdir(d):
-                binds += ["--tmpfs", d]
+        for d in private:  # runtime state under a bound root is masked: folders by an empty tmpfs, files by /dev/null
+            if any(d == r or d.startswith(r.rstrip("/") + "/") for r in roots):
+                if os.path.isdir(d):
+                    binds += ["--tmpfs", d]
+                elif os.path.isfile(d):
+                    binds += ["--ro-bind", "/dev/null", d]
         # /tmp is mounted before the work dir: the work dir usually lives under /tmp on Linux, and a later tmpfs would hide it
         cmd = ["bwrap", *binds, "--tmpfs", "/tmp", "--bind", workdir, workdir, "--proc", "/proc", "--dev", "/dev",
                "--unshare-all", "--die-with-parent", "--new-session", "--chdir", workdir] + py
