@@ -33,7 +33,7 @@ LAST = ["Garcia", "Nguyen", "Okafor", "Hernandez", "Tran", "Lopez", "Kim", "Mart
 def hmda_incomes():
     from keystone.models.market_gap import load
     d = load(2024)
-    low = d[d.income_pct_ami <= 80]
+    low = d.loc[d.income_pct_ami <= 80]
     return (low.income_k.values * 1000).astype(float)
 
 

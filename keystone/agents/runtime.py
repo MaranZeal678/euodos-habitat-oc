@@ -17,6 +17,7 @@ import sys
 import time
 import uuid
 from contextlib import AsyncExitStack
+from typing import Any
 
 from mcp import ClientSession
 from mcp.client.stdio import StdioServerParameters, stdio_client
@@ -28,7 +29,7 @@ from keystone.config import ARTIFACTS, ROOT
 RUNS = ARTIFACTS / "runs"
 RUNS.mkdir(exist_ok=True)
 MAX_DEPTH = 3
-CURRENT_NODE = contextvars.ContextVar("node", default=None)  # asyncio tasks inherit it, so tool calls know their agent node
+CURRENT_NODE: contextvars.ContextVar[str | None] = contextvars.ContextVar("node", default=None)  # asyncio tasks inherit it, so tool calls know their agent node
 
 
 class Trace:
@@ -69,17 +70,18 @@ class Hierarchy:
         self.trace.log(type="run_start", run_id=self.run_id, policy=self.policy_name, tools=list(self.mcp_tools))
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *_exc):
         await self.stack.aclose()
 
-    async def call_tool(self, agent, name, args, depth):
+    async def call_tool(self, agent, name, args, depth) -> Any:
+        """Call an MCP tool as `agent`; returns the tool's JSON result (arbitrary shape, hence Any)."""
         if name not in SPECS[agent].tools:
             return {"error": f"{agent} is not permitted to call {name}"}
         t0 = time.time()
         res = await self.mcp.call_tool(name, args)
         text = "".join(getattr(c, "text", "") for c in res.content)
         try:
-            data = json.loads(text)
+            data: Any = json.loads(text)
         except ValueError:
             data = {"text": text}
         self.tool_results.append({"agent": agent, "tool": name, "args": args, "result": data})
@@ -167,13 +169,15 @@ class ClaudePolicy:
     async def run(self, agent, task, depth, node):
         spec = SPECS[agent]
         system = memory.system_prompt(agent, self.h.overrides.get(agent))
-        messages = [{"role": "user", "content": task}]
+        messages: list[Any] = [{"role": "user", "content": task}]
         tools = self._tools(agent)
-        for turn in range(spec.max_turns):
-            resp = await self.client.beta.messages.create(
-                model=spec.model, max_tokens=16000, system=system, messages=messages, tools=tools,
-                thinking={"type": "adaptive"}, output_config={"effort": spec.effort},
-                betas=["server-side-fallback-2026-07-01"], fallbacks="default")
+        for _turn in range(spec.max_turns):
+            # plain JSON-shaped params; the request shape is pinned by tests/test_claude_policy.py
+            params: dict[str, Any] = {
+                "model": spec.model, "max_tokens": 16000, "system": system, "messages": messages, "tools": tools,
+                "thinking": {"type": "adaptive"}, "output_config": {"effort": spec.effort},
+                "betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
+            resp = await self.client.beta.messages.create(**params)
             self.h.trace.tokens["input"] += resp.usage.input_tokens
             self.h.trace.tokens["output"] += resp.usage.output_tokens
             if resp.stop_reason == "refusal":

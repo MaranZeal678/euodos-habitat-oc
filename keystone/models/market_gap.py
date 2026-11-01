@@ -13,6 +13,7 @@ challenger is promoted.
 """
 import json
 import pickle
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -45,12 +46,12 @@ def _dti(v):
 
 def load(year):
     d = pd.read_csv(DATA_RAW / f"hmda_oc_{year}.csv", low_memory=False)
-    d = d[(d.occupancy_type == 1) & (d.lien_status == 1) & d.action_taken.isin([1, 2, 3])].copy()
+    d = d.loc[(d.occupancy_type == 1) & (d.lien_status == 1) & d.action_taken.isin([1, 2, 3])].copy()
     d["denied"] = (d.action_taken == 3).astype(int)
     d["income_k"] = pd.to_numeric(d.income, errors="coerce")
-    d = d[d.income_k > 0]
+    d = d.loc[d.income_k > 0].copy()
     d["loan_k"] = d.loan_amount / 1000
-    d["value_k"] = pd.to_numeric(d.property_value, errors="coerce") / 1000
+    d["value_k"] = pd.Series(pd.to_numeric(d.property_value, errors="coerce"), index=d.index) / 1000
     d["ltv"] = pd.to_numeric(d.loan_to_value_ratio, errors="coerce")
     d["dti"] = d.debt_to_income_ratio.map(_dti)
     d["loan_type"] = d.loan_type
@@ -93,8 +94,10 @@ def fairness_gap(d, p):
 
 
 def fit(train_df, seed=0, **hp):
-    params = {"max_iter": 300, "learning_rate": 0.05, "max_leaf_nodes": 31, "l2_regularization": 1.0} | hp
-    m = HistGradientBoostingClassifier(random_state=seed, categorical_features=[FEATURES.index("loan_type")], **params)
+    params: dict[str, Any] = {"max_iter": 300, "learning_rate": 0.05, "max_leaf_nodes": 31, "l2_regularization": 1.0} | hp
+    m = HistGradientBoostingClassifier(random_state=seed,
+                                       categorical_features=[FEATURES.index("loan_type")],  # pyright: ignore[reportArgumentType]  # sklearn accepts index lists; bundled stub says str
+                                       **params)
     m.fit(train_df[FEATURES], train_df.denied)
     return m, params
 
@@ -135,6 +138,8 @@ _MODEL = {}
 
 def champion_model():
     c = registry.champion("market_gap")
+    if c is None:
+        raise RuntimeError("No market_gap champion yet: run `python -m keystone.models.market_gap`")
     if c["path"] not in _MODEL:
         with open(c["path"], "rb") as f:
             _MODEL.clear(); _MODEL[c["path"]] = pickle.load(f)

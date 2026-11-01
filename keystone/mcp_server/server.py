@@ -18,10 +18,10 @@ app = MCPServer(
                  "Every number is sourced or labelled an assumption; cite sources in answers.",
 )
 
-READ_ONLY = ToolAnnotations(readOnlyHint=True, openWorldHint=False)
+READ_ONLY = ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False)
 for fn in tools.TOOLS:
     app.tool(annotations=READ_ONLY if fn.__name__ != "sandbox_run_python" else
-             ToolAnnotations(readOnlyHint=False, destructiveHint=False, openWorldHint=False))(fn)
+             ToolAnnotations(read_only_hint=False, destructive_hint=False, open_world_hint=False))(fn)
 
 
 @app.resource("keystone://sources")

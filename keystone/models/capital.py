@@ -29,8 +29,8 @@ def unit_cost(c=config.COST_ASSUMPTIONS, land_per_unit=0.0):
     return {"hard": round(hard), "soft": round(soft), "land": round(land_per_unit), "total": round(hard + soft + land_per_unit)}
 
 
-def plan(target_homes=100, family=None, design=None, appraised_value=750_000, land_per_unit=0.0,
-         calhome=60_000, ahp=40_000, sites=None, max_units_per_site=30, note_discount_rate=0.05):
+def plan(target_homes: int = 100, family=None, design=None, appraised_value: float = 750_000, land_per_unit: float = 0.0,
+         calhome: float = 60_000, ahp: float = 40_000, sites=None, max_units_per_site=30, note_discount_rate=0.05):
     family = family or Family()
     design = design or Design(rate=0.0, term_years=30, payment_cap=0.30)
     cost = unit_cost(land_per_unit=land_per_unit)

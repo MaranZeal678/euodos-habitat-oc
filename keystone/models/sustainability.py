@@ -122,11 +122,11 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
     essentials = a["essentials_base"] + a["essentials_per_person"] * (family.household_size - 1)
     cure = a["steward_cure_prob"] if design.stewardship else a["no_steward_cure_prob"]
     min_buffer = np.full(n_paths, np.inf)
-    if record:
-        states = np.zeros((T, n_paths), np.int8)
-        events = np.zeros((T, n_paths), np.int8)
-        buffers = np.zeros((T, n_paths), np.float32)
-        last_contact = np.full(n_paths, -99)
+    rec_T = T if record else 0  # recording arrays are empty unless asked for
+    states = np.zeros((rec_T, n_paths), np.int8)
+    events = np.zeros((rec_T, n_paths), np.int8)
+    buffers = np.zeros((rec_T, n_paths), np.float32)
+    last_contact = np.full(n_paths, -99)
 
     for t in range(T):
         shock = np.zeros(n_paths, bool)

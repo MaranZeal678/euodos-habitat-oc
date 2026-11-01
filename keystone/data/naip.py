@@ -1,5 +1,6 @@
 """NAIP 0.6 m RGB+NIR aerial imagery from Microsoft Planetary Computer (anonymous SAS signing)."""
 import json
+from datetime import datetime
 from functools import lru_cache
 
 import numpy as np
@@ -27,7 +28,8 @@ def _index():
     if not INDEX.exists():
         cat = Client.open(STAC)
         items = cat.search(collections=["naip"], bbox=list(OC_BBOX), datetime="2020-01-01/2030-01-01").item_collection()
-        rows = [{"href": i.assets["image"].href, "year": i.datetime.year, "geometry": i.geometry} for i in items]
+        rows = [{"href": i.assets["image"].href, "geometry": i.geometry,
+                 "year": (i.datetime or i.common_metadata.start_datetime or datetime(1900, 1, 1)).year} for i in items]
         INDEX.write_text(json.dumps(rows))
     rows = json.loads(INDEX.read_text())
     rows.sort(key=lambda r: -r["year"])
@@ -65,7 +67,9 @@ def rasterize_polys(polys_lonlat, out_shape, transform, crs):
         return np.zeros(out_shape, dtype=np.uint8)
     tf = Transformer.from_crs(4326, crs, always_xy=True).transform
     geoms = [shp_transform(tf, p) for p in polys_lonlat]
-    return rasterize([(mapping(g), 1) for g in geoms], out_shape=out_shape, transform=transform, fill=0, dtype=np.uint8)
+    out = rasterize([(mapping(g), 1) for g in geoms], out_shape=out_shape, transform=transform, fill=0, dtype=np.uint8)
+    assert out is not None  # rasterize only returns None when given an `out` array to fill
+    return out
 
 
 def chip_bounds(lon, lat, meters):

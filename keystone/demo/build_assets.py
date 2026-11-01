@@ -14,7 +14,7 @@ import numpy as np
 from PIL import Image
 from pyproj import Transformer
 from scipy.ndimage import binary_dilation, binary_erosion, label
-from shapely.geometry import Polygon, shape
+from shapely.geometry import MultiPolygon, Polygon, shape
 from shapely.ops import transform as shp_transform
 
 from keystone import config
@@ -42,7 +42,8 @@ def site_plan(dev, tf, angle, target):
     that fits the most buildings wins, and buildings are taken center-out so the plan reads as one compact village.
     Rectangle fit is tested with a summed-area table in a 1 m grid.
     """
-    lab, n = label(dev)
+    lab, n = label(dev)  # pyright: ignore[reportGeneralTypeIssues]  # scipy stub types the result as a scalar
+    lab = np.asarray(lab, dtype=np.int64)
     if n == 0:
         return []
     sizes = np.bincount(lab.ravel())[1:]
@@ -96,6 +97,14 @@ def site_plan(dev, tf, angle, target):
     return out
 
 
+def _largest_polygon(geom) -> Polygon:
+    if isinstance(geom, Polygon):
+        return geom
+    if isinstance(geom, MultiPolygon):
+        return max(geom.geoms, key=lambda g: g.area)
+    raise ValueError(f"parcel geometry is {geom.geom_type}, expected Polygon or MultiPolygon")
+
+
 def build_site(site, allocated):
     parcel = shape(site["parcel_geojson"])
     b = parcel.bounds
@@ -109,11 +118,14 @@ def build_site(site, allocated):
     to_utm = Transformer.from_crs(4326, crs, always_xy=True).transform
     to_ll = Transformer.from_crs(crs, 4326, always_xy=True).transform
     mrr = shp_transform(to_utm, parcel).minimum_rotated_rectangle
-    xy = np.array(mrr.exterior.coords)
-    e = xy[1] - xy[0]
-    angle = np.degrees(np.arctan2(e[1], e[0]))
+    if isinstance(mrr, Polygon):
+        xy = np.array(mrr.exterior.coords)
+        e = xy[1] - xy[0]
+        angle = float(np.degrees(np.arctan2(e[1], e[0])))
+    else:  # degenerate parcel (line or point): no orientation to follow
+        angle = 0.0
     plan = site_plan(dev, tf, angle, allocated)
-    homes = [{"polygon": [list(p) for p in shp_transform(to_ll, p).exterior.coords], "i": i,
+    homes = [{"polygon": [list(q) for q in shp_transform(to_ll, p).exterior.coords], "i": i,
               "bldg": i // UNITS_PER_BLDG} for i, p in enumerate(plan)]
     H, W = prob.shape
     corners = [tf * (0, H), tf * (W, H), tf * (W, 0), tf * (0, 0)]  # bl, br, tr, tl (deck.gl quad order)
@@ -121,10 +133,10 @@ def build_site(site, allocated):
     rgb = np.dstack([np.moveaxis(arr[:3], 0, -1), np.where(arr[:3].max(0) > 0, 255, 0).astype(np.uint8)])  # nodata -> transparent
     rgba = np.zeros((H, W, 4), np.uint8)
     rgba[parking] = (46, 230, 190, 170)
-    edge = binary_dilation(parking, iterations=1) & ~parking & inside
+    edge = np.asarray(binary_dilation(parking, iterations=1), dtype=bool) & ~parking & inside
     rgba[edge] = (160, 255, 235, 255)
     outline = np.zeros((H, W, 4), np.uint8)
-    pe = binary_dilation(inside, iterations=2) & ~inside
+    pe = np.asarray(binary_dilation(inside, iterations=2), dtype=bool) & ~inside
     outline[pe] = (255, 196, 64, 255)
     return {
         "apn": site["apn"], "name": site["name"], "city": site.get("city"), "address": site.get("address"),
@@ -132,8 +144,7 @@ def build_site(site, allocated):
         "parking_sqm": int(parking.sum() * PX * PX), "units": len(homes), "allocated": allocated,
         "bearing": float((90 - angle) % 360), "quad": quad,
         "img_rgb": _png(rgb), "img_mask": _png(rgba), "img_outline": _png(outline),
-        "parcel": [list(p) for p in parcel.exterior.coords] if parcel.geom_type == "Polygon"
-                  else [list(p) for p in max(parcel.geoms, key=lambda g: g.area).exterior.coords],
+        "parcel": [list(p) for p in _largest_polygon(parcel).exterior.coords],
         "homes": homes, "model_version": cnn.load_champion()[1]["version"],
     }
 
