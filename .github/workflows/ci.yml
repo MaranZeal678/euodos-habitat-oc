@@ -26,6 +26,12 @@ jobs:
           sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
           # Ubuntu 24.04 blocks unprivileged user namespaces by default; bubblewrap needs them
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Sandbox diagnostics (interpreter layout bubblewrap must expose)
+        run: |
+          .venv/bin/python -c "import sys, os; print('exe', sys.executable, '->', os.path.realpath(sys.executable)); print('prefix', sys.prefix, 'base', sys.base_prefix)"
+          ldd "$(readlink -f .venv/bin/python)" || true
+          ls -la / | grep -E ' (bin|lib|lib64|sbin) ' || true
+          .venv/bin/python -c "from keystone.sandbox import runner; r = runner.run_python('import sys; print(sys.version)'); print(r)"
       - name: Lint
         run: .venv/bin/ruff check keystone tests scripts
       - name: Types
