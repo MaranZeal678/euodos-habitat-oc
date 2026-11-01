@@ -23,3 +23,4 @@ artifacts/parking_unet_20261031_155914.pt
 artifacts/sandbox_audit.jsonl
 artifacts/skills/
 artifacts/memory/
+.coverage

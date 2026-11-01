@@ -166,7 +166,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
       <li>Returns the cheapest design that keeps P(still owning at year 10) ≥ 95%</li></ul></div>
     <div><span><span class="tag">HMDA</span><span class="tag">fairness gate</span></span><h3>Capital</h3>
       <ul><li>Gradient-boosted denial model trained on 52,075 OC lending decisions from 2022–2024</li>
-      <li>Protected attributes are excluded, and promotion is blocked if the race-group calibration gap widens</li>
+      <li>Protected attributes are excluded; promotion needs a gain clear of bootstrap noise and is blocked if the calibration gap for any race or ethnicity group of 100+ applicants widens significantly</li>
       <li>Path-to-100 planner values 0% notes at present value, not face value</li></ul></div>
   </div>
   <div class="tree">
@@ -193,7 +193,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
         <text x="390" y="214" font-size="12">Underwriter</text><text x="390" y="228" font-size="10">Sonnet 5.5</text>
         <text x="520" y="214" font-size="12">Underwriter</text><text x="520" y="228" font-size="10">Sonnet 5.5</text>
         <text x="735" y="216" font-size="12" font-weight="600">Keystone MCP server</text>
-        <text x="735" y="233" font-size="11">13 tools · 2 resources</text>
+        <text x="735" y="233" font-size="11">15 tools · 2 resources</text>
         <text x="735" y="250" font-size="11">OS sandbox · skill library · registry</text>
       </g>
       <g fill="none" stroke="var(--mark)" stroke-dasharray="4 4" stroke-width="1.2"><path d="M730 152 L735 196"/><path d="M580 216 L610 216"/></g>
@@ -222,24 +222,24 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
   <p class="col">Default is driven by liquidity, not equity. Cutting payments reduced default where cutting principal did not (<a href="https://doi.org/10.1257/aer.20181243">Ganong &amp; Noel 2020</a>), and halving a payment cuts the delinquency hazard by about 55% (<a href="https://doi.org/10.1257/pol.20150007">Fuster &amp; Willen 2017</a>). Stewarded community-land-trust loans ran at 1.3% serious delinquency against 8.6% in the market (<a href="https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/">Thaden 2011</a>). Keystone therefore optimizes the monthly payment and keeps a steward in the loop.</p>
   <div class="tbl"><table>
     <tr><th>Family (example applicants)</th><th class="n">Income</th><th class="n">% AMI</th><th class="n">P(market denial)</th><th>Chosen design</th><th class="n">P(owns at yr 10)</th><th class="n">Under stress</th><th class="n">Subsidy PV</th></tr>
-    <tr><td>Garcia · 4 · warehouse + childcare</td><td class="n">$92,000</td><td class="n">66%</td><td class="n">94%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">99.2%</td><td class="n">98.7%</td><td class="n">$152,801</td></tr>
-    <tr><td>Nguyen · 3 · nurse aide</td><td class="n">$71,000</td><td class="n">57%</td><td class="n">94%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">99.5%</td><td class="n">99.1%</td><td class="n">$212,896</td></tr>
-    <tr><td>Okafor · 5 · rideshare + retail</td><td class="n">$108,000</td><td class="n">72%</td><td class="n">92%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">97.5%</td><td class="n">95.9%</td><td class="n">$107,014</td></tr>
+    <tr><td>Garcia · 4 · warehouse + childcare</td><td class="n">$92,000</td><td class="n">66%</td><td class="n">94%</td><td>4% · 40 yr · 35% cap · $5k reserve · income-indexed</td><td class="n hl">97.2%</td><td class="n">96.2%</td><td class="n">$222,152</td></tr>
+    <tr><td>Nguyen · 3 · nurse aide</td><td class="n">$71,000</td><td class="n">57%</td><td class="n">95%</td><td>4% · 40 yr · 35% cap · $5k reserve</td><td class="n hl">95.4%</td><td class="n">92.7%</td><td class="n">$261,558</td></tr>
+    <tr><td>Okafor · 5 · rideshare + retail</td><td class="n">$108,000</td><td class="n">72%</td><td class="n">93%</td><td>4% · 40 yr · 35% cap · $5k reserve · income-indexed</td><td class="n hl">95.1%</td><td class="n">92.2%</td><td class="n">$191,476</td></tr>
   </table></div>
-  <p class="muted" style="font-size:14px">The stress test multiplies job-loss risk by 1.5 and raises the yearly insurance-shock probability to 15%; it runs as agent-written code in the sandbox. For the Garcia family, the same home with a market-rate first mortgage and no steward gives 85.6%. Families are illustrative and hazard rates are assumptions, because no public Habitat loan-performance data exists.</p>
+  <p class="muted" style="font-size:14px">The stress test multiplies job-loss risk by 1.5 and raises the yearly insurance-shock probability to 15%; it runs as agent-written code in the sandbox. Under that stress the Nguyen and Okafor designs fall below 95%, so the Underwriter flags them for a larger reserve or closer stewardship. For the Garcia family, the same home with a market-rate first mortgage and no steward gives 54.1%. Missed payments are carried as arrears until paid or worked out, never forgiven, and the down payment comes out of savings. Families are illustrative and hazard rates are assumptions, because no public Habitat loan-performance data exists.</p>
 </section>
 
 <section>
   <div class="eyebrow">Results · Capital</div>
-  <h2>About $16M of philanthropy closes the gap for 100 homes</h2>
-  <p class="col">Each townhome costs about $539,000 to build at an assumed $375 per square foot, with land contributed through SB 4. The buyer's 0% first mortgage has a face value of $519,000 but is worth $269,000 at a 5% discount rate. That difference is why 0% lending ties up capital. After an assumed $100,000 per home from <a href="https://www.hcd.ca.gov/funding/hosn">CalHome</a> and <a href="https://www.fhlbsf.com/products/community-programs-grants/ahp">FHLBank SF AHP</a>, the gap is $164,407 per home. The family puts down only what its savings cover; Habitat counts the rest as assistance.</p>
+  <h2>Keystone's designs need less than half the philanthropy of standard 0% loans</h2>
+  <p class="col">Each townhome costs about $539,000 to build at an assumed $375 per square foot, with land contributed through SB 4. The buyer's 0% first mortgage has a face value of $519,000 but is worth $269,000 at a 5% discount rate. That difference is why 0% lending ties up capital. After an assumed $100,000 per home from <a href="https://www.hcd.ca.gov/funding/hosn">CalHome</a> and <a href="https://www.fhlbsf.com/products/community-programs-grants/ahp">FHLBank SF AHP</a>, the gap is $164,407 per home: about $16.4M for 100 homes. The family puts down only what its savings cover; Habitat counts the rest as assistance. Sized instead for the designs Keystone recommends to the three example families (4% · 40 years · 35% cap, plus a $5,000 reserve), the mortgages recover far more capital and the program needs about $7.4M, or $74,315 per home. Okafor's design recovers $19,986 more than the home costs, but one family's surplus is not counted against another's gap.</p>
   <div class="tbl" style="max-width:640px"><table>
     <tr><th>Hard cost / sf</th><th class="n">Discount 4%</th><th class="n">5%</th><th class="n">6%</th></tr>
     <tr><td>$325</td><td class="n">$5.9M</td><td class="n">$9.3M</td><td class="n">$12.1M</td></tr>
     <tr><td>$375</td><td class="n">$13.1M</td><td class="n hl">$16.4M</td><td class="n">$19.3M</td></tr>
     <tr><td>$425</td><td class="n">$20.3M</td><td class="n">$23.6M</td><td class="n">$26.4M</td></tr>
   </table></div>
-  <p class="muted" style="font-size:14px">Philanthropy needed for 100 homes. The Capital lead ran this sweep in the sandbox. Per-unit public funding and hard cost are planning assumptions.</p>
+  <p class="muted" style="font-size:14px">Philanthropy needed for 100 homes with standard 0% · 30-year loans. The Capital lead ran this sweep in the sandbox. Per-unit public funding and hard cost are planning assumptions.</p>
 </section>
 
 <section>
@@ -262,7 +262,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
   <div class="tbl"><table>
     <tr><th>Capability</th><th>How Keystone does it</th><th>Grounding</th></tr>
     <tr><td>Agent hierarchy</td><td>Director → 3 leads → workers, with parallel delegation, a progress ledger and least-privilege tools. Leads run on Claude Opus 5.5 and workers on Claude Sonnet 5.5, both with adaptive thinking</td><td><a href="https://www.anthropic.com/engineering/multi-agent-research-system">Anthropic 2025</a>, <a href="https://arxiv.org/abs/2411.04468">Magentic-One</a></td></tr>
-    <tr><td>MCP</td><td>One Keystone server with 13 namespaced tools and 2 resources, over stdio or Streamable HTTP. It also plugs into Claude Desktop and Claude Code</td><td><a href="https://modelcontextprotocol.io/specification/latest">MCP spec 2026-07-28</a></td></tr>
+    <tr><td>MCP</td><td>One Keystone server with 15 namespaced tools and 2 resources, over stdio or Streamable HTTP. It also plugs into Claude Desktop and Claude Code</td><td><a href="https://modelcontextprotocol.io/specification/latest">MCP spec 2026-07-28</a></td></tr>
     <tr><td>Sandbox</td><td>Agent-written Python runs under macOS seatbelt or Linux bubblewrap, with no network, writes only to its own folder, and secrets scrubbed. Red-team tests pass</td><td><a href="https://www.anthropic.com/engineering/claude-code-sandboxing">Anthropic 2025</a>, <a href="https://www.anthropic.com/engineering/code-execution-with-mcp">code execution with MCP</a></td></tr>
     <tr><td>CNN</td><td>U-Net on NAIP RGB + NIR + NDVI, weakly supervised by OSM</td><td><a href="https://arxiv.org/abs/2412.13179">Qiam et al. 2024</a>, <a href="https://doi.org/10.1080/01944363.2024.2345730">Jo et al. 2025</a></td></tr>
     <tr><td>Simulate and optimize</td><td>Household Monte Carlo inside a design search</td><td><a href="https://arxiv.org/abs/2411.00563">Ardon et al. 2024</a></td></tr>

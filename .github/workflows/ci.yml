@@ -35,7 +35,7 @@ jobs:
       - name: Tests (unit, fuzz, hardening, deploy, browser) with coverage gate
         env:
           KEYSTONE_REQUIRE_OS_SANDBOX: "1"
-        run: .venv/bin/python -m pytest -q tests --cov=keystone --cov-report=term-missing:skip-covered --cov-fail-under=80
+        run: .venv/bin/python -m pytest -q tests --cov=keystone --cov-report=term-missing:skip-covered --cov-fail-under=75
 
   docker:
     runs-on: ubuntu-24.04

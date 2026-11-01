@@ -96,7 +96,7 @@ def main():
                 time.sleep(0.05)
                 page.evaluate("__flush()")
             page.evaluate("__flush()")
-            enc.stdin.write(page.screenshot(type="jpeg", quality=92))
+            enc.stdin.write(page.screenshot(type="jpeg", quality=92, timeout=120_000))  # generous: a busy machine is slow, not wrong
             if i % (a.fps * 5) == 0:
                 el = time.time() - t0
                 print(f"frame {i}/{n} · demo t={i * dt / 1000:.1f}s · step {page.evaluate('si')} · {el:.0f}s elapsed, ~{el / max(i, 1) * (n - i):.0f}s left", flush=True)

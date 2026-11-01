@@ -70,3 +70,12 @@ def test_income_limits_classify():
 def test_site_search_uses_cnn_scores():
     r = tools.sites_search(limit=5)
     assert r["total_matches"] > 50 and all(s["units_townhome"] >= 4 for s in r["sites"])
+
+
+def test_parking_cnn_champion_runs_inference():
+    import numpy as np
+
+    from keystone.models import cnn
+    arr = np.random.default_rng(0).integers(0, 255, (4, 61, 77), dtype=np.uint8)  # odd sizes exercise the padding
+    p = cnn.segment(arr)
+    assert p.shape == (61, 77) and np.isfinite(p).all() and 0 <= p.min() and p.max() <= 1
