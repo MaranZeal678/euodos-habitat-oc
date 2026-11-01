@@ -133,6 +133,8 @@ html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink)
 
 <script>
 const $ = s => document.querySelector(s);
+// Every data-derived string goes through esc(): site names come from OpenStreetMap; replayed tool args can be model text.
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
 const fmt = n => Number(n).toLocaleString("en-US");
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -262,14 +264,14 @@ function hudCities() {
   const top = Object.entries(by).sort((a, b) => b[1].n - a[1].n).slice(0, 8), max = top[0][1].n;
   $("#hud").style.opacity = 1;
   $("#hud").innerHTML = `<div class="t">Where the land is</div><div style="margin-bottom:6px">Viable faith-owned sites in ${Object.keys(by).length} Orange County cities</div>` +
-    top.map(([c, v]) => `<div style="display:grid;grid-template-columns:96px 1fr 70px;gap:8px;align-items:center;margin:3px 0"><span>${c}</span><span style="height:6px;border-radius:0 3px 3px 0;background:var(--teal);width:${v.n / max * 100}%"></span><b style="text-align:right">${v.n} · ${fmt(v.u)}</b></div>`).join("") +
+    top.map(([c, v]) => `<div style="display:grid;grid-template-columns:96px 1fr 70px;gap:8px;align-items:center;margin:3px 0"><span>${esc(c)}</span><span style="height:6px;border-radius:0 3px 3px 0;background:var(--teal);width:${v.n / max * 100}%"></span><b style="text-align:right">${v.n} · ${fmt(v.u)}</b></div>`).join("") +
     `<div style="margin-top:6px;color:var(--ink-3);font-size:11px">sites · townhome capacity</div>`;
 }
 function hudSite(k, phase) {
   if (STEPS[si] && STEPS[si].act !== 1) return;
   const f = FEAT[k];
   $("#hud").style.opacity = 1;
-  $("#hud").innerHTML = `<div class="t">${f.name}</div><div>${f.address || ""}, ${f.city} · APN ${f.apn}</div>
+  $("#hud").innerHTML = `<div class="t">${esc(f.name)}</div><div>${esc(f.address)}, ${esc(f.city)} · APN ${esc(f.apn)}</div>
     <div class="bar"><i style="width:${phase >= 1 ? 100 : 0}%;transition:width 2.2s"></i></div>
     <div class="row"><span>Parcel</span><b>${f.parcel_acres} acres</b></div>
     <div class="row"><span>CNN parking found</span><b>${phase >= 1 ? fmt(f.parking_sqm) + " m²" : "scanning…"}</b></div>
@@ -295,13 +297,13 @@ function replayTick() {
   const e = replayQ.shift();
   AGENTS.forEach(([k]) => agentOn(k, k === e.agent || k === "director"));
   const args = JSON.stringify(e.args).replace(/"/g, "").slice(0, 60);
-  logEv(`<b>${e.agent}</b> → mcp:${e.tool}(${args}) <span style="color:var(--ink-3)">${e.secs}s</span>`, e.tool.startsWith("sandbox") ? "sb" : e.agent === "steward" ? "st" : "");
+  logEv(`<b>${esc(e.agent)}</b> → mcp:${esc(e.tool)}(${esc(args)}) <span style="color:var(--ink-3)">${esc(e.secs)}s</span>`, e.tool.startsWith("sandbox") ? "sb" : e.agent === "steward" ? "st" : "");
 }
 
 // ------------------------------------------------------------------ act 2 grids
 const GRID = {};
 function buildGrids() {
-  $("#grids").innerHTML = Object.entries(PORT.scenarios).map(([k, t]) => `<div class="gcol ${k === "keystone" ? "k" : ""}"><div class="gt">${t}</div><canvas id="g_${k}" width="420" height="420"></canvas><div class="own" id="o_${k}">100<small>still home</small></div></div>`).join("");
+  $("#grids").innerHTML = Object.entries(PORT.scenarios).map(([k, t]) => `<div class="gcol ${k === "keystone" ? "k" : ""}"><div class="gt">${esc(t)}</div><canvas id="g_${k}" width="420" height="420"></canvas><div class="own" id="o_${k}">100<small>still home</small></div></div>`).join("");
   Object.keys(PORT.scenarios).forEach(k => GRID[k] = $("#g_" + k).getContext("2d"));
 }
 function house(ctx, x, y, s, fill, stroke) {
@@ -336,7 +338,7 @@ function stewardFeed() {
     if (!(e[m] & EV.STEW)) return;
     let recent = 0; for (let j = Math.max(0, m - 12); j <= m; j++) recent |= e[j];
     const cause = recent & EV.JOB ? "job loss → payment reset to income cap" : recent & EV.INS ? "insurance spike → escrow reserve draw" : recent & EV.REP ? "major repair → repair program" : "thin buffer → reserve plan";
-    logEv(`<b>steward</b> → ${f.name.split(" ")[0]} ${f.name.split(" ")[1][0]}. · M${m + 1} · ${cause}`, "st");
+    logEv(`<b>steward</b> → ${esc(f.name.split(" ")[0])} ${esc((f.name.split(" ")[1] || "")[0] || "")}. · M${m + 1} · ${cause}`, "st");
   });
 }
 

@@ -132,6 +132,17 @@ a { color: var(--series-1); }
 <div class="tip" id="tip"></div>
 <script>
 const $ = s => document.querySelector(s);
+// Every data-derived string goes through esc(): site names come from OpenStreetMap and briefs can contain model text.
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+function safeMarkdown(md) {
+  const html = marked.parse(String(md).replace(/</g, "&lt;"));  // raw HTML in the brief renders as text
+  const t = document.createElement("template"); t.innerHTML = html;
+  t.content.querySelectorAll("a").forEach(a => {
+    if (!/^https?:\/\//i.test(a.getAttribute("href") || "")) a.removeAttribute("href");
+    a.setAttribute("rel", "noopener noreferrer"); a.setAttribute("target", "_blank");
+  });
+  return t.innerHTML;
+}
 const fmt = (n, d = 0) => n == null ? "—" : Number(n).toLocaleString("en-US", {maximumFractionDigits: d, minimumFractionDigits: d});
 const usd = n => "$" + fmt(n);
 const pct = (n, d = 0) => (n * 100).toFixed(d) + "%";
@@ -187,8 +198,8 @@ function hbar(sel, data, tipFmt) {
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
   data.forEach((d, i) => {
     const w = (W - L - 50) * d.value / max, y = i * rowH + 4;
-    s += `<text x="${L - 8}" y="${y + 15}" text-anchor="end">${d.label}</text>
-      <rect x="${L}" y="${y + 3}" width="${Math.max(w, 2)}" height="${rowH - 8}" rx="4" fill="${css("--series-1")}" data-t="${d.label}: ${tipFmt(d.value)}"></rect>
+    s += `<text x="${L - 8}" y="${y + 15}" text-anchor="end">${esc(d.label)}</text>
+      <rect x="${L}" y="${y + 3}" width="${Math.max(w, 2)}" height="${rowH - 8}" rx="4" fill="${css("--series-1")}" data-t="${esc(d.label)}: ${esc(tipFmt(d.value))}"></rect>
       <text x="${L + w + 6}" y="${y + 15}">${fmt(d.value)}</text>`;
   });
   $(sel).innerHTML = s + "</svg>";
@@ -207,12 +218,12 @@ async function initMap() {
     const t = s.units_townhome / maxU;
     L.circleMarker([s.lat, s.lon], {radius: 3 + 12 * Math.sqrt(t), weight: 1, color: s.viable ? css("--seq-high") : css("--text-muted"),
       fillColor: s.viable ? css("--series-1") : css("--text-muted"), fillOpacity: s.viable ? 0.35 + 0.5 * t : 0.25})
-      .bindPopup(`<b>${s.name}</b><br>${s.address || ""}, ${s.city || ""}<br>APN ${s.apn}<br>Parcel ${fmt(s.parcel_sqm / 4046.86, 2)} ac · CNN parking ${fmt(s.parking_sqm)} m²<br>Developable ${s.developable_acres} ac → <b>${s.units_townhome} townhomes</b> (SB 4 cap ${s.units_sb4_cap})`)
+      .bindPopup(`<b>${esc(s.name)}</b><br>${esc(s.address)}, ${esc(s.city)}<br>APN ${esc(s.apn)}<br>Parcel ${fmt(s.parcel_sqm / 4046.86, 2)} ac · CNN parking ${fmt(s.parking_sqm)} m²<br>Developable ${s.developable_acres} ac → <b>${s.units_townhome} townhomes</b> (SB 4 cap ${s.units_sb4_cap})`)
       .addTo(MAP);
   });
   const v = sites.filter(s => s.viable).slice(0, 60);
   $("#siteTable").innerHTML = `<tr><th>Site</th><th>City</th><th class="n">Parking m²</th><th class="n">Dev. ac</th><th class="n">Units</th></tr>` +
-    v.map(s => `<tr data-lat="${s.lat}" data-lon="${s.lon}" style="cursor:pointer"><td>${s.name}<div class="muted">APN ${s.apn}</div></td><td>${s.city || ""}</td><td class="n">${fmt(s.parking_sqm)}</td><td class="n">${s.developable_acres}</td><td class="n">${s.units_townhome}</td></tr>`).join("");
+    v.map(s => `<tr data-lat="${s.lat}" data-lon="${s.lon}" style="cursor:pointer"><td>${esc(s.name)}<div class="muted">APN ${esc(s.apn)}</div></td><td>${esc(s.city)}</td><td class="n">${fmt(s.parking_sqm)}</td><td class="n">${s.developable_acres}</td><td class="n">${s.units_townhome}</td></tr>`).join("");
   $("#siteTable").querySelectorAll("tr[data-lat]").forEach(r => r.onclick = () => MAP.setView([+r.dataset.lat, +r.dataset.lon], 17));
 }
 
@@ -277,7 +288,7 @@ async function loadRuns(pickFirst) {
   const runs = await api("/api/runs");
   if (pickFirst && !CUR && runs.length) CUR = runs[0].id;
   $("#runTable").innerHTML = `<tr><th>Run</th><th>Policy</th><th class="n">Score</th></tr>` + runs.map(r =>
-    `<tr data-id="${r.id}" style="cursor:pointer;${r.id === CUR ? "background:var(--accent-bg)" : ""}"><td>${r.id}</td><td>${r.policy || ""}</td><td class="n">${r.running || !r.done ? "running…" : r.score?.toFixed(2) ?? "—"}</td></tr>`).join("");
+    `<tr data-id="${esc(r.id)}" style="cursor:pointer;${r.id === CUR ? "background:var(--accent-bg)" : ""}"><td>${esc(r.id)}</td><td>${esc(r.policy)}</td><td class="n">${r.running || !r.done ? "running…" : r.score?.toFixed(2) ?? "—"}</td></tr>`).join("");
   $("#runTable").querySelectorAll("tr[data-id]").forEach(t => t.onclick = () => { CUR = t.dataset.id; loadRuns(); });
   if (CUR) await loadRun(CUR);
   if (runs.some(r => r.running || !r.done)) setTimeout(() => loadRuns(), 2000);
@@ -290,14 +301,14 @@ async function loadRun(id) {
     if (e.type === "agent_end" && nodes[e.node]) nodes[e.node].done = true;
   });
   r.events.filter(e => e.type === "tool").forEach(e => nodes[e.node]?.tools.push(e));
-  const render = n => `<div class="node"><div class="hd">${n.agent} <span class="pill">${n.model.replace("claude-", "")}</span> <span class="pill">playbook ${n.playbook_version}</span> ${n.done ? "" : '<span class="pill">running</span>'}</div>
+  const render = n => `<div class="node"><div class="hd">${esc(n.agent)} <span class="pill">${esc(n.model.replace("claude-", ""))}</span> <span class="pill">playbook ${esc(n.playbook_version)}</span> ${n.done ? "" : '<span class="pill">running</span>'}</div>
     <div class="task">${escapeHtml(n.task).slice(0, 300)}</div>
-    ${n.tools.map(t => `<div class="tool" title="${escapeHtml(t.summary || "")}">↳ mcp:${t.tool}(${escapeHtml(JSON.stringify(t.args)).slice(0, 90)}) · ${t.secs}s${t.error ? " · error" : ""}</div>`).join("")}
+    ${n.tools.map(t => `<div class="tool" title="${escapeHtml(t.summary || "")}">↳ mcp:${esc(t.tool)}(${escapeHtml(JSON.stringify(t.args)).slice(0, 90)}) · ${t.secs}s${t.error ? " · error" : ""}</div>`).join("")}
     ${n.kids.map(render).join("")}</div>`;
   $("#trace").innerHTML = roots.map(render).join("") || "<span class='muted'>waiting…</span>";
   const g = r.grade;
-  $("#grade").innerHTML = g ? `<p>Grade <b>${g.score.toFixed(2)}</b> ` + Object.entries(g.checks).map(([k, v]) => `<span class="pill ${v ? "good" : "bad"}">${v ? "✓" : "✗"} ${k.replaceAll("_", " ")}</span>`).join(" ") + "</p>" : "";
-  $("#report").innerHTML = r.report ? marked.parse(r.report) : "<span class='muted'>The brief appears when the Director finishes.</span>";
+  $("#grade").innerHTML = g ? `<p>Grade <b>${g.score.toFixed(2)}</b> ` + Object.entries(g.checks).map(([k, v]) => `<span class="pill ${v ? "good" : "bad"}">${v ? "✓" : "✗"} ${esc(k.replaceAll("_", " "))}</span>`).join(" ") + "</p>" : "";
+  $("#report").innerHTML = r.report ? safeMarkdown(r.report) : "<span class='muted'>The brief appears when the Director finishes.</span>";
 }
 const escapeHtml = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 
@@ -307,8 +318,8 @@ async function improve() {
   const rows = [];
   Object.entries(reg).forEach(([name, es]) => es.forEach(e => rows.push({name, ...e})));
   $("#regTable").innerHTML = `<tr><th>Artifact</th><th>Version</th><th>Metrics</th><th>Status</th><th>Gate reasoning</th></tr>` + rows.map(e =>
-    `<tr><td>${e.name}</td><td>${e.version}</td><td>${Object.entries(e.metrics).filter(([k, v]) => typeof v !== "object").map(([k, v]) => `${k} ${v}`).join("<br>")}</td>
-     <td><span class="pill ${e.status === "champion" ? "good" : e.status === "rejected" ? "bad" : ""}">${e.status}</span></td><td class="muted">${(e.decision_reasons || []).join("<br>")}</td></tr>`).join("");
+    `<tr><td>${esc(e.name)}</td><td>${esc(e.version)}</td><td>${Object.entries(e.metrics).filter(([k, v]) => typeof v !== "object").map(([k, v]) => `${esc(k)} ${esc(v)}`).join("<br>")}</td>
+     <td><span class="pill ${e.status === "champion" ? "good" : e.status === "rejected" ? "bad" : ""}">${e.status}</span></td><td class="muted">${(e.decision_reasons || []).map(esc).join("<br>")}</td></tr>`).join("");
   const imp = SUM?.improve || [];
   if (!imp.length) { $("#impChart").innerHTML = "<p class='muted'>Run <code>python -m keystone.agents.improve</code> to populate.</p>"; return; }
   const pts = [{g: "baseline", v: imp[0].baseline}, ...imp.map((x, i) => ({g: "gen " + (i + 1), v: x.challenger, x}))];

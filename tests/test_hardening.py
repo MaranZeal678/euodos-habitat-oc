@@ -10,6 +10,7 @@ from keystone.app import server
 from keystone.mcp_server.server import app as mcp_app
 from keystone.models import market_gap
 from keystone.models import sustainability as sus
+from keystone.sandbox.runner import run_python
 
 BAD_TOOL_CALLS = [
     (tools.family_market_score, {"income": -5, "price": 750_000}),
@@ -69,11 +70,13 @@ def client():
         yield c
 
 
-def test_api_validates_and_hides_internals(client):
+def test_api_validates_and_hides_internals(client, monkeypatch):
+    monkeypatch.setattr(server, "TOKEN", "t0k")
+    auth = {"Authorization": "Bearer t0k"}
     assert client.post("/api/optimize", json={"income": -1}).status_code == 422
     assert client.post("/api/optimize", json={"household_size": 40}).status_code == 422
-    assert client.post("/api/mission", json={"mission": 99}).status_code == 422
-    assert client.post("/api/mission", json={"policy": "rm -rf"}).status_code == 422
+    assert client.post("/api/mission", json={"mission": 99}, headers=auth).status_code == 422
+    assert client.post("/api/mission", json={"policy": "rm -rf"}, headers=auth).status_code == 422
     assert client.get("/api/homekeeper/watchlist", params={"month": 500}).status_code == 422
     for rid in ("..", "..%2F..", "20261031_000000_zzzz", "x" * 300):
         assert client.get(f"/api/runs/{rid}").status_code == 404
@@ -86,3 +89,18 @@ def test_token_gates_mcp_and_mission(client, monkeypatch):
     assert client.post("/mcp/", json={}).status_code == 401
     assert client.post("/mcp/", json={}, headers={"Authorization": "Bearer wrong"}).status_code == 401
     assert client.get("/api/summary").status_code == 200  # reads stay open
+
+
+def test_no_token_means_loopback_only(client, monkeypatch):
+    monkeypatch.setattr(server, "TOKEN", None)
+    # TestClient's peer is "testclient", i.e. not loopback: exactly the docker-without-a-token case
+    assert client.post("/mcp/", json={}).status_code == 403
+    assert client.post("/api/mission", json={}).status_code == 403
+
+
+def test_sandbox_cannot_read_home_directory():
+    import os
+    r = run_python(f"print(open({os.path.expanduser('~/.zshrc')!r}).read())")
+    assert not r["ok"]
+    r = run_python(f"import os\nprint(os.listdir({os.path.expanduser('~')!r}))")
+    assert not r["ok"]

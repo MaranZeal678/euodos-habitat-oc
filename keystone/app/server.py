@@ -2,7 +2,8 @@
 
   uvicorn keystone.app.server:app --port 8000
 
-Set KEYSTONE_API_TOKEN to require `Authorization: Bearer <token>` on /mcp and on endpoints that start agent runs.
+/mcp and POST /api/mission run code and spend money, so they fail closed: with KEYSTONE_API_TOKEN set they require
+`Authorization: Bearer <token>`; without it they answer only to loopback clients (local development).
 """
 import asyncio
 import contextlib
@@ -40,13 +41,19 @@ app = FastAPI(title="Keystone", lifespan=lifespan)
 HERE = config.ROOT / "keystone" / "app"
 
 
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
 @app.middleware("http")
 async def auth(request: Request, call_next):
     protected = request.url.path.startswith("/mcp") or (request.method == "POST" and request.url.path == "/api/mission")
-    if TOKEN and protected:
-        got = request.headers.get("authorization", "")
-        if not secrets.compare_digest(got, f"Bearer {TOKEN}"):
-            return JSONResponse({"error": "missing or invalid bearer token"}, status_code=401)
+    if protected:
+        if TOKEN:
+            got = request.headers.get("authorization", "")
+            if not secrets.compare_digest(got, f"Bearer {TOKEN}"):
+                return JSONResponse({"error": "missing or invalid bearer token"}, status_code=401)
+        elif (request.client.host if request.client else "") not in LOOPBACK:
+            return JSONResponse({"error": "set KEYSTONE_API_TOKEN to use this endpoint from another machine"}, status_code=403)
     return await call_next(request)
 
 

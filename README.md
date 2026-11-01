@@ -19,7 +19,7 @@ A replay of a real graded agent run streams alongside throughout.
 | Capital Planner | per-home funding waterfall, sensitivity range, application drafts |
 | Agent Console + MCP | `/mcp` endpoint (Streamable HTTP, bearer auth) for Claude Desktop, Claude Code or any MCP host |
 
-**Deploy:** `docker build -t keystone .` then run the image, or use the Render blueprint in `render.yaml`. One container serves `/`, `/demo`, `/api` and `/mcp`. Choose the market with `KEYSTONE_REGION` (configs live in `keystone/regions/`). Onboarding a new county means filling in `_template.json` and running `python -m keystone.pipeline`.
+**Deploy:** `docker build -t keystone .` then run the image with `-e KEYSTONE_API_TOKEN=<secret>`, or use the Render blueprint in `render.yaml` (it generates the token). `/mcp` and `POST /api/mission` fail closed: without a token they answer only to loopback clients. One container serves `/`, `/demo`, `/api` and `/mcp`. Choose the market with `KEYSTONE_REGION` (configs live in `keystone/regions/`). Onboarding a new county means filling in `_template.json` and running `python -m keystone.pipeline`.
 
 Keystone uses AI on the three technical problems between Habitat OC and 100 more homes:
 

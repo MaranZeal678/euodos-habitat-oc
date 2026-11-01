@@ -2,7 +2,9 @@
 
 Agents write analysis code (sensitivity sweeps, custom portfolio cuts); it runs here, never in the host process.
 Layers, following Anthropic's sandboxing guidance (filesystem + network isolation, enforced by the OS):
-  - macOS seatbelt profile via sandbox-exec (Linux: bubblewrap): no network, writes only to a per-run temp dir
+  - macOS seatbelt profile via sandbox-exec (Linux: bubblewrap): no network, writes only to a per-run temp dir,
+    and reads only from an allowlist (interpreter, system libraries, the project's code/data, the work dir), so
+    agent code cannot read credentials elsewhere on the host
   - isolated interpreter (-I), scrubbed environment (no API keys), CPU/file-size rlimits, wall-clock timeout
   - code is AST-screened for obviously dangerous calls before it runs, and every run is audit-logged
 Production would swap this for Anthropic's code execution tool or a Firecracker/gVisor microVM; the interface stays.
@@ -22,10 +24,23 @@ AUDIT = ARTIFACTS / "sandbox_audit.jsonl"
 BLOCKED_CALLS = {"system", "popen", "fork", "execv", "execve", "spawnv", "rmtree", "remove", "unlink", "kill"}
 BLOCKED_MODULES = {"socket", "subprocess", "ctypes", "multiprocessing", "requests", "urllib", "http", "shutil"}
 
+# Read allowlist: everything else on the host (home directory, ~/.config, ~/.ssh, .env files) is unreadable.
+SYSTEM_READ = ["/System", "/usr", "/bin", "/Library/Frameworks", "/Library/Apple", "/private/etc", "/private/var/db/timezone",
+               "/opt/homebrew/lib", "/opt/homebrew/opt", "/dev"]
+
+
+def _read_roots(workdir):
+    venv_or_prefix = os.path.realpath(sys.prefix)
+    base = os.path.realpath(sys.base_prefix)
+    project = [str(ROOT / d) for d in ("keystone", "data", "artifacts")]
+    return sorted({*SYSTEM_READ, venv_or_prefix, base, *project, os.path.realpath(workdir)})
+
+
 SEATBELT = """(version 1)
 (deny default)
 (allow process-exec process-fork)
-(allow file-read*)
+(allow file-read-metadata)
+(allow file-read* {read_rules})
 (allow file-write* (subpath "{workdir}") (literal "/dev/null"))
 (allow sysctl-read)
 (allow mach-lookup)
@@ -68,15 +83,24 @@ def run_python(code, timeout=90, agent="unknown"):
         f.write(code)
     env = {"PATH": "/usr/bin:/bin", "HOME": workdir, "TMPDIR": workdir, "MPLCONFIGDIR": workdir, "MPLBACKEND": "Agg", "PYTHONPATH": str(ROOT),
            "OMP_NUM_THREADS": "1", "PYTHONDONTWRITEBYTECODE": "1"}
+    roots = _read_roots(workdir)
     py = [sys.executable, "-I", "-c",
           # rlimits are set inside the child (preexec_fn is unsafe in the threaded MCP server)
           ("import resource, sys; resource.setrlimit(resource.RLIMIT_CPU, (60, 60)); "
            "resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 2**20, 50 * 2**20)); "
            f"sys.path.insert(0, {str(ROOT)!r}); exec(compile(open({script!r}).read(), 'main.py', 'exec'))")]
     if sys.platform == "darwin" and shutil.which("sandbox-exec"):
-        cmd, kind = ["sandbox-exec", "-p", SEATBELT.format(workdir=os.path.realpath(workdir))] + py, "seatbelt"
+        rules = " ".join(f'(subpath "{r}")' for r in roots) + f' (literal "{ROOT}") (literal "/")'
+        cmd = ["sandbox-exec", "-p", SEATBELT.format(workdir=os.path.realpath(workdir), read_rules=rules)] + py
+        kind = "seatbelt"
     elif shutil.which("bwrap"):
-        cmd = ["bwrap", "--ro-bind", "/", "/", "--bind", workdir, workdir, "--unshare-net", "--die-with-parent", "--dev", "/dev"] + py
+        # Linux: an empty root with only the allowlisted trees bound read-only (lib dirs added when present)
+        binds = []
+        for r in [*roots, "/lib", "/lib64", "/etc"]:
+            if os.path.exists(r) and r != os.path.realpath(workdir):
+                binds += ["--ro-bind", r, r]
+        cmd = ["bwrap", *binds, "--bind", workdir, workdir, "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
+               "--unshare-all", "--die-with-parent", "--chdir", workdir] + py
         kind = "bubblewrap"
     else:
         result = {"ok": False, "stdout": "", "stderr": "no OS sandbox available on this host; refusing to run", "sandbox": None}
