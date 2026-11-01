@@ -20,3 +20,7 @@ artifacts/siteplan_check.png
 artifacts/parking_unet_20261031_155914.pt
 .DS_Store
 .gstack/
+artifacts/sandbox_audit.jsonl
+artifacts/skills/
+artifacts/memory/
+artifacts/improve_log.json
