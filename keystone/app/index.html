@@ -186,8 +186,8 @@ async function overview() {
     <div class="tile"><div class="l">Townhome capacity found</div><div class="v">${fmt(SUM.townhome_units)}</div><div class="s">${(SUM.townhome_units / 100).toFixed(0)}× the Keys to 100 goal</div></div>
     <div class="tile"><div class="l">Low-income purchase denials, 2024</div><div class="v">${pct(g24.low_income_denial_rate)}</div><div class="s">${fmt(g24.low_income_denied)} OC families ≤80% AMI · HMDA</div></div>
     <div class="tile"><div class="l">Parking CNN (holdout IoU)</div><div class="v">${cnn.metrics.iou.toFixed(2)}</div><div class="s">U-Net · NAIP RGB+NIR · v${cnn.version}</div></div>
-    <div class="tile"><div class="l">Market-gap model (AUC)</div><div class="v">${mg.metrics.auc.toFixed(3)}</div><div class="s">fairness gap ${mg.metrics.fairness_gap} · ${mg.data_version}</div></div>
-    <div class="tile"><div class="l">Agent eval score</div><div class="v">${imp.length ? imp[imp.length - 1].challenger.toFixed(2) : "—"}</div><div class="s">${imp.length ? `from ${imp[0].baseline.toFixed(2)} over ${imp.length} generation(s)` : "run the improve loop"}</div></div>
+    <div class="tile"><div class="l">Market-gap model (AUC)</div><div class="v">${mg.metrics.auc.toFixed(3)}</div><div class="s">fairness gap ${mg.metrics.fairness_gap} · trained on ${esc((mg.params.train_years || []).join(", "))}, tested on ${esc(mg.params.test_year)}</div></div>
+    <div class="tile"><div class="l">Agent eval score</div><div class="v">${imp.length ? imp[imp.length - 1].challenger.toFixed(2) : "—"}</div><div class="s">${imp.length ? `from ${imp[0].baseline.toFixed(2)} over ${imp.length} ${imp.length === 1 ? "generation" : "generations"}` : "run the improve loop"}</div></div>
   </div>
   <div class="grid2">
     <div class="card"><h2>Why families lose homes, and what Keystone does about it</h2>
