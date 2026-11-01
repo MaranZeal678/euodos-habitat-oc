@@ -16,6 +16,7 @@ import ast
 import contextlib
 import json
 import os
+import pathlib
 import selectors
 import shutil
 import signal
@@ -35,11 +36,31 @@ SYSTEM_READ = ["/System", "/usr", "/bin", "/Library/Frameworks", "/Library/Apple
                "/opt/homebrew/lib", "/opt/homebrew/opt", "/dev"]
 
 
+def _interpreter_paths():
+    """Every install directory the kernel and Python walk to start the interpreter. A venv links to its interpreter,
+    and uv links that through a minor-version alias (cpython-3.13-...) to the real install (cpython-3.13.14-...), so
+    mounting only the fully resolved directory leaves the paths the venv actually uses missing inside the sandbox."""
+    paths, p = set(), sys.executable
+    for _ in range(20):
+        paths.update({os.path.dirname(p), os.path.dirname(os.path.dirname(p))})  # .../bin and the install above it
+        if not os.path.islink(p):
+            break
+        target = os.readlink(p)
+        p = target if os.path.isabs(target) else os.path.join(os.path.dirname(p), target)
+    cfg = os.path.join(sys.prefix, "pyvenv.cfg")  # Python finds its standard library via the venv's recorded home
+    if os.path.exists(cfg):
+        for line in pathlib.Path(cfg).read_text().splitlines():
+            if line.partition("=")[0].strip() == "home":
+                home = line.partition("=")[2].strip()
+                paths.update({home, os.path.dirname(home)})
+    return {x for x in paths if x and x != "/"}
+
+
 def _read_roots(workdir):
     venv_or_prefix = os.path.realpath(sys.prefix)
     base = os.path.realpath(sys.base_prefix)
     project = [str(ROOT / d) for d in ("keystone", "data", "artifacts")]
-    return sorted({*SYSTEM_READ, venv_or_prefix, base, *project, os.path.realpath(workdir)})
+    return sorted({*SYSTEM_READ, venv_or_prefix, base, *_interpreter_paths(), *project, os.path.realpath(workdir)})
 
 
 MAX_OUTPUT = 2 * 2**20  # bytes of stdout+stderr kept; past this the run is killed
