@@ -10,6 +10,7 @@ Outer layer: search over mortgage designs for the one that maximizes 10-year sus
 All hazard parameters are labelled assumptions (no public Habitat loan-performance data exists);
 they are exposed so agents can run sensitivity analyses in the sandbox.
 """
+import math
 from dataclasses import asdict, dataclass
 from itertools import product
 
@@ -48,7 +49,7 @@ class Family:
     income_volatility: float = 1.0     # multiplier on job-loss risk (gig/seasonal work > 1)
 
     def __post_init__(self):
-        _require(0 < self.income <= 2_000_000, f"income must be in (0, 2,000,000], got {self.income}")
+        _require(1_000 <= self.income <= 2_000_000, f"income must be $1,000-$2,000,000, got {self.income}")
         _require(1 <= self.household_size <= 8, f"household_size must be 1-8 (HUD scale), got {self.household_size}")
         _require(self.savings >= 0, f"savings must be >= 0, got {self.savings}")
         _require(self.monthly_debts >= 0, f"monthly_debts must be >= 0, got {self.monthly_debts}")
@@ -91,10 +92,11 @@ class Home:
 
 
 def _pmt(principal, rate, n):
-    if rate == 0:
-        return principal / n
     r = rate / 12
-    return principal * r / (1 - (1 + r) ** -n)
+    if r < 1e-12:  # below this the amortizing payment equals principal/n to ~1e-10 (and r may have underflowed to 0)
+        return principal / n
+    # 1 - (1+r)^-n via expm1/log1p: stays exact as r -> 0, where the textbook form divides by zero
+    return principal * r / -math.expm1(-n * math.log1p(r))
 
 
 def underwrite(family: Family, home: Home, design: Design, a=ASSUMPTIONS):
@@ -150,6 +152,12 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
     events = np.zeros((rec_T, n_paths), np.int8)
     buffers = np.zeros((rec_T, n_paths), np.float32)
     last_contact = np.full(n_paths, -99)
+    # One cure draw per delinquency episode, not per calendar month: a family whose crisis a bigger reserve delays
+    # still faces the same cure odds, so more money can never make a path worse (checked by tests/test_fuzz.py).
+    # Its own stream, so the life-shock stream (job loss, insurance, repairs) is untouched by how cures are drawn.
+    cure_u = np.random.default_rng([seed, 1]).random((T // 3 + 1, n_paths))
+    episode = np.zeros(n_paths, dtype=int)
+    paths = np.arange(n_paths)
 
     for t in range(T):
         shock = np.zeros(n_paths, bool)
@@ -176,7 +184,8 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
         buffer = np.maximum(buffer, 0)
         hit90 = missed >= 3
         ever90 |= hit90
-        resolved = hit90 & (rng.random(n_paths) < cure)
+        resolved = hit90 & (cure_u[episode, paths] < cure)
+        episode += hit90
         newly_lost = hit90 & ~resolved & ~lost
         lost |= hit90 & ~resolved
         missed = np.where(resolved, 0, missed)
@@ -211,11 +220,12 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
 
 
 def _balance(principal, rate, n, k):
-    if rate == 0:
-        return principal * (1 - k / n)
     r = rate / 12
+    if r < 1e-12:
+        return principal * (1 - k / n)
     pmt = _pmt(principal, rate, n)
-    return principal * (1 + r) ** k - pmt * ((1 + r) ** k - 1) / r
+    growth = math.expm1(k * math.log1p(r))  # (1+r)^k - 1, stable for tiny r
+    return principal * (1 + growth) - pmt * growth / r
 
 
 def subsidy_cost(uw, design, home, discount=0.04):

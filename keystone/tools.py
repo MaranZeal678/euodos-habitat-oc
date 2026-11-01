@@ -16,7 +16,7 @@ _SITES = None
 
 # Bounds live in the signatures: pydantic enforces them on every call, and MCP publishes them in each tool's input
 # schema, so an agent sees the valid range before it calls.
-Income = Annotated[float, Field(gt=0, le=2_000_000, description="annual household income, USD")]
+Income = Annotated[float, Field(ge=1_000, le=2_000_000, description="annual household income, USD (floor $1,000: below that no payment ratio is meaningful)")]
 HouseholdSize = Annotated[int, Field(ge=1, le=8, description="people in the household (HUD scale 1-8)")]
 Money = Annotated[float, Field(ge=0, le=20_000_000)]
 HomeValue = Annotated[float, Field(ge=10_000, le=20_000_000, description="appraised home value, USD")]
