@@ -21,5 +21,5 @@ cp -R "$DIST/Keystone.app" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 hdiutil create -quiet -volname "Keystone $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DIST/Keystone-$VERSION.dmg"
 rm -rf "$STAGE"
-shasum -a 256 "$DIST/Keystone-$VERSION.dmg" | tee "$DIST/Keystone-$VERSION.dmg.sha256"
+(cd "$DIST" && shasum -a 256 "Keystone-$VERSION.dmg" | tee "Keystone-$VERSION.dmg.sha256")  # bare name: `shasum -c` works after download
 du -sh "$DIST/Keystone.app" "$DIST/Keystone-$VERSION.dmg"
