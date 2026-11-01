@@ -8,11 +8,13 @@ services:
     envVars:
       - key: KEYSTONE_REGION
         value: orange_county_ca
+      - key: KEYSTONE_STATE_DIR  # runs, skills library, agent lessons: they must survive deploys for self-improvement
+        value: /app/state
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: KEYSTONE_API_TOKEN
         generateValue: true
     disk:
-      name: keystone-artifacts
-      mountPath: /app/artifacts/runs
+      name: keystone-state
+      mountPath: /app/state
       sizeGB: 5

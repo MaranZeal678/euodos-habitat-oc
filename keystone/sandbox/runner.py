@@ -18,9 +18,9 @@ import sys
 import tempfile
 import time
 
-from keystone.config import ARTIFACTS, ROOT
+from keystone.config import ROOT, STATE
 
-AUDIT = ARTIFACTS / "sandbox_audit.jsonl"
+AUDIT = STATE / "sandbox_audit.jsonl"
 BLOCKED_CALLS = {"system", "popen", "fork", "execv", "execve", "spawnv", "rmtree", "remove", "unlink", "kill"}
 BLOCKED_MODULES = {"socket", "subprocess", "ctypes", "multiprocessing", "requests", "urllib", "http", "shutil"}
 

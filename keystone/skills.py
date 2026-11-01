@@ -5,9 +5,9 @@ import re
 import threading
 import time
 
-from keystone.config import ARTIFACTS
+from keystone.config import STATE
 
-DIR = ARTIFACTS / "skills"
+DIR = STATE / "skills"
 DIR.mkdir(exist_ok=True)
 INDEX = DIR / "index.json"
 _lock = threading.Lock()  # concurrent missions share the index: read-modify-write under one lock, replace atomically

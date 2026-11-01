@@ -14,8 +14,11 @@ REGION = json.loads((ROOT / "keystone" / "regions" / f"{REGION_ID}.json").read_t
 _DEFAULT = REGION_ID == "orange_county_ca"
 DATA_RAW = ROOT / "data" / "raw" if _DEFAULT else ROOT / "data" / REGION_ID / "raw"
 DATA = ROOT / "data" / "processed" if _DEFAULT else ROOT / "data" / REGION_ID / "processed"
-ARTIFACTS = ROOT / "artifacts" if _DEFAULT else ROOT / "artifacts" / REGION_ID
-for _d in (DATA_RAW, DATA, ARTIFACTS):
+ARTIFACTS = ROOT / "artifacts" if _DEFAULT else ROOT / "artifacts" / REGION_ID  # trained models + registry (shipped)
+# Runtime state the product writes as it works: agent runs, skills, lessons, sandbox audit. Point KEYSTONE_STATE_DIR
+# at a persistent disk in production; child processes (the stdio MCP server) inherit it, so tests stay isolated too.
+STATE = Path(os.environ["KEYSTONE_STATE_DIR"]) if os.environ.get("KEYSTONE_STATE_DIR") else ARTIFACTS
+for _d in (DATA_RAW, DATA, ARTIFACTS, STATE):
     _d.mkdir(parents=True, exist_ok=True)
 
 OC_BBOX = tuple(REGION["bbox"])  # lon_min, lat_min, lon_max, lat_max (name kept for compatibility)

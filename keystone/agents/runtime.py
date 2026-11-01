@@ -24,9 +24,9 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 
 from keystone.agents import memory
 from keystone.agents.specs import SPECS
-from keystone.config import ARTIFACTS, ROOT
+from keystone.config import ROOT, STATE
 
-RUNS = ARTIFACTS / "runs"
+RUNS = STATE / "runs"
 RUNS.mkdir(exist_ok=True)
 MAX_DEPTH = 3
 CURRENT_NODE: contextvars.ContextVar[str | None] = contextvars.ContextVar("node", default=None)  # asyncio tasks inherit it, so tool calls know their agent node

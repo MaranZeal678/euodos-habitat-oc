@@ -3,9 +3,9 @@ import json
 import time
 
 from keystone.agents.specs import SPECS
-from keystone.config import ARTIFACTS
+from keystone.config import STATE
 
-DIR = ARTIFACTS / "memory"
+DIR = STATE / "memory"
 DIR.mkdir(exist_ok=True)
 LESSONS = DIR / "lessons.json"
 PLAYBOOKS = DIR / "playbooks.json"

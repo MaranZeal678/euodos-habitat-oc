@@ -12,6 +12,7 @@ def isolated_artifacts(tmp_path, monkeypatch):
     art = tmp_path / "artifacts"
     for sub in ("runs", "skills", "memory"):
         (art / sub).mkdir(parents=True)
+    monkeypatch.setenv("KEYSTONE_STATE_DIR", str(art))  # child processes (the stdio MCP server) compute their paths from this
     monkeypatch.setattr(runtime, "RUNS", art / "runs")
     monkeypatch.setattr(runner, "AUDIT", art / "sandbox_audit.jsonl")
     monkeypatch.setattr(skills, "DIR", art / "skills")

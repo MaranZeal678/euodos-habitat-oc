@@ -3,7 +3,7 @@
 FROM python:3.13-slim
 
 ARG WITH_ML=1
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 KEYSTONE_HOST=0.0.0.0 PORT=8000
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 KEYSTONE_HOST=0.0.0.0 PORT=8000 KEYSTONE_STATE_DIR=/app/state
 # bubblewrap gives the agent sandbox its OS boundary on Linux (no network, private writable dir)
 RUN apt-get update && apt-get install -y --no-install-recommends bubblewrap && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY keystone ./keystone
 COPY data/processed ./data/processed
 COPY data/raw/hmda_oc_2024.csv ./data/raw/
 COPY artifacts ./artifacts
-RUN useradd -m keystone && chown -R keystone /app
+RUN useradd -m keystone && mkdir -p /app/state && chown -R keystone /app
 USER keystone
 EXPOSE 8000
 HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
