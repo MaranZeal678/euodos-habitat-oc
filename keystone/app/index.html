@@ -126,8 +126,10 @@ a { color: var(--brand); text-underline-offset: 2px; }
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
         <label style="min-width:280px">Mission<select id="missionSel"></select></label>
         <label style="min-width:160px">Policy<select id="policySel"><option value="auto">auto</option><option value="claude">claude</option><option value="scripted">scripted (offline)</option></select></label>
+        <label style="min-width:200px">Access token<input id="missionToken" type="password" autocomplete="off" placeholder="only on a shared server"></label>
         <button class="btn" id="launch" style="margin-bottom:8px">Launch mission</button>
       </div>
+      <p id="missionStatus" class="muted" aria-live="polite"></p>
     </div>
     <div class="grid2">
       <div class="card"><h3>Runs</h3><div class="scroll" style="max-height:200px"><table id="runTable"></table></div><h3 style="margin-top:12px">Trace</h3><div id="trace" class="tree scroll"></div></div>
@@ -241,7 +243,7 @@ async function initMap() {
 // ---------------------------------------------------------------- families
 // [key, label, default, min, max, step]: bounds mirror the API's request model so the browser flags bad input first
 // step "any" except household size: an HTML step counts from min, so a coarse step would reject ordinary values
-const FIELDS = [["income", "Household income ($/yr)", 92000, 1, 2000000, "any"], ["household_size", "Household size", 4, 1, 8, 1],
+const FIELDS = [["income", "Household income ($/yr)", 92000, 1000, 2000000, "any"], ["household_size", "Household size", 4, 1, 8, 1],
   ["savings", "Liquid savings ($)", 4000, 0, 20000000, "any"], ["monthly_debts", "Other debts ($/mo)", 350, 0, 1000000, "any"],
   ["income_volatility", "Job-loss risk multiplier", 1.2, 0, 5, "any"], ["home_value", "Appraised home value ($)", 750000, 10000, 20000000, "any"],
   ["min_sustain", "Target P(sustained 10y)", 0.95, 0.5, 0.999, "any"]];
@@ -264,12 +266,13 @@ $("#famGo").onclick = async () => {
   let res, r;
   try {
     res = await fetch("/api/optimize", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
-    r = await res.json();
   } catch (e) {
     $("#famGo").disabled = false;
     return famError("Couldn't reach the Keystone server. Check that it is running, then try again.");
   }
+  r = await res.json().catch(() => ({}));
   $("#famGo").disabled = false;
+  if (res.status === 429) return famError(`Keystone is busy. Wait ${res.headers.get("Retry-After") || "a few"} seconds and try again.`);
   if (!res.ok) {  // 422 from the request model: name the field and the rule
     const d = Array.isArray(r.detail) ? r.detail[0] : null;
     const f = d && FIELDS.find(([k]) => k === d.loc[d.loc.length - 1]);
@@ -321,18 +324,31 @@ async function agents() {
   $("#missionSel").innerHTML = ms.map((m, i) => `<option value="${i}">${m.name}</option>`).join("");
   await loadRuns(true);
 }
+const MISSION_REFUSED = {
+  401: "This server needs its access token to run missions. Enter it above.",
+  403: "Missions only run locally on this server. Set KEYSTONE_API_TOKEN on the server, then enter the token above.",
+};
 $("#launch").onclick = async () => {
-  const r = await api("/api/mission", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({mission: +$("#missionSel").value, policy: $("#policySel").value})});
+  const tok = $("#missionToken").value.trim(), st = $("#missionStatus");
+  st.textContent = ""; st.style.color = "";
+  let res;
+  try {
+    res = await fetch("/api/mission", {method: "POST", body: JSON.stringify({mission: +$("#missionSel").value, policy: $("#policySel").value}),
+      headers: {"Content-Type": "application/json", ...(tok ? {Authorization: `Bearer ${tok}`} : {})}});
+  } catch (e) { st.textContent = "Couldn't reach the Keystone server."; st.style.color = "var(--serious)"; return; }
+  const r = await res.json().catch(() => ({}));
+  if (!res.ok) { st.textContent = MISSION_REFUSED[res.status] || (typeof r.detail === "string" ? r.detail : `The server refused the mission (${res.status}).`); st.style.color = "var(--serious)"; return; }
   CUR = r.run_id; setTimeout(() => loadRuns(), 800);
 };
+const runStatus = r => r.error ? "failed" : r.running ? "running…" : !r.done ? "incomplete" : (r.score?.toFixed(2) ?? "—");
 async function loadRuns(pickFirst) {
   const runs = await api("/api/runs");
   if (pickFirst && !CUR && runs.length) CUR = runs[0].id;
   $("#runTable").innerHTML = `<tr><th>Run</th><th>Policy</th><th class="n">Score</th></tr>` + runs.map(r =>
-    `<tr data-id="${esc(r.id)}" style="cursor:pointer;${r.id === CUR ? "background:var(--accent-bg)" : ""}"><td>${esc(r.id)}</td><td>${esc(r.policy)}</td><td class="n">${r.running || !r.done ? "running…" : r.score?.toFixed(2) ?? "—"}</td></tr>`).join("");
+    `<tr data-id="${esc(r.id)}" style="cursor:pointer;${r.id === CUR ? "background:var(--accent-bg)" : ""}"><td>${esc(r.id)}</td><td>${esc(r.policy)}</td><td class="n">${runStatus(r)}</td></tr>`).join("");
   $("#runTable").querySelectorAll("tr[data-id]").forEach(t => t.onclick = () => { CUR = t.dataset.id; loadRuns(); });
   if (CUR) await loadRun(CUR);
-  if (runs.some(r => r.running || !r.done)) setTimeout(() => loadRuns(), 2000);
+  if (runs.some(r => r.running)) setTimeout(() => loadRuns(), 2000);  // failed or orphaned runs stop the polling
 }
 async function loadRun(id) {
   const r = await api("/api/runs/" + id);
@@ -349,7 +365,8 @@ async function loadRun(id) {
   $("#trace").innerHTML = roots.map(render).join("") || "<span class='muted'>waiting…</span>";
   const g = r.grade;
   $("#grade").innerHTML = g ? `<p>Grade <b>${g.score.toFixed(2)}</b> ` + Object.entries(g.checks).map(([k, v]) => `<span class="pill ${v ? "good" : "bad"}">${v ? "✓" : "✗"} ${esc(k.replaceAll("_", " "))}</span>`).join(" ") + "</p>" : "";
-  $("#report").innerHTML = r.report ? safeMarkdown(r.report) : "<span class='muted'>The brief appears when the Director finishes.</span>";
+  $("#report").innerHTML = r.error ? `<p style="color:var(--serious)">This mission failed: ${escapeHtml(r.error)}</p>`
+    : r.report ? safeMarkdown(r.report) : "<span class='muted'>The brief appears when the Director finishes.</span>";
 }
 const escapeHtml = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 

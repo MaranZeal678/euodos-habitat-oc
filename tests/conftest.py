@@ -1,4 +1,5 @@
 import pytest
+from fastapi.testclient import TestClient
 
 from keystone import skills
 from keystone.agents import memory, runtime
@@ -19,3 +20,12 @@ def isolated_artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(memory, "LESSONS", art / "memory" / "lessons.json")
     monkeypatch.setattr(memory, "PLAYBOOKS", art / "memory" / "playbooks.json")
     return art
+
+
+@pytest.fixture(scope="session")
+def client():
+    """One app lifespan per test process, exactly like a uvicorn worker: MCP's session manager can only start once.
+    Server errors come back as 500 responses (not raised) so tests assert on what a real client would see."""
+    from keystone.app import server
+    with TestClient(server.app, raise_server_exceptions=False) as c:
+        yield c

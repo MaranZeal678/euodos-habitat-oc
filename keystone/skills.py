@@ -1,6 +1,8 @@
 """Voyager-style skill library: sandbox code that ran successfully, stored for reuse by later agent runs."""
 import json
+import os
 import re
+import threading
 import time
 
 from keystone.config import ARTIFACTS
@@ -8,6 +10,13 @@ from keystone.config import ARTIFACTS
 DIR = ARTIFACTS / "skills"
 DIR.mkdir(exist_ok=True)
 INDEX = DIR / "index.json"
+_lock = threading.Lock()  # concurrent missions share the index: read-modify-write under one lock, replace atomically
+
+
+def _write(path, text):
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
 
 
 def index():
@@ -16,19 +25,21 @@ def index():
 
 def save(name, code, description=""):
     name = re.sub(r"[^a-z0-9_]", "_", name.lower())[:60]
-    idx = index()
-    (DIR / f"{name}.py").write_text(code)
-    entry = idx.get(name, {"uses": 0, "created": time.strftime("%Y-%m-%d %H:%M")})
-    entry.update({"description": description, "updated": time.strftime("%Y-%m-%d %H:%M"), "lines": code.count("\n") + 1})
-    idx[name] = entry
-    INDEX.write_text(json.dumps(idx, indent=2))
+    with _lock:
+        idx = index()
+        _write(DIR / f"{name}.py", code)
+        entry = idx.get(name, {"uses": 0, "created": time.strftime("%Y-%m-%d %H:%M")})
+        entry.update({"description": description, "updated": time.strftime("%Y-%m-%d %H:%M"), "lines": code.count("\n") + 1})
+        idx[name] = entry
+        _write(INDEX, json.dumps(idx, indent=2))
     return name
 
 
 def get(name):
-    idx = index()
-    if name not in idx:
-        return {"error": f"unknown skill {name}", "available": list(idx)}
-    idx[name]["uses"] += 1
-    INDEX.write_text(json.dumps(idx, indent=2))
+    with _lock:
+        idx = index()
+        if name not in idx:
+            return {"error": f"unknown skill {name}", "available": list(idx)}
+        idx[name]["uses"] += 1
+        _write(INDEX, json.dumps(idx, indent=2))
     return {"name": name, **idx[name], "code": (DIR / f"{name}.py").read_text()}

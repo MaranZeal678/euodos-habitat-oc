@@ -3,32 +3,39 @@
   uvicorn keystone.app.server:app --port 8000
 
 /mcp and POST /api/mission run code and spend money, so they fail closed: with KEYSTONE_API_TOKEN set they require
-`Authorization: Bearer <token>`; without it they answer only to loopback clients (local development).
+`Authorization: Bearer <token>`; without it they answer only to loopback clients, and only when the server itself is
+bound to loopback (local development). A deployed server (KEYSTONE_HOST=0.0.0.0, as in the Dockerfile) never trusts
+loopback, because a reverse proxy in front of it would make every visitor look local.
+/api/optimize is open but CPU-heavy (~3 s), so it is rate-limited per client and capped in concurrency.
 """
 import asyncio
 import contextlib
 import json
+import logging
 import os
 import re
 import secrets
+import threading
 import time
 import uuid
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from keystone import config, tools
-from keystone.agents import evals
-from keystone.agents.runtime import RUNS, Hierarchy
+from keystone.agents import evals, runtime
 from keystone.mcp_server.server import app as mcp_server
 from keystone.models import registry
+from keystone.sandbox.runner import run_python
 
+log = logging.getLogger("keystone")
 TOKEN = os.environ.get("KEYSTONE_API_TOKEN")
-mcp_app = mcp_server.streamable_http_app(streamable_http_path="/", stateless_http=True,
-                                         host=os.environ.get("KEYSTONE_HOST", "127.0.0.1"))
+HOST = os.environ.get("KEYSTONE_HOST", "127.0.0.1")
+mcp_app = mcp_server.streamable_http_app(streamable_http_path="/", stateless_http=True, host=HOST)
 
 
 @contextlib.asynccontextmanager
@@ -41,7 +48,18 @@ app = FastAPI(title="Keystone", lifespan=lifespan)
 HERE = config.ROOT / "keystone" / "app"
 
 
+@app.exception_handler(RequestValidationError)
+async def invalid_request(_request, exc):
+    # FastAPI's default 422 echoes the offending input, and NaN/Infinity are not JSON, so it would 500 on exactly the
+    # inputs it is rejecting. Field location, message and type are all a client needs.
+    return JSONResponse({"detail": [{k: e[k] for k in ("loc", "msg", "type") if k in e} for e in exc.errors()]}, status_code=422)
+
+
 LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def trust_loopback():
+    return HOST in LOOPBACK
 
 
 @app.middleware("http")
@@ -52,7 +70,7 @@ async def auth(request: Request, call_next):
             got = request.headers.get("authorization", "")
             if not secrets.compare_digest(got, f"Bearer {TOKEN}"):
                 return JSONResponse({"error": "missing or invalid bearer token"}, status_code=401)
-        elif (request.client.host if request.client else "") not in LOOPBACK:
+        elif not trust_loopback() or (request.client.host if request.client else "") not in LOOPBACK:
             return JSONResponse({"error": "set KEYSTONE_API_TOKEN to use this endpoint from another machine"}, status_code=403)
     return await call_next(request)
 
@@ -70,15 +88,30 @@ def demo():
     return FileResponse(HERE / "demo.html", headers=NO_CACHE)
 
 
+_sandbox_check = {}
+
+
+def sandbox_status():
+    """Run one trivial program through the OS sandbox, once per process: a host without a working sandbox (no bwrap,
+    no user namespaces in the container) shows up at deploy time instead of failing mid-mission."""
+    if not _sandbox_check:
+        r = run_python("print(6 * 7)", timeout=30, agent="healthz")
+        _sandbox_check.update({"ok": r["ok"] and r["stdout"].strip() == "42", "kind": r.get("sandbox")}
+                              | ({} if r["ok"] else {"error": r["stderr"][-300:]}))
+    return _sandbox_check
+
+
 @app.get("/healthz")
 def healthz():
-    return {"ok": True, "region": config.REGION_ID, "champions": {n: (registry.champion(n) or {}).get("version") for n in ("parking_cnn", "market_gap")}}
+    sbx = sandbox_status()
+    return {"ok": True, "degraded": [] if sbx["ok"] else ["sandbox"], "sandbox": sbx, "region": config.REGION_ID,
+            "champions": {n: (registry.champion(n) or {}).get("version") for n in ("parking_cnn", "market_gap")}}
 
 
 @app.get("/api/demo/trace")
 def demo_trace():
     """Most recent fully graded run: its trace (for the replayed agent feed), brief and grade."""
-    for d in sorted(RUNS.iterdir(), reverse=True):
+    for d in sorted(runtime.RUNS.iterdir(), reverse=True):
         if (d / "grade.json").exists() and (d / "report.md").exists():
             return run(d.name)
     raise HTTPException(404, "no graded runs yet")
@@ -131,7 +164,7 @@ def sites():
 
 
 class FamilyIn(BaseModel):
-    income: float = Field(92_000, gt=0, le=2_000_000)
+    income: float = Field(92_000, ge=1_000, le=2_000_000)
     household_size: int = Field(4, ge=1, le=8)
     savings: float = Field(4_000, ge=0, le=20_000_000)
     monthly_debts: float = Field(350, ge=0, le=1_000_000)
@@ -140,12 +173,44 @@ class FamilyIn(BaseModel):
     min_sustain: float = Field(0.95, ge=0.5, le=0.999)
 
 
+class RateLimiter:
+    """Token bucket per client: `burst` calls at once, refilled at `rate` per second. In-process, so per worker.
+    The key is the peer address uvicorn resolved (it honours X-Forwarded-For only from FORWARDED_ALLOW_IPS)."""
+
+    def __init__(self, rate, burst, max_clients=10_000):
+        self.rate, self.burst, self.max_clients = rate, burst, max_clients
+        self.buckets = {}
+        self.lock = threading.Lock()
+
+    def allow(self, key):
+        now = time.monotonic()
+        with self.lock:
+            tokens, last = self.buckets.get(key, (self.burst, now))
+            tokens = min(self.burst, tokens + (now - last) * self.rate)
+            self.buckets[key] = (tokens - 1 if tokens >= 1 else tokens, now)
+            if len(self.buckets) > self.max_clients:  # forget the idlest clients; a full bucket loses nothing
+                for k in sorted(self.buckets, key=lambda k: self.buckets[k][1])[: self.max_clients // 2]:
+                    del self.buckets[k]
+            return tokens >= 1
+
+
+optimize_limiter = RateLimiter(rate=0.5, burst=10)  # 10 back-to-back, then one every 2 s
+optimize_slots = threading.BoundedSemaphore(4)       # at most 4 optimizations burning CPU at once
+
+
 @app.post("/api/optimize")
-def optimize(f: FamilyIn):
-    out = tools.mortgage_optimize(**f.model_dump())
-    out["limits"] = tools.income_limits(household_size=f.household_size, income=f.income)
-    out["market"] = tools.family_market_score(income=f.income, price=f.home_value, monthly_debts=f.monthly_debts)
-    return out
+def optimize(f: FamilyIn, request: Request):
+    if not optimize_limiter.allow(request.client.host if request.client else ""):
+        raise HTTPException(429, "too many requests from this client; wait a few seconds", headers={"Retry-After": "2"})
+    if not optimize_slots.acquire(blocking=False):
+        raise HTTPException(429, "the optimizer is busy with other families; try again in a few seconds", headers={"Retry-After": "3"})
+    try:
+        out = tools.mortgage_optimize(**f.model_dump())
+        out["limits"] = tools.income_limits(household_size=f.household_size, income=f.income)
+        out["market"] = tools.family_market_score(income=f.income, price=f.home_value, monthly_debts=f.monthly_debts)
+        return out
+    finally:
+        optimize_slots.release()
 
 
 @app.get("/api/registry")
@@ -153,17 +218,41 @@ def reg():
     return registry.history()
 
 
+def read_jsonl(path):
+    """Events of a trace that may still be being written: a torn last line is skipped, not a 500."""
+    out = []
+    for line in path.read_text().splitlines():
+        with contextlib.suppress(json.JSONDecodeError):
+            out.append(json.loads(line))
+    return out
+
+
+def read_json(path):
+    try:
+        return json.loads(path.read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return None
+
+
 @app.get("/api/runs")
 def runs():
     out = []
-    for d in sorted(RUNS.iterdir(), reverse=True):
+    for d in sorted(runtime.RUNS.iterdir(), reverse=True):
         if not (d / "trace.jsonl").exists():
             continue
-        first = json.loads((d / "trace.jsonl").open().readline())
-        g = json.loads((d / "grade.json").read_text()) if (d / "grade.json").exists() else None
-        out.append({"id": d.name, "policy": first.get("policy"), "done": (d / "report.md").exists(),
-                    "score": g and g["score"], "running": d.name in _tasks and not _tasks[d.name].done()})
+        events = read_jsonl(d / "trace.jsonl")
+        g = read_json(d / "grade.json")
+        err = read_json(d / "error.json")
+        out.append({"id": d.name, "policy": events[0].get("policy") if events else None, "done": (d / "report.md").exists(),
+                    "score": g and g.get("score"), "running": d.name in _tasks and not _tasks[d.name].done(),
+                    "error": err and err.get("error")})
     return out[:40]
+
+
+def write_atomic(path, text):
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
 
 
 RUN_ID = re.compile(r"^\d{8}_\d{6}_[0-9a-f]{4}$")
@@ -171,13 +260,13 @@ RUN_ID = re.compile(r"^\d{8}_\d{6}_[0-9a-f]{4}$")
 
 @app.get("/api/runs/{rid}")
 def run(rid: str):
-    if not RUN_ID.match(rid) or not (RUNS / rid / "trace.jsonl").exists():
+    if not RUN_ID.match(rid) or not (runtime.RUNS / rid / "trace.jsonl").exists():
         raise HTTPException(404, "unknown run id")
-    d = RUNS / rid
-    events = [json.loads(l) for l in (d / "trace.jsonl").read_text().splitlines()]
-    return {"id": rid, "events": events,
+    d = runtime.RUNS / rid
+    err = read_json(d / "error.json")
+    return {"id": rid, "events": read_jsonl(d / "trace.jsonl"),
             "report": (d / "report.md").read_text() if (d / "report.md").exists() else None,
-            "grade": json.loads((d / "grade.json").read_text()) if (d / "grade.json").exists() else None}
+            "grade": read_json(d / "grade.json"), "error": err and err.get("error")}
 
 
 class MissionIn(BaseModel):
@@ -193,10 +282,19 @@ async def mission(m: MissionIn):
     spec = evals.MISSIONS[m.mission]
 
     async def go():
-        async with Hierarchy(policy=m.policy, run_id=rid) as h:
-            report = await h.mission(evals.mission_text(spec))
-            (h.trace.dir / "grade.json").write_text(json.dumps(evals.grade(report, h.tool_results, spec), indent=2))
+        try:
+            async with runtime.Hierarchy(policy=m.policy, run_id=rid) as h:
+                report = await h.mission(evals.mission_text(spec))
+                write_atomic(h.trace.dir / "grade.json", json.dumps(evals.grade(report, h.tool_results, spec), indent=2))
+        except Exception as e:  # a failed mission must say so in its run, not vanish with the task
+            msg = f"{type(e).__name__}: {e}"[:2000]
+            trace = runtime.Trace(rid)  # also lists the run when it died before its first event
+            trace.log(type="mission_error", policy=m.policy, error=msg)
+            write_atomic(trace.dir / "error.json", json.dumps({"error": msg}))
+            log.exception("mission %s failed", rid)
 
+    for done in [k for k, t in _tasks.items() if t.done()]:  # keep the task table bounded
+        del _tasks[done]
     _tasks[rid] = asyncio.create_task(go())
     return {"run_id": rid, "mission": spec["name"]}
 

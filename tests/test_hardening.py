@@ -2,7 +2,6 @@
 import asyncio
 
 import pytest
-from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from keystone import config, tools
@@ -57,17 +56,10 @@ def test_cost_override_does_not_leak_between_requests():
 def test_mcp_schemas_publish_bounds():
     ts = {t.name: t for t in asyncio.run(mcp_app.list_tools())}
     income = ts["family_market_score"].input_schema["properties"]["income"]
-    assert income["exclusiveMinimum"] == 0 and income["maximum"] == 2_000_000
+    assert income["minimum"] == 1_000 and income["maximum"] == 2_000_000
     assert ts["homekeeper_watchlist"].input_schema["properties"]["scenario"]["enum"] == ["market", "standard", "keystone"]
     assert ts["sites_search"].annotations.read_only_hint and ts["sites_search"].annotations.idempotent_hint
     assert not ts["sandbox_run_python"].annotations.read_only_hint
-
-
-@pytest.fixture(scope="module")
-def client():
-    # one lifespan per process: MCP's session manager can only start once, exactly like a real uvicorn worker
-    with TestClient(server.app) as c:
-        yield c
 
 
 def test_api_validates_and_hides_internals(client, monkeypatch):
@@ -104,3 +96,99 @@ def test_sandbox_cannot_read_home_directory():
     assert not r["ok"]
     r = run_python(f"import os\nprint(os.listdir({os.path.expanduser('~')!r}))")
     assert not r["ok"]
+
+
+def test_optimize_is_rate_limited_per_client(client, monkeypatch):
+    monkeypatch.setattr(tools, "mortgage_optimize", lambda **kw: {"best": None})
+    monkeypatch.setattr(server, "optimize_limiter", server.RateLimiter(rate=0, burst=3))
+    codes = [client.post("/api/optimize", json={}).status_code for _ in range(5)]
+    assert codes == [200, 200, 200, 429, 429]
+    r = client.post("/api/optimize", json={})
+    assert r.headers["retry-after"] and "wait" in r.json()["detail"]
+
+
+def test_optimize_concurrency_is_capped(client, monkeypatch):
+    import threading
+    busy = threading.BoundedSemaphore(1)
+    busy.acquire()  # every slot taken
+    monkeypatch.setattr(server, "optimize_slots", busy)
+    monkeypatch.setattr(server, "optimize_limiter", server.RateLimiter(rate=1e9, burst=1e9))
+    r = client.post("/api/optimize", json={})
+    assert r.status_code == 429 and "busy" in r.json()["detail"]
+    busy.release()  # the refused call must not have released a slot it never took
+    assert busy.acquire(blocking=False)
+
+
+def test_rate_limiter_forgets_idle_clients():
+    lim = server.RateLimiter(rate=0, burst=1, max_clients=10)
+    for i in range(50):
+        assert lim.allow(f"10.0.0.{i}")
+    assert len(lim.buckets) <= 10
+
+
+def test_partial_traces_never_500(client, isolated_artifacts):
+    runs = isolated_artifacts / "runs"
+    (runs / "20261031_000000_aaaa").mkdir()
+    (runs / "20261031_000000_aaaa" / "trace.jsonl").write_text("")  # mission just started
+    (runs / "20261031_000001_bbbb").mkdir()
+    (runs / "20261031_000001_bbbb" / "trace.jsonl").write_text('{"type": "agent_start", "policy": "scripted"}\n{"type": "to')
+    (runs / "20261031_000001_bbbb" / "grade.json").write_text('{"score": 0.')  # torn write
+    listing = client.get("/api/runs")
+    assert listing.status_code == 200
+    assert {r["id"]: r["policy"] for r in listing.json()} == {"20261031_000000_aaaa": None, "20261031_000001_bbbb": "scripted"}
+    one = client.get("/api/runs/20261031_000001_bbbb").json()
+    assert len(one["events"]) == 1 and one["grade"] is None
+
+
+def test_failed_mission_is_recorded_not_lost(client, monkeypatch):
+    import time as _time
+
+    class Exploding:
+        def __init__(self, **kw):
+            pass
+
+        async def __aenter__(self):
+            raise RuntimeError("model endpoint unreachable")
+
+        async def __aexit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(server, "TOKEN", "t")
+    monkeypatch.setattr(server.runtime, "Hierarchy", Exploding)
+    rid = client.post("/api/mission", json={"policy": "scripted"}, headers={"Authorization": "Bearer t"}).json()["run_id"]
+    for _ in range(50):
+        r = client.get(f"/api/runs/{rid}")
+        if r.status_code == 200 and r.json()["error"]:
+            break
+        _time.sleep(0.05)
+    assert "model endpoint unreachable" in r.json()["error"]
+    row = next(x for x in client.get("/api/runs").json() if x["id"] == rid)
+    assert row["error"] and not row["running"]
+
+
+def test_deployed_server_never_trusts_loopback(client, monkeypatch):
+    # behind a reverse proxy every visitor arrives from 127.0.0.1; a 0.0.0.0-bound server must not treat that as local
+    monkeypatch.setattr(server, "TOKEN", None)
+    monkeypatch.setattr(server, "HOST", "0.0.0.0")
+    assert not server.trust_loopback()
+    monkeypatch.setattr(server, "HOST", "127.0.0.1")
+    assert server.trust_loopback()
+
+
+def test_healthz_proves_the_sandbox_runs(client, monkeypatch):
+    monkeypatch.setattr(server, "_sandbox_check", {})
+    h = client.get("/healthz").json()
+    assert h["sandbox"]["ok"] and h["degraded"] == []
+    monkeypatch.setattr(server, "_sandbox_check", {})
+    monkeypatch.setattr(server, "run_python", lambda *a, **k: {"ok": False, "stdout": "", "stderr": "bwrap: No permissions", "sandbox": "bubblewrap"})
+    h = client.get("/healthz").json()
+    assert h["ok"] and h["degraded"] == ["sandbox"] and "bwrap" in h["sandbox"]["error"]
+
+
+def test_skill_index_survives_concurrent_writers():
+    from concurrent.futures import ThreadPoolExecutor
+
+    from keystone import skills
+    with ThreadPoolExecutor(8) as ex:
+        list(ex.map(lambda i: skills.save(f"s{i}", f"print({i})", "x"), range(40)))
+    assert len(skills.index()) == 40
