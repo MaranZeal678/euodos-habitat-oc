@@ -1,0 +1,65 @@
+# Proves on Linux what a Mac cannot: the bubblewrap sandbox, and the Docker image that Render deploys.
+name: ci
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.26"
+      - name: Install
+        run: |
+          uv venv --python 3.13 .venv
+          uv pip install --python .venv/bin/python --torch-backend cpu -r requirements-dev.txt
+          .venv/bin/playwright install --with-deps chromium
+      - name: Linux sandbox prerequisites
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends bubblewrap
+          # Ubuntu 24.04 blocks unprivileged user namespaces by default; bubblewrap needs them
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Lint
+        run: .venv/bin/ruff check keystone tests scripts
+      - name: Types
+        run: .venv/bin/pyright keystone
+      - name: Dead code
+        run: .venv/bin/vulture keystone --min-confidence 80
+      - name: Tests (unit, fuzz, hardening, deploy, browser) with coverage gate
+        env:
+          KEYSTONE_REQUIRE_OS_SANDBOX: "1"
+        run: .venv/bin/python -m pytest -q tests --cov=keystone --cov-report=term-missing:skip-covered --cov-fail-under=80
+
+  docker:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image Render deploys
+        run: docker build -t keystone .
+      - name: Run it like production (token set, no extra privileges)
+        run: |
+          docker run -d --name ks -p 8000:8000 -e KEYSTONE_API_TOKEN=ci-token keystone
+          for i in $(seq 1 60); do curl -fsS localhost:8000/healthz >/dev/null 2>&1 && break; sleep 2; done
+          curl -fsS localhost:8000/healthz | tee healthz.json
+      - name: Product endpoints answer from a fresh image
+        run: |
+          set -e
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:8000/api/summary)" = 200
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/api/optimize -H 'content-type: application/json' -d '{"income": 92000}')" = 200
+          curl -fsS localhost:8000/api/demo/trace | python3 -c "import json,sys; t=json.load(sys.stdin); assert t['grade']['score'] == 1.0"
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/mcp/ -d '{}')" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/api/mission -H 'Authorization: Bearer ci-token' -H 'content-type: application/json' -d '{"policy": "scripted"}')" = 200
+      - name: Agent sandbox works inside the container
+        run: |
+          python3 -c "import json; h=json.load(open('healthz.json')); s=h['sandbox']; print(s); assert s['ok'], 'sandbox unavailable in an unprivileged container: ' + s.get('error', '')"
+      - name: Server log on failure
+        if: failure()
+        run: docker logs ks

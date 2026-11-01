@@ -4,6 +4,7 @@ import time
 
 from keystone.agents.specs import SPECS
 from keystone.config import STATE
+from keystone.models import registry
 
 DIR = STATE / "memory"
 DIR.mkdir(exist_ok=True)
@@ -26,8 +27,15 @@ def add_lesson(agent, lesson, run_id, grader=None):
 
 
 def playbook(agent):
+    """This deployment's evolved playbook if it has one, else the registry's promoted champion (gate-approved and
+    committed, so a fresh deploy keeps what self-improvement earned), else the spec's v0."""
     pb = json.loads(PLAYBOOKS.read_text()) if PLAYBOOKS.exists() else {}
-    return pb.get(agent, {"version": "v0", "text": SPECS[agent].playbook})
+    if agent in pb:
+        return pb[agent]
+    champ = registry.champion(f"playbook:{agent}")
+    if champ:
+        return {"version": champ["version"], "text": champ["path"]}  # playbook entries keep their text in "path"
+    return {"version": "v0", "text": SPECS[agent].playbook}
 
 
 def set_playbook(agent, text, version):

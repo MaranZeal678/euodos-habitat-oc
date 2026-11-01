@@ -108,13 +108,17 @@ def healthz():
             "champions": {n: (registry.champion(n) or {}).get("version") for n in ("parking_cnn", "market_gap")}}
 
 
+REFERENCE_RUN = HERE / "static" / "demo" / "reference_run.json"  # a graded scripted run shipped with the app
+
+
 @app.get("/api/demo/trace")
 def demo_trace():
-    """Most recent fully graded run: its trace (for the replayed agent feed), brief and grade."""
+    """Most recent fully graded run: its trace (for the replayed agent feed), brief and grade. A fresh deploy has no
+    runs yet, so it replays the reference run instead and the demo never loses its agent rail."""
     for d in sorted(runtime.RUNS.iterdir(), reverse=True):
         if (d / "grade.json").exists() and (d / "report.md").exists():
             return run(d.name)
-    raise HTTPException(404, "no graded runs yet")
+    return json.loads(REFERENCE_RUN.read_text()) | {"reference": True}
 
 
 @app.get("/api/demo/capital")
@@ -295,6 +299,8 @@ async def mission(m: MissionIn):
 
     for done in [k for k, t in _tasks.items() if t.done()]:  # keep the task table bounded
         del _tasks[done]
+    # Record the run before answering: the dashboard opens it right away, while the MCP server is still starting
+    runtime.Trace(rid).log(type="mission_queued", policy=m.policy, mission=spec["name"])
     _tasks[rid] = asyncio.create_task(go())
     return {"run_id": rid, "mission": spec["name"]}
 

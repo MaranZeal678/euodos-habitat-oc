@@ -2,7 +2,7 @@
   "parking_cnn": [
     {
       "version": "20261031_153932",
-      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/parking_unet_20261031_153932.pt",
+      "path": "artifacts/parking_unet_20261031_153932.pt",
       "metrics": {
         "iou": 0.5437,
         "pixel_acc": 0.8493
@@ -25,7 +25,7 @@
     },
     {
       "version": "20261031_155915",
-      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/parking_unet_20261031_155914.pt",
+      "path": "artifacts/parking_unet_20261031_155914.pt",
       "metrics": {
         "iou": 0.5463,
         "pixel_acc": 0.8419
@@ -51,7 +51,7 @@
   "market_gap": [
     {
       "version": "20261031_154232",
-      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2022.pkl",
+      "path": "artifacts/market_gap_2022.pkl",
       "metrics": {
         "auc": 0.7606,
         "brier": 0.069,
@@ -84,7 +84,7 @@
     },
     {
       "version": "20261031_154234",
-      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2022_2023.pkl",
+      "path": "artifacts/market_gap_2022_2023.pkl",
       "metrics": {
         "auc": 0.7787,
         "brier": 0.0671,
@@ -119,7 +119,7 @@
     },
     {
       "version": "20261031_154236",
-      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2023.pkl",
+      "path": "artifacts/market_gap_2023.pkl",
       "metrics": {
         "auc": 0.7824,
         "brier": 0.0677,

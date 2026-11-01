@@ -90,12 +90,19 @@ def test_no_token_means_loopback_only(client, monkeypatch):
     assert client.post("/api/mission", json={}).status_code == 403
 
 
-def test_sandbox_cannot_read_home_directory():
+def test_sandbox_cannot_read_outside_its_allowlist(tmp_path):
     import os
-    r = run_python(f"print(open({os.path.expanduser('~/.zshrc')!r}).read())")
-    assert not r["ok"]
+    # a planted secret outside the allowlist (pytest's tmp dir), so the check means something on any host
+    secret = tmp_path / "credentials"
+    secret.write_text("sk-live-canary")
+    r = run_python(f"print(open({str(secret)!r}).read())")
+    assert not r["ok"] and "sk-live-canary" not in r["stdout"]
+    r = run_python(f"import os\nprint(os.listdir({str(tmp_path)!r}))")
+    assert not r["ok"] and "credentials" not in r["stdout"]
     r = run_python(f"import os\nprint(os.listdir({os.path.expanduser('~')!r}))")
     assert not r["ok"]
+    if os.environ.get("KEYSTONE_REQUIRE_OS_SANDBOX"):  # CI: refusing to run is not good enough, the sandbox must exist
+        assert run_python("print(1)")["sandbox"] in ("seatbelt", "bubblewrap")
 
 
 def test_optimize_is_rate_limited_per_client(client, monkeypatch):
@@ -192,3 +199,33 @@ def test_skill_index_survives_concurrent_writers():
     with ThreadPoolExecutor(8) as ex:
         list(ex.map(lambda i: skills.save(f"s{i}", f"print({i})", "x"), range(40)))
     assert len(skills.index()) == 40
+
+
+def test_fresh_deploy_demo_still_has_an_agent_trace(client):
+    # the isolated state dir has no runs, exactly like a new Render disk
+    r = client.get("/api/demo/trace")
+    assert r.status_code == 200
+    t = r.json()
+    assert t["reference"] and t["grade"]["score"] == 1.0 and any(e["type"] == "tool" for e in t["events"])
+
+
+def test_launched_mission_is_readable_immediately(client, monkeypatch):
+    import asyncio as _asyncio
+
+    class Slow:  # the MCP server takes a moment to start; the dashboard asks for the run before that
+        def __init__(self, **kw):
+            pass
+
+        async def __aenter__(self):
+            await _asyncio.sleep(2)
+            raise RuntimeError("stopped")
+
+        async def __aexit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(server, "TOKEN", "t")
+    monkeypatch.setattr(server.runtime, "Hierarchy", Slow)
+    rid = client.post("/api/mission", json={"policy": "scripted"}, headers={"Authorization": "Bearer t"}).json()["run_id"]
+    r = client.get(f"/api/runs/{rid}")
+    assert r.status_code == 200 and r.json()["events"][0]["type"] == "mission_queued"
+    assert any(x["id"] == rid and x["running"] and x["policy"] == "scripted" for x in client.get("/api/runs").json())

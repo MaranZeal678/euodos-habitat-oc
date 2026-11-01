@@ -167,7 +167,7 @@ def train(epochs=30, width=24, lr=2e-3, seed=0, tag=None):
     path = ARTIFACTS / f"parking_unet_{tag or registry.new_version()}.pt"
     torch.save({"state": model.state_dict(), "width": width}, path)
     # 136 holdout chips: require a real gain, not noise
-    return registry.propose("parking_cnn", str(path), metrics, params, primary="iou", min_gain=0.01)
+    return registry.propose("parking_cnn", registry.relative(path), metrics, params, primary="iou", min_gain=0.01)
 
 
 _LOADED = {}
@@ -178,7 +178,7 @@ def load_champion():
     if champ is None:
         raise RuntimeError("No parking_cnn champion yet: run `python -m keystone.models.cnn train`")
     if champ["path"] not in _LOADED:
-        ck = torch.load(champ["path"], map_location=DEVICE)
+        ck = torch.load(registry.model_file(champ), map_location=DEVICE)
         m = UNet(w=ck["width"]).to(DEVICE)
         m.load_state_dict(ck["state"]); m.eval()
         _LOADED.clear(); _LOADED[champ["path"]] = m

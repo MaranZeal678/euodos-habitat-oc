@@ -116,7 +116,7 @@ def propose(train_years, test_year, frames, **hp):
     # A challenger only counts if it is compared on the newest year, so re-score the champion there too
     champ = registry.champion("market_gap")
     if champ is not None:
-        with open(champ["path"], "rb") as f:
+        with open(registry.model_file(champ), "rb") as f:
             cm = pickle.load(f)
         champ["metrics"] = evaluate(cm, frames[test_year])
         r = json.loads(registry.REG.read_text())
@@ -128,7 +128,7 @@ def propose(train_years, test_year, frames, **hp):
     path = ARTIFACTS / f"market_gap_{'_'.join(map(str, train_years))}.pkl"
     with open(path, "wb") as f:
         pickle.dump(m, f)
-    return registry.propose("market_gap", str(path), metrics, params | {"train_years": train_years, "test_year": test_year},
+    return registry.propose("market_gap", registry.relative(path), metrics, params | {"train_years": train_years, "test_year": test_year},
                             primary="auc", min_gain=0.002, guardrails={"fairness_gap": 0.005},
                             data_version=f"HMDA OC {train_years}->{test_year}")
 
@@ -141,7 +141,7 @@ def champion_model():
     if c is None:
         raise RuntimeError("No market_gap champion yet: run `python -m keystone.models.market_gap`")
     if c["path"] not in _MODEL:
-        with open(c["path"], "rb") as f:
+        with open(registry.model_file(c), "rb") as f:
             _MODEL.clear(); _MODEL[c["path"]] = pickle.load(f)
     return _MODEL[c["path"]], c
 

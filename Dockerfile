@@ -12,7 +12,6 @@ RUN pip install --no-cache-dir -r requirements.txt && \
     if [ "$WITH_ML" = "1" ]; then pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu -r requirements-ml.txt; fi
 COPY keystone ./keystone
 COPY data/processed ./data/processed
-COPY data/raw/hmda_oc_2024.csv ./data/raw/
 COPY artifacts ./artifacts
 RUN useradd -m keystone && mkdir -p /app/state && chown -R keystone /app
 USER keystone

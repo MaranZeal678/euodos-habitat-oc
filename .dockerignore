@@ -1,13 +1,14 @@
+# build context: code, processed data, shipped models. Never the venv, raw downloads, or local runtime state.
+.git
 .venv
-.claude
+.gstack
+.pytest_cache
 **/__pycache__
-data/raw/source_docs
-data/raw/*.json
-data/raw/hmda_oc_2022.csv
-data/raw/hmda_oc_2023.csv
-data/processed/parking_chips.npz
-artifacts/runs
-artifacts/*.png
-artifacts/*.log
-tests
+data/raw
 docs
+artifacts/runs
+artifacts/memory
+artifacts/skills
+artifacts/*.log
+artifacts/*.png
+artifacts/sandbox_audit.jsonl

@@ -8,10 +8,21 @@ primary metric on the same frozen holdout by at least `min_gain`, and passes any
 import json
 import time
 from datetime import UTC, datetime
+from pathlib import Path
 
-from keystone.config import ARTIFACTS
+from keystone.config import ARTIFACTS, ROOT
 
 REG = ARTIFACTS / "registry.json"
+
+
+def relative(path):
+    """Model files are recorded relative to the repo, so the registry works in any checkout or container."""
+    return str(Path(path).resolve().relative_to(ROOT))
+
+
+def model_file(entry):
+    p = Path(entry["path"])
+    return p if p.is_absolute() else ROOT / p
 
 
 def _load():
