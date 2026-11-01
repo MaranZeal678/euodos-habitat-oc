@@ -148,6 +148,8 @@ def champion_model():
 
 def score_family(income, price, down_payment_share=0.05, monthly_debts=0.0, rate=0.0686, loan_type=1, age_band=2):
     """P(conventional denial) for a family buying at `price` with a market-rate 30-yr loan."""
+    if not (income > 0 and price > 0 and 0 <= down_payment_share < 1 and monthly_debts >= 0 and 0 < rate < 0.25):
+        raise ValueError("score_family needs income > 0, price > 0, 0 <= down_payment_share < 1, monthly_debts >= 0, 0 < rate < 0.25")
     loan = price * (1 - down_payment_share)
     r = rate / 12
     pmt = loan * r / (1 - (1 + r) ** -360)

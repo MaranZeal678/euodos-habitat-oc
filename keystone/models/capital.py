@@ -30,10 +30,12 @@ def unit_cost(c=config.COST_ASSUMPTIONS, land_per_unit=0.0):
 
 
 def plan(target_homes: int = 100, family=None, design=None, appraised_value: float = 750_000, land_per_unit: float = 0.0,
-         calhome: float = 60_000, ahp: float = 40_000, sites=None, max_units_per_site=30, note_discount_rate=0.05):
+         calhome: float = 60_000, ahp: float = 40_000, sites=None, max_units_per_site=30, note_discount_rate=0.05,
+         cost_inputs: dict | None = None):
     family = family or Family()
     design = design or Design(rate=0.0, term_years=30, payment_cap=0.30)
-    cost = unit_cost(land_per_unit=land_per_unit)
+    cost_inputs = cost_inputs or config.COST_ASSUMPTIONS  # callers pass a copy to override; never mutate the global
+    cost = unit_cost(cost_inputs, land_per_unit=land_per_unit)
     uw = underwrite(family, Home(value=appraised_value), design)
     # A below-market first mortgage is worth its PV to Habitat (e.g. if sold to a note buyer), not its face value
     n = design.term_years * 12
@@ -63,7 +65,7 @@ def plan(target_homes: int = 100, family=None, design=None, appraised_value: flo
         "silent_second_per_unit": round(uw["silent_second"]),
         "assumptions": {"design": design.label(), "family_income": family.income, "appraised_value": appraised_value,
                         "calhome_per_unit": calhome, "ahp_per_unit": ahp, "note_discount_rate": note_discount_rate,
-                        "max_units_per_site": max_units_per_site, "cost_inputs": config.COST_ASSUMPTIONS},
+                        "max_units_per_site": max_units_per_site, "cost_inputs": cost_inputs},
         "funding_sources": FUNDING_SOURCES,
     }
 

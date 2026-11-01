@@ -34,6 +34,11 @@ ASSUMPTIONS = {
 }
 
 
+def _require(ok, msg):
+    if not ok:
+        raise ValueError(msg)
+
+
 @dataclass
 class Family:
     income: float = 95_000
@@ -41,6 +46,13 @@ class Family:
     savings: float = 6_000
     monthly_debts: float = 300.0
     income_volatility: float = 1.0     # multiplier on job-loss risk (gig/seasonal work > 1)
+
+    def __post_init__(self):
+        _require(0 < self.income <= 2_000_000, f"income must be in (0, 2,000,000], got {self.income}")
+        _require(1 <= self.household_size <= 8, f"household_size must be 1-8 (HUD scale), got {self.household_size}")
+        _require(self.savings >= 0, f"savings must be >= 0, got {self.savings}")
+        _require(self.monthly_debts >= 0, f"monthly_debts must be >= 0, got {self.monthly_debts}")
+        _require(0 <= self.income_volatility <= 5, f"income_volatility must be 0-5, got {self.income_volatility}")
 
 
 @dataclass
@@ -54,6 +66,13 @@ class Design:
     down_payment_share: float = 0.01
     restricted_assessment: bool = True  # deed-restricted homes assessed at restricted price (RTC 402.1-style); assumption
 
+    def __post_init__(self):
+        _require(0 <= self.rate <= 0.2, f"rate must be 0-0.20, got {self.rate}")
+        _require(5 <= self.term_years <= 50, f"term_years must be 5-50, got {self.term_years}")
+        _require(0.05 <= self.payment_cap <= 0.8, f"payment_cap must be 0.05-0.80, got {self.payment_cap}")
+        _require(self.reserve_fund >= 0, f"reserve_fund must be >= 0, got {self.reserve_fund}")
+        _require(0 <= self.down_payment_share < 1, f"down_payment_share must be in [0, 1), got {self.down_payment_share}")
+
     def label(self):
         return (f"{self.rate:.0%} / {self.term_years}y / cap {self.payment_cap:.0%} / reserve ${self.reserve_fund:,.0f}"
                 f"{' / income-indexed' if self.income_indexed else ''}{'' if self.stewardship else ' / no steward'}")
@@ -65,6 +84,10 @@ class Home:
     hoa: float = config.COST_ASSUMPTIONS["hoa_monthly"]
     insurance: float = config.COST_ASSUMPTIONS["insurance_annual"]
     insurance_growth: float = config.COST_ASSUMPTIONS["insurance_annual_growth"]
+
+    def __post_init__(self):
+        _require(10_000 <= self.value <= 20_000_000, f"home value must be $10k-$20M, got {self.value}")
+        _require(self.hoa >= 0 and self.insurance >= 0, "hoa and insurance must be >= 0")
 
 
 def _pmt(principal, rate, n):

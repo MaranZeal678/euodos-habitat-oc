@@ -8,14 +8,16 @@ import asyncio
 import contextlib
 import json
 import os
+import re
 import secrets
 import time
 import uuid
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from keystone import config, tools
 from keystone.agents import evals
@@ -84,8 +86,10 @@ def demo_capital():
 
 
 @app.get("/api/homekeeper/watchlist")
-def hk_watchlist(month: int = 36, scenario: str = "keystone"):
-    return tools.homekeeper_watchlist(month, scenario)
+def hk_watchlist(month: int = 36, scenario: Literal["market", "standard", "keystone"] = "keystone"):
+    if not 0 <= month <= 119:
+        raise HTTPException(422, "month must be 0-119")
+    return tools.homekeeper_watchlist(month=month, scenario=scenario)
 
 
 @app.get("/")
@@ -117,20 +121,20 @@ def sites():
 
 
 class FamilyIn(BaseModel):
-    income: float = 92_000
-    household_size: int = 4
-    savings: float = 4_000
-    monthly_debts: float = 350
-    income_volatility: float = 1.0
-    home_value: float = 750_000
-    min_sustain: float = 0.95
+    income: float = Field(92_000, gt=0, le=2_000_000)
+    household_size: int = Field(4, ge=1, le=8)
+    savings: float = Field(4_000, ge=0, le=20_000_000)
+    monthly_debts: float = Field(350, ge=0, le=1_000_000)
+    income_volatility: float = Field(1.0, ge=0, le=5)
+    home_value: float = Field(750_000, ge=10_000, le=20_000_000)
+    min_sustain: float = Field(0.95, ge=0.5, le=0.999)
 
 
 @app.post("/api/optimize")
 def optimize(f: FamilyIn):
     out = tools.mortgage_optimize(**f.model_dump())
-    out["limits"] = tools.income_limits(f.household_size, f.income)
-    out["market"] = tools.family_market_score(f.income, f.home_value, f.monthly_debts)
+    out["limits"] = tools.income_limits(household_size=f.household_size, income=f.income)
+    out["market"] = tools.family_market_score(income=f.income, price=f.home_value, monthly_debts=f.monthly_debts)
     return out
 
 
@@ -152,11 +156,14 @@ def runs():
     return out[:40]
 
 
+RUN_ID = re.compile(r"^\d{8}_\d{6}_[0-9a-f]{4}$")
+
+
 @app.get("/api/runs/{rid}")
 def run(rid: str):
+    if not RUN_ID.match(rid) or not (RUNS / rid / "trace.jsonl").exists():
+        raise HTTPException(404, "unknown run id")
     d = RUNS / rid
-    if not d.exists() or "/" in rid:
-        raise HTTPException(404)
     events = [json.loads(l) for l in (d / "trace.jsonl").read_text().splitlines()]
     return {"id": rid, "events": events,
             "report": (d / "report.md").read_text() if (d / "report.md").exists() else None,
@@ -164,14 +171,16 @@ def run(rid: str):
 
 
 class MissionIn(BaseModel):
-    mission: int = 0
-    policy: str = "auto"
+    mission: int = Field(0, ge=0, le=len(evals.MISSIONS) - 1)
+    policy: Literal["auto", "claude", "scripted"] = "auto"
 
 
 @app.post("/api/mission")
 async def mission(m: MissionIn):
     rid = time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:4]
-    spec = evals.MISSIONS[m.mission % len(evals.MISSIONS)]
+    if sum(1 for t in _tasks.values() if not t.done()) >= 3:
+        raise HTTPException(429, "three missions are already running; wait for one to finish")
+    spec = evals.MISSIONS[m.mission]
 
     async def go():
         async with Hierarchy(policy=m.policy, run_id=rid) as h:

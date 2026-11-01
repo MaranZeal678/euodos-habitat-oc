@@ -109,7 +109,12 @@ ACTIONS = [
 
 def watchlist(month: int, scenario: str = "keystone", limit: int = 12):
     """Families in trouble at `month`, the shocks behind it, and the Steward's recommended action."""
+    if scenario not in SCENARIOS:
+        raise ValueError(f"scenario must be one of {list(SCENARIOS)}, got {scenario!r}")
     data = json.loads((OUT / "portfolio.json").read_text())
+    if not 0 <= month < data["months"]:
+        raise ValueError(f"month must be 0-{data['months'] - 1}, got {month}")
+    limit = max(1, min(int(limit), 100))
     rows = []
     for f in data["families"]:
         s = f[scenario]
