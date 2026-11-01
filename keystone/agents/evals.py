@@ -32,29 +32,51 @@ def mission_text(m):
             "Return a program brief. Mission parameters (JSON): " + json.dumps(m))
 
 
+URL = re.compile(r"https?://[^\s)\]|>,]+")
+BARE_DOMAIN = re.compile(r"(?<![\w./@-])(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:gov|org|com|edu|net|io)\b(?:/[^\s)\]|>,]*)?", re.IGNORECASE)
+SITE_ROW = re.compile(r"^\| [^|\n]+ \| [^|\n]* \| ([0-9A-Za-z-]+) \| [\d.]+ \| (\d+) \|$", re.MULTILINE)
+ASSUMED = r"(hard cost|discount|calhome|ahp|job[- ]loss|hazard|appreciation|insurance|land|per-unit|funding)"
+
+
+def _host(u):
+    return re.sub(r"^(https?://)?(www\.)?", "", u.lower()).split("/")[0]
+
+
 def grade(report, tool_results, mission):
+    """Outcome checks that must be backed by the run's own tool results, so a brief cannot pass on keywords alone."""
     g = {}
-    plans = [t["result"] for t in tool_results if t["tool"] == "capital_plan"]
-    sited = max([p.get("homes_sited", 0) for p in plans] + [0])
-    nums = [int(n.replace(",", "")) for n in re.findall(r"(\d[\d,]*) units vs target", report)]
-    shortlisted = max(nums + [0])
-    g["reaches_target"] = (shortlisted >= mission["target_homes"] or
-                           (sited >= mission["target_homes"] and not mission.get("city")))
-    g["target_buffer_20pct"] = shortlisted >= 1.2 * mission["target_homes"]
-    opts = [t["result"]["best"] for t in tool_results if t["tool"] == "mortgage_optimize"]
-    g["families_sustainable"] = len(opts) >= len(mission["families"]) and all(o["p_sustained_10y"] >= 0.95 for o in opts)
-    urls = set(re.findall(r"https?://[^\s)\]|>,]+", report))
-    urls = {u.rstrip(".;") for u in urls}
-    g["citations_present"] = len(urls) >= 5
-    g["no_hallucinated_urls"] = all(u in KNOWN_URLS for u in urls)
-    g["assumptions_disclosed"] = "assumption" in report.lower()
-    g["sensitivity_run"] = any(t["tool"] == "sandbox_run_python" and t["result"].get("ok") and t["agent"] == "capital_lead"
-                               for t in tool_results)
-    g["fairness_reported"] = "fairness" in report.lower()
-    g["diversified_sites"] = bool(re.search(r"\| (\d+) \|\n", report)) and not any(
-        int(u) > 30 for u in re.findall(r"\| [\d.]+ \| (\d+) \|", report))
+    by_tool = lambda name: [t for t in tool_results if t["tool"] == name]
+    target = mission["target_homes"]
+    # land: every shortlisted unit must trace to a site the CNN search actually returned, at no more than its capacity
+    found = {s["apn"]: s["units_townhome"] for t in by_tool("sites_search") for s in t["result"].get("sites", [])}
+    rows = [(apn, int(u)) for apn, u in SITE_ROW.findall(report)]
+    verified = sum(min(u, found[apn]) for apn, u in rows if apn in found)
+    claimed = max([int(n.replace(",", "")) for n in re.findall(r"(\d[\d,]*) units vs target", report)] + [0])
+    g["reaches_target"] = verified >= target and claimed <= verified
+    g["target_buffer_20pct"] = g["reaches_target"] and verified >= 1.2 * target
+    g["diversified_sites"] = len(rows) >= 2 and all(u <= 30 for _, u in rows)  # with the cap, reaching N needs N/30 sites
+    # families: each mission family needs its own optimizer result at the sustainability bar
+    opts = {round(t["args"].get("income", -1)): t["result"]["best"] for t in by_tool("mortgage_optimize")}
+    g["families_sustainable"] = all(round(f["income"]) in opts and opts[round(f["income"])]["p_sustained_10y"] >= 0.95
+                                    for f in mission["families"])
+    # citations: real, distinct, known sources; bare domains count as citations too
+    urls = {u.rstrip(".;") for u in URL.findall(report)}
+    bare = {b.rstrip(".;") for b in BARE_DOMAIN.findall(URL.sub(" ", report))}
+    known_hosts = {_host(u) for u in KNOWN_URLS}
+    bad = sorted({u for u in urls if u not in KNOWN_URLS} | {b for b in bare if _host(b) not in known_hosts})
+    g["citations_present"] = len(urls & KNOWN_URLS) >= 5
+    g["no_hallucinated_urls"] = bool(urls) and not bad
+    g["assumptions_disclosed"] = bool(re.search(rf"assumption.{{0,160}}{ASSUMED}|{ASSUMED}.{{0,160}}assumption", report, re.IGNORECASE | re.DOTALL))
+    # capital: a sweep that actually varies hard cost, run by the capital lead, with a table of results
+    g["sensitivity_run"] = any(t["agent"] == "capital_lead" and t["result"].get("ok") and "hard_cost" in t["args"].get("code", "")
+                               and len(t["result"].get("stdout", "").strip().splitlines()) >= 3
+                               for t in by_tool("sandbox_run_python"))
+    # governance: the registry was consulted and its measured fairness gap is quoted
+    gaps = {str(e["metrics"].get("fairness_gap")) for t in by_tool("models_registry") for e in t["result"].get("history", [])
+            if e.get("status") == "champion"}
+    g["fairness_reported"] = "fairness" in report.lower() and any(gp in report for gp in gaps if gp != "None")
     score = sum(g.values()) / len(g)
-    return {"score": round(score, 3), "checks": g, "bad_urls": sorted(u for u in urls if u not in KNOWN_URLS)}
+    return {"score": round(score, 3), "checks": g, "bad_urls": bad}
 
 
 LESSONS = {

@@ -4,16 +4,24 @@
     "policy": "scripted",
     "baseline": 0.667,
     "challenger": 1.0,
+    "lesson_gain": 0.333,
+    "playbook_only_champion": 0.667,
+    "playbook_challengers": {
+      "capital_lead": 0.778,
+      "director": 0.889,
+      "land_lead": 1.0
+    },
     "implicated": [
       "capital_lead",
       "director",
       "land_lead"
     ],
     "decisions": {
-      "director": "champion",
       "capital_lead": "champion",
+      "director": "champion",
       "land_lead": "champion"
     },
-    "promoted": true
+    "promoted": true,
+    "playbook_only_after": 1.0
   }
 ]

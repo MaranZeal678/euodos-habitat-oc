@@ -32,6 +32,7 @@ ASSUMPTIONS = {
     "home_appreciation_mu": 0.035, "home_appreciation_sd": 0.06,
     "effective_tax_rate_exempt": 0.003,   # RTC 214.15 welfare exemption during nonprofit ownership; residual bonds
     "tax_rate_owner": config.COST_ASSUMPTIONS["property_tax_rate"],
+    "note_discount_rate": 0.05,           # Habitat's cost of capital for valuing notes and subsidies; assumption
 }
 
 
@@ -117,6 +118,7 @@ def underwrite(family: Family, home: Home, design: Design, a=ASSUMPTIONS):
     tax_base = first + down if design.restricted_assessment else home.value
     piti = first * k + tax_base * t + other
     return {"first_mortgage": first, "silent_second": second, "down_payment": down, "tax_base": tax_base,
+            "down_payment_from_savings": min(down, family.savings),
             "piti_hoa": piti, "front_end_ratio": piti / monthly_income}
 
 
@@ -134,7 +136,9 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
     n = design.term_years * 12
     pi = _pmt(uw["first_mortgage"], design.rate, n)
     income = np.full(n_paths, family.income / 12)
-    buffer = np.full(n_paths, family.savings + design.reserve_fund)
+    # the down payment comes out of savings first; Habitat covers any shortfall (and counts it as subsidy)
+    down_assist = max(uw["down_payment"] - family.savings, 0.0)
+    buffer = np.full(n_paths, max(family.savings - uw["down_payment"], 0.0) + design.reserve_fund)
     insurance = np.full(n_paths, home.insurance / 12)
     tax = uw["tax_base"] * a["tax_rate_owner"] / 12
     unemployed = np.zeros(n_paths, dtype=int)
@@ -170,7 +174,7 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
         back = (unemployed > 0) & (rng.random(n_paths) < p_reemploy) & ~newly
         unemployed = np.where(back, 0, unemployed)
         earned = np.where(unemployed > 0, income * a["ui_replacement"], income)
-        payment = pi + tax + insurance + home.hoa
+        payment = (pi if t < n else 0.0) + tax + insurance + home.hoa  # P&I ends with the loan term
         if design.income_indexed:
             # payment capped at cap*current income; shortfall accrues as deferred (Ganong & Noel: liquidity first)
             cap_pay = design.payment_cap * earned
@@ -179,17 +183,21 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
         repair = np.where(rng.random(n_paths) < a["repair_annual_prob"] / 12, rng.exponential(a["repair_mean"], n_paths), 0)
         surplus = earned - payment - essentials - family.monthly_debts - repair
         buffer = buffer + np.where(surplus > 0, surplus * a["surplus_saved"], surplus)
-        short = (buffer < 0) & ~lost
-        missed = np.where(short, missed + 1, 0)
-        buffer = np.maximum(buffer, 0)
+        # A negative buffer is arrears owed to the servicer: it is carried until paid (never forgiven), and every month
+        # spent owing counts toward 90 days late, not just consecutive short months
+        behind = (buffer < 0) & ~lost
+        missed = np.where(behind, missed + 1, 0)
         hit90 = missed >= 3
         ever90 |= hit90
         resolved = hit90 & (cure_u[episode, paths] < cure)
         episode += hit90
         newly_lost = hit90 & ~resolved & ~lost
         lost |= hit90 & ~resolved
+        # a cure is a workout: the arrears move into the deferred balance (repaid at resale), not into thin air
+        deferred += np.where(resolved, np.maximum(-buffer, 0), 0)
+        buffer = np.where(resolved, 0, buffer)
         missed = np.where(resolved, 0, missed)
-        min_buffer = np.minimum(min_buffer, buffer)
+        min_buffer = np.minimum(min_buffer, np.maximum(buffer, 0))
         if record:
             stressed = buffer < payment
             st = np.where(lost, 4, np.where(hit90, 3, np.where(missed > 0, 2, np.where(stressed, 1, 0))))
@@ -204,7 +212,8 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
     years_arr = rng.normal(a["home_appreciation_mu"], a["home_appreciation_sd"], (n_paths, years)).sum(1)
     value_T = home.value * np.exp(years_arr)
     paid_principal = uw["first_mortgage"] - _balance(uw["first_mortgage"], design.rate, n, T)
-    equity = paid_principal + uw["down_payment"] + 0.25 * np.maximum(value_T - home.value, 0)  # 25% appreciation share (resale formula)
+    # 25% appreciation share (resale formula), less what the owner still owes Habitat in deferred payments
+    equity = paid_principal + uw["down_payment"] - down_assist + 0.25 * np.maximum(value_T - home.value, 0) - deferred
     sustained = ~lost
     return {
         "design": design.label(), "underwriting": {k: round(v, 2) for k, v in uw.items()},
@@ -213,13 +222,20 @@ def simulate(family: Family, home: Home, design: Design, n_paths=2000, years=10,
         "median_buffer_low": round(float(np.median(min_buffer))),
         "median_owner_equity_10y": round(float(np.median(equity[sustained]))) if sustained.any() else 0,
         "mean_deferred_balance": round(float(deferred.mean())),
-        "subsidy_cost": round(subsidy_cost(uw, design, home)),
+        "subsidy_cost": round(subsidy_cost(uw, design, home, deferred=float(deferred.mean()), down_assist=down_assist)),
         "n_paths": n_paths,
         **({"states": states, "events": events, "buffers": buffers} if record else {}),
     }
 
 
+def annuity(rate, n):
+    """PV of $1/month for n months at an annual rate (stable at 0%)."""
+    r = rate / 12
+    return n if r < 1e-12 else -math.expm1(-n * math.log1p(r)) / r
+
+
 def _balance(principal, rate, n, k):
+    k = min(k, n)  # a loan shorter than the horizon is paid off, not negative
     r = rate / 12
     if r < 1e-12:
         return principal * (1 - k / n)
@@ -228,14 +244,13 @@ def _balance(principal, rate, n, k):
     return principal * (1 + growth) - pmt * growth / r
 
 
-def subsidy_cost(uw, design, home, discount=0.04):
-    """PV cost to Habitat: below-market interest on the first, the silent second (assume 50% recaptured at resale), reserve."""
+def subsidy_cost(uw, design, home, deferred=0.0, down_assist=0.0, discount=ASSUMPTIONS["note_discount_rate"]):
+    """PV cost to Habitat: the first mortgage's interest below Habitat's cost of capital (negative, i.e. income, when the
+    rate is above it), the silent second and any deferred payments (50% recaptured at resale, an assumption), the
+    reserve, and down-payment assistance where savings fall short."""
     n = design.term_years * 12
-    market = _pmt(uw["first_mortgage"], discount, n)
-    actual = _pmt(uw["first_mortgage"], design.rate, n)
-    r = discount / 12
-    pv_interest_gap = (market - actual) * (1 - (1 + r) ** -n) / r
-    return max(pv_interest_gap, 0) + 0.5 * uw["silent_second"] + design.reserve_fund
+    pv_interest_gap = uw["first_mortgage"] - _pmt(uw["first_mortgage"], design.rate, n) * annuity(discount, n)
+    return pv_interest_gap + 0.5 * (uw["silent_second"] + deferred) + design.reserve_fund + down_assist
 
 
 DESIGN_SPACE = {

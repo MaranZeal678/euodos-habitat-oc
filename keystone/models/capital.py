@@ -2,7 +2,15 @@
 import json
 
 from keystone import config
-from keystone.models.sustainability import Design, Family, Home, _pmt, underwrite
+from keystone.models.sustainability import (
+    ASSUMPTIONS,
+    Design,
+    Family,
+    Home,
+    _pmt,
+    annuity,
+    underwrite,
+)
 
 # Programs verified 2026-10-31 (see research brief). Per-unit amounts are planning assumptions, not program caps.
 FUNDING_SOURCES = [
@@ -30,7 +38,8 @@ def unit_cost(c=config.COST_ASSUMPTIONS, land_per_unit=0.0):
 
 
 def plan(target_homes: int = 100, family=None, design=None, appraised_value: float = 750_000, land_per_unit: float = 0.0,
-         calhome: float = 60_000, ahp: float = 40_000, sites=None, max_units_per_site=30, note_discount_rate=0.05,
+         calhome: float = 60_000, ahp: float = 40_000, sites=None, max_units_per_site=30,
+         note_discount_rate=ASSUMPTIONS["note_discount_rate"],
          cost_inputs: dict | None = None):
     family = family or Family()
     design = design or Design(rate=0.0, term_years=30, payment_cap=0.30)
@@ -39,11 +48,9 @@ def plan(target_homes: int = 100, family=None, design=None, appraised_value: flo
     uw = underwrite(family, Home(value=appraised_value), design)
     # A below-market first mortgage is worth its PV to Habitat (e.g. if sold to a note buyer), not its face value
     n = design.term_years * 12
-    pay = _pmt(uw["first_mortgage"], design.rate, n)
-    r = note_discount_rate / 12
-    note_value = pay * (1 - (1 + r) ** -n) / r
-    buyer_funds = note_value + uw["down_payment"]
-    gap = cost["total"] - buyer_funds - calhome - ahp
+    note_value = _pmt(uw["first_mortgage"], design.rate, n) * annuity(note_discount_rate, n)
+    buyer_funds = note_value + uw["down_payment_from_savings"]  # only what the family can actually put down
+    gap = cost["total"] + design.reserve_fund - buyer_funds - calhome - ahp
     if sites is None:
         sites = json.loads((config.DATA / "site_scores.json").read_text())
     viable = [s for s in sites if s.get("viable")]

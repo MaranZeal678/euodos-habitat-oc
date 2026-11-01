@@ -46,10 +46,11 @@ class Trace:
 
 
 class Hierarchy:
-    def __init__(self, policy="auto", run_id=None, playbook_overrides=None):
+    def __init__(self, policy="auto", run_id=None, playbook_overrides=None, use_lessons=True):
         self.run_id = run_id or time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:4]
         self.trace = Trace(self.run_id)
         self.overrides = playbook_overrides or {}
+        self.use_lessons = use_lessons  # off when the improve loop tests whether a playbook stands on its own
         self.policy_name = policy
         self.sem = asyncio.Semaphore(6)
         self.tool_results = []   # structured results for graders/dashboard
@@ -168,7 +169,7 @@ class ClaudePolicy:
 
     async def run(self, agent, task, depth, node):
         spec = SPECS[agent]
-        system = memory.system_prompt(agent, self.h.overrides.get(agent))
+        system = memory.system_prompt(agent, self.h.overrides.get(agent), use_lessons=self.h.use_lessons)
         messages: list[Any] = [{"role": "user", "content": task}]
         tools = self._tools(agent)
         for _turn in range(spec.max_turns):
@@ -215,9 +216,10 @@ class ScriptedPolicy:
 
     def __init__(self, h: Hierarchy):
         self.h = h
+        self.chosen = []  # per-family recommended designs, handed from the family lead to the capital lead
 
     def _lesson_on(self, agent, *words):
-        txt = " ".join(l["lesson"].lower() for l in memory.lessons(agent))
+        txt = " ".join(l["lesson"].lower() for l in memory.lessons(agent)) if self.h.use_lessons else ""
         txt += " " + (self.h.overrides.get(agent) or memory.playbook(agent)["text"]).lower()
         return any(w in txt for w in words)
 
@@ -231,11 +233,12 @@ class ScriptedPolicy:
         self.h.trace.log(type="ledger", agent="director", node=node, facts=[f"target {target} homes", f"{len(families)} families"],
                          plan=["land_lead: shortlist SB4 sites", "family_lead: design mortgages", "capital_lead: size gap"],
                          done=[], blockers=[])
-        land, fam, cap, stew = await asyncio.gather(
+        land, fam, stew = await asyncio.gather(
             self.h.delegate("director", node, "land_lead", json.dumps({"target_homes": target, "city": m.get("city")}), depth),
             self.h.delegate("director", node, "family_lead", json.dumps({"families": families}), depth),
-            self.h.delegate("director", node, "capital_lead", json.dumps({"target_homes": target}), depth),
             self.h.delegate("director", node, "steward", json.dumps({"month": m.get("portfolio_month", 36)}), depth))
+        # capital comes after families: the gap must be sized for the designs actually recommended, not a generic one
+        cap = await self.h.delegate("director", node, "capital_lead", json.dumps({"target_homes": target, "families": self.chosen}), depth)
         self.h.trace.log(type="ledger", agent="director", node=node, facts=[], plan=[],
                          done=["land", "families", "capital"], blockers=[])
         cites = (await self.h.call_tool("director", "research_lookup", {"topic": "stewardship"}, depth))["citations"]
@@ -297,6 +300,7 @@ class ScriptedPolicy:
         table = "| Family | Income | % AMI | Band | P(market denial) | Design | P(sustained 10y) | Subsidy PV |\n|---|---|---|---|---|---|---|---|\n"
         for (f, lim, mk), o in zip(rows, outs):
             d = json.loads(o)
+            self.chosen.append({"name": f["name"], "income": f["income"], "design": d["design_params"]})
             table += (f"| {f['name']} | ${f['income']:,} | {lim['pct_ami']}% | {lim['category']} | {mk['p_denied']:.0%} | "
                       f"{d['design']} | {d['p_sustained_10y']:.1%} | ${d['subsidy_cost']:,} |\n")
             briefs.append(f"- {f['name']}: stress test → {d.get('stress', 'n/a')}")
@@ -324,21 +328,43 @@ class ScriptedPolicy:
                                       "skill_description": "Stress-test a mortgage design: job-loss x1.5 and insurance shocks"}, depth)
         stress = run["stdout"].strip() if run.get("ok") else f"sandbox error: {run.get('stderr', '')[:200]}"
         return json.dumps({"design": best["design"], "p_sustained_10y": best["p_sustained_10y"], "subsidy_cost": best["subsidy_cost"],
-                           "stress": stress})
+                           "stress": stress, "design_params": dp})
 
     async def capital_lead(self, task, depth, node):
         m = json.loads(task)
-        plan = await self.h.call_tool("capital_lead", "capital_plan", {"target_homes": m.get("target_homes", 100)}, depth)
+        target = m.get("target_homes", 100)
+        fams = m.get("families") or []
+        plan = await self.h.call_tool("capital_lead", "capital_plan", {"target_homes": target}, depth)
+        per = []
+        for f in fams:  # the program's own family mix, each on the design recommended for it
+            d = f["design"]
+            p = await self.h.call_tool("capital_lead", "capital_plan", {
+                "target_homes": target, "family_income": f["income"], "rate": d["rate"], "term_years": d["term_years"],
+                "payment_cap": d["payment_cap"], "reserve_fund": d["reserve_fund"]}, depth)
+            per.append((f, p))
         gap = await self.h.call_tool("capital_lead", "market_gap_report", {"year": 2024}, depth)
         sens = ""
         if self._lesson_on("capital_lead", "sensitivity", "sweep"):
             run = await self.h.call_tool("capital_lead", "sandbox_run_python", {"code": CAPITAL_SWEEP}, depth)
             sens = "\n\nSensitivity (sandbox):\n```\n" + (run["stdout"] if run.get("ok") else run.get("stderr", "")) + "```"
         stack = "\n".join(f"- {s['name']}: {s['notes']} ({s['url']})" for s in plan["funding_sources"])
+        if per:
+            def gap_cell(g):
+                return f"${g:,}" if g >= 0 else f"none (recovers ${-g:,} more)"
+            rows = "\n".join(f"| {f['name']} | {p['assumptions']['design']} | ${p['capital_recovered_per_unit']:,} | "
+                             f"{gap_cell(p['per_unit_gap_after_public_sources'])} |" for f, p in per)
+            # one family's surplus does not pay for another's home, so each gap is floored at zero before averaging
+            blended = round(sum(max(p["per_unit_gap_after_public_sources"], 0) for _, p in per) / len(per))
+            gap_txt = (f"Gap per home for the recommended designs (after CalHome + AHP, assumed $100k/home):\n\n"
+                       f"| Family | Design | Capital recovered | Gap per home |\n|---|---|---|---|\n{rows}\n\n"
+                       f"At this family mix the program needs about ${blended * target:,} in philanthropy for {target} homes "
+                       f"(${blended:,} per home). For reference, a standard 0% / 30-year design for a $95k family leaves "
+                       f"${plan['per_unit_gap_after_public_sources']:,} per home.")
+        else:
+            gap_txt = (f"Gap after CalHome + AHP (assumed $100k/home): ${plan['per_unit_gap_after_public_sources']:,} per home → "
+                       f"${plan['philanthropy_needed_total']:,} philanthropy for {target} homes (standard 0% / 30-year design).")
         return (f"Per-home cost ${plan['unit_cost']['total']:,} (hard ${plan['unit_cost']['hard']:,}, soft ${plan['unit_cost']['soft']:,}, land $0 via SB 4 ground lease — assumption). "
-                f"Each 0% first mortgage has face value ${plan['first_mortgage_face']:,} but PV ${plan['first_mortgage_pv']:,} at 5%. "
-                f"Gap after CalHome + AHP (assumed $100k/home): ${plan['per_unit_gap_after_public_sources']:,} per home → "
-                f"${plan['philanthropy_needed_total']:,} philanthropy for {plan['target_homes']} homes.\n\n"
+                f"Notes are valued at Habitat's 5% cost of capital (assumption). {gap_txt}\n\n"
                 f"Demand (HMDA 2024, real loan data): {gap['low_income_applications']:,} low-income OC purchase applications, "
                 f"{gap['low_income_denial_rate']:.0%} denied, {gap['low_income_denial_reasons'].get('Debt-to-income ratio', 0)} for debt-to-income. "
                 f"Source: https://ffiec.cfpb.gov/data-browser/\n\nFunding stack:\n{stack}{sens}")
@@ -372,12 +398,10 @@ print(f"base {base['p_sustained_10y']:.1%} -> stressed {stressed['p_sustained_10
 CAPITAL_SWEEP = '''from keystone import config
 from keystone.models import capital
 from keystone.models.sustainability import Design, Family
-base = dict(config.COST_ASSUMPTIONS)
 print("hard$/sf  disc   gap/home   total(100)")
-for hc in (325, 375, 425):
+for hard_cost in (325, 375, 425):
     for disc in (0.04, 0.05, 0.06):
-        config.COST_ASSUMPTIONS["hard_cost_per_sqft"] = hc
-        p = capital.plan(100, Family(), Design(), note_discount_rate=disc)
-        print(f"{hc:>8} {disc:>5.0%} {p['per_unit_gap_after_public_sources']:>10,} {p['philanthropy_needed_total']:>12,}")
-config.COST_ASSUMPTIONS.update(base)
+        cost = dict(config.COST_ASSUMPTIONS, hard_cost_per_sqft=hard_cost)
+        p = capital.plan(100, Family(), Design(), note_discount_rate=disc, cost_inputs=cost)
+        print(f"{hard_cost:>8} {disc:>5.0%} {p['per_unit_gap_after_public_sources']:>10,} {p['philanthropy_needed_total']:>12,}")
 '''

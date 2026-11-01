@@ -48,9 +48,21 @@ def history(name=None):
     return r if name is None else r.get(name, [])
 
 
+def rescore(name, metrics):
+    """Re-measure the current champion on today's evaluation before a challenger is compared with it, so the gate
+    never compares against a stale score (the market-gap model does the same on the newest test year)."""
+    r = _load()
+    champs = [e for e in r.get(name, []) if e["status"] == "champion"]
+    if champs:
+        champs[-1]["metrics"] = {**champs[-1]["metrics"], **metrics}
+        champs[-1]["rescored"] = datetime.now(UTC).isoformat(timespec="seconds")
+        _save(r)
+
+
 def propose(name, path, metrics, params, primary, higher_is_better=True, min_gain=0.0,
-            guardrails=None, data_version=None):
-    """guardrails: {metric: max_allowed_increase} checked against the champion (lower is better for those)."""
+            guardrails=None, data_version=None, checks=None):
+    """guardrails: {metric: max_allowed_increase} checked against the champion (lower is better for those).
+    checks: extra (passed, reason) pairs computed by the caller, e.g. a bootstrap interval on the gain."""
     r = _load()
     entries = r.setdefault(name, [])
     champs = [e for e in entries if e["status"] == "champion"]
@@ -72,6 +84,9 @@ def propose(name, path, metrics, params, primary, higher_is_better=True, min_gai
                 ok = metrics[g] <= champ["metrics"][g] + tol
                 reasons.append(f"guardrail {g}: {metrics[g]} vs {champ['metrics'][g]} (+{tol} allowed) -> {'ok' if ok else 'FAIL'}")
                 decision = decision and ok
+        for ok, why in checks or []:
+            reasons.append(f"{why} -> {'ok' if ok else 'FAIL'}")
+            decision = decision and ok
     entry["status"] = "champion" if decision else "rejected"
     entry["decision_reasons"] = reasons
     if decision and champ is not None:

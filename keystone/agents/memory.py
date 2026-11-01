@@ -44,10 +44,10 @@ def set_playbook(agent, text, version):
     PLAYBOOKS.write_text(json.dumps(pb, indent=2))
 
 
-def system_prompt(agent, playbook_override=None):
+def system_prompt(agent, playbook_override=None, use_lessons=True):
     spec = SPECS[agent]
     pb = playbook_override or playbook(agent)["text"]
-    ls = lessons(agent)[-8:]
+    ls = lessons(agent)[-8:] if use_lessons else []
     lesson_txt = "\n".join(f"- {l['lesson']}" for l in ls) or "- (none yet)"
     return (f"{spec.role}\n\nPlaybook:\n{pb}\n\nLessons from earlier runs (apply them):\n{lesson_txt}\n\n"
             "Ground rules: numbers come from tools or cited sources; never invent a URL; say 'assumption' for "

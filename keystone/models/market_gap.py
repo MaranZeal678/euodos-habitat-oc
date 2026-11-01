@@ -84,13 +84,40 @@ def gap_report(d):
     }
 
 
+MIN_GROUP = 100  # small enough to measure Black applicants in OC (n~120 a year), large enough for a stable mean
+
+
 def fairness_gap(d, p):
-    """Max over large race groups of |mean predicted - observed denial rate| (calibration gap)."""
+    """Max calibration gap |mean predicted - observed denial rate| over every race and ethnicity group with at least
+    MIN_GROUP applicants (including applicants whose race was not reported, who are a real population of denials)."""
     gaps = {}
-    for g, sub in d.assign(p=p).groupby("race"):
-        if len(sub) >= 300 and g not in ("Race Not Available",):
-            gaps[g] = abs(sub.p.mean() - sub.denied.mean())
+    d = d.assign(p=p)
+    for col, prefix in (("race", ""), ("derived_ethnicity", "ethnicity: ")):
+        if col not in d:
+            continue
+        for g, sub in d.groupby(col):
+            if len(sub) >= MIN_GROUP and g != "Free Form Text Only":
+                gaps[f"{prefix}{g}"] = abs(sub.p.mean() - sub.denied.mean())
     return round(float(max(gaps.values())), 4), {k: round(float(v), 4) for k, v in gaps.items()}
+
+
+def paired_bootstrap(champ_model, chal_model, test_df, n_boot=400, seed=0):
+    """95% intervals, over the same resampled test applicants, of the challenger's AUC gain and of how much wider its
+    fairness gap is. Small groups (Black applicants are ~120 a year in OC) make the fairness gap noisy, so a
+    challenger is judged on whether it is *significantly* less fair, not on a point difference inside the noise."""
+    y = test_df.denied.to_numpy()
+    pc, pn = champ_model.predict_proba(test_df[FEATURES])[:, 1], chal_model.predict_proba(test_df[FEATURES])[:, 1]
+    rng = np.random.default_rng(seed)
+    auc, fair = [], []
+    for _ in range(n_boot):
+        i = rng.integers(0, len(y), len(y))
+        if y[i].min() == y[i].max():
+            continue
+        sub = test_df.iloc[i]
+        auc.append(roc_auc_score(y[i], pn[i]) - roc_auc_score(y[i], pc[i]))
+        fair.append(fairness_gap(sub, pn[i])[0] - fairness_gap(sub, pc[i])[0])
+    ci = lambda v: [round(float(x), 4) for x in np.percentile(v, [2.5, 97.5])]
+    return ci(auc), ci(fair)
 
 
 def fit(train_df, seed=0, **hp):
@@ -110,11 +137,15 @@ def evaluate(m, test_df):
             "fairness_gap": fg, "fairness_by_group": groups, "n_test": len(test_df)}
 
 
+MIN_AUC_GAIN = 0.002
+
+
 def propose(train_years, test_year, frames, **hp):
     tr = pd.concat([frames[y] for y in train_years])
     m, params = fit(tr, **hp)
     # A challenger only counts if it is compared on the newest year, so re-score the champion there too
     champ = registry.champion("market_gap")
+    cm = None
     if champ is not None:
         with open(registry.model_file(champ), "rb") as f:
             cm = pickle.load(f)
@@ -125,11 +156,18 @@ def propose(train_years, test_year, frames, **hp):
                 e["metrics"] = champ["metrics"]; e["rescored_on"] = test_year
         registry.REG.write_text(json.dumps(r, indent=2))
     metrics = evaluate(m, frames[test_year])
+    checks = []
+    if cm is not None:
+        (lo, hi), (flo, fhi) = paired_bootstrap(cm, m, frames[test_year])
+        metrics["auc_gain_ci95"], metrics["fairness_widening_ci95"] = [lo, hi], [flo, fhi]
+        # a gain inside the noise is not a gain; a fairness gap that is significantly wider blocks promotion outright
+        checks.append((lo > MIN_AUC_GAIN, f"AUC gain 95% CI [{lo:+.4f}, {hi:+.4f}]; lower bound must exceed {MIN_AUC_GAIN}"))
+        checks.append((flo <= 0, f"fairness gap widening 95% CI [{flo:+.4f}, {fhi:+.4f}]; must not be significantly above 0"))
     path = ARTIFACTS / f"market_gap_{'_'.join(map(str, train_years))}.pkl"
     with open(path, "wb") as f:
         pickle.dump(m, f)
     return registry.propose("market_gap", registry.relative(path), metrics, params | {"train_years": train_years, "test_year": test_year},
-                            primary="auc", min_gain=0.002, guardrails={"fairness_gap": 0.005},
+                            primary="auc", min_gain=MIN_AUC_GAIN, checks=checks,
                             data_version=f"HMDA OC {train_years}->{test_year}")
 
 

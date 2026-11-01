@@ -124,8 +124,8 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
     <figcaption class="cap">Demo, Act 1. Real NAIP imagery and the real CNN parking mask (teal) for Crossline Church, Laguna Hills, with the generated 30-townhome site plan rising in 3D. The agent rail replays a graded run's MCP calls.</figcaption>
   </figure>
   <figure class="plan" style="margin:0">
-    <img src="img/demo_act2_families.png" alt="Mission control demo: three 100-home grids after 10 years showing 58, 80 and 87 families still home" style="width:100%;border-radius:3px;display:block">
-    <figcaption class="cap">Demo, Act 2. The same 100 families live 10 years under three ways of financing, with identical layoffs, insurance spikes and repairs. Still home at year 10: 58 with market-rate loans, 80 with a standard 0% loan, 87 with Keystone designs plus the Steward agent. Families are synthetic; their incomes are sampled from 2024 HMDA applicants in Habitat OC's band.</figcaption>
+    <img src="img/demo_act2_families.png" alt="Mission control demo: three 100-home grids after 10 years showing 39, 69 and 85 families still home" style="width:100%;border-radius:3px;display:block">
+    <figcaption class="cap">Demo, Act 2. The same 100 families live 10 years under three ways of financing, with identical layoffs, insurance spikes and repairs. Still home at year 10: 39 with market-rate loans, 69 with a standard 0% loan, 85 with Keystone designs plus the Steward agent. Families are synthetic; their incomes are sampled from 2024 HMDA applicants in Habitat OC's band.</figcaption>
   </figure>
   <div class="tbl"><table>
     <tr><th>Module</th><th>What a staff member gets</th><th>AI under the hood</th></tr>
@@ -232,12 +232,12 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
 <section>
   <div class="eyebrow">Results · Capital</div>
   <h2>About $16M of philanthropy closes the gap for 100 homes</h2>
-  <p class="col">Each townhome costs about $539,000 to build at an assumed $375 per square foot, with land contributed through SB 4. The buyer's 0% first mortgage has a face value of $519,000 but is worth $269,000 at a 5% discount rate. That difference is why 0% lending ties up capital. After an assumed $100,000 per home from <a href="https://www.hcd.ca.gov/funding/hosn">CalHome</a> and <a href="https://www.fhlbsf.com/products/community-programs-grants/ahp">FHLBank SF AHP</a>, the gap is $162,907 per home.</p>
+  <p class="col">Each townhome costs about $539,000 to build at an assumed $375 per square foot, with land contributed through SB 4. The buyer's 0% first mortgage has a face value of $519,000 but is worth $269,000 at a 5% discount rate. That difference is why 0% lending ties up capital. After an assumed $100,000 per home from <a href="https://www.hcd.ca.gov/funding/hosn">CalHome</a> and <a href="https://www.fhlbsf.com/products/community-programs-grants/ahp">FHLBank SF AHP</a>, the gap is $164,407 per home. The family puts down only what its savings cover; Habitat counts the rest as assistance.</p>
   <div class="tbl" style="max-width:640px"><table>
     <tr><th>Hard cost / sf</th><th class="n">Discount 4%</th><th class="n">5%</th><th class="n">6%</th></tr>
-    <tr><td>$325</td><td class="n">$5.8M</td><td class="n">$9.1M</td><td class="n">$11.9M</td></tr>
-    <tr><td>$375</td><td class="n">$12.9M</td><td class="n hl">$16.3M</td><td class="n">$19.1M</td></tr>
-    <tr><td>$425</td><td class="n">$20.1M</td><td class="n">$23.5M</td><td class="n">$26.3M</td></tr>
+    <tr><td>$325</td><td class="n">$5.9M</td><td class="n">$9.3M</td><td class="n">$12.1M</td></tr>
+    <tr><td>$375</td><td class="n">$13.1M</td><td class="n hl">$16.4M</td><td class="n">$19.3M</td></tr>
+    <tr><td>$425</td><td class="n">$20.3M</td><td class="n">$23.6M</td><td class="n">$26.4M</td></tr>
   </table></div>
   <p class="muted" style="font-size:14px">Philanthropy needed for 100 homes. The Capital lead ran this sweep in the sandbox. Per-unit public funding and hard cost are planning assumptions.</p>
 </section>
@@ -248,12 +248,12 @@ footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; 
   <p class="col">Keystone runs one promotion rule for everything it learns: a challenger replaces the champion only if it beats it on the same frozen evaluation and passes its guardrails. Agents can propose changes but never approve their own. The approach follows validation-gated governance (<a href="https://arxiv.org/abs/2606.03321">Lim et al. 2026</a>), Reflexion lesson memory (<a href="https://arxiv.org/abs/2303.11366">Shinn et al. 2023</a>) and a Voyager-style skill library (<a href="https://arxiv.org/abs/2305.16291">Wang et al. 2023</a>).</p>
   <div class="tbl"><table>
     <tr><th>What learned</th><th>Evidence</th><th>Gate decision</th></tr>
-    <tr><td>HMDA denial model, as each new year arrived</td><td>AUC on newest year: 0.761 → 0.779 → 0.782. Race-group calibration gap 0.019 → 0.014 → 0.006</td><td><span class="pill good">promoted ×2</span></td></tr>
+    <tr><td>HMDA denial model, as each new year arrived</td><td>AUC on the newest year 0.761 → 0.779, gain 95% CI +0.010 to +0.026. A third challenger (0.782) gained only +0.004, inside the noise (CI −0.003 to +0.012). Measured on every group of 100+ applicants, the champion's largest calibration gap is 6.9 points, for Black applicants: a gap the old 300-applicant cut-off had hidden</td><td><span class="pill good">promoted ×1</span> <span class="pill bad">rejected ×1</span></td></tr>
     <tr><td>Parking CNN challenger (wider, 40 epochs)</td><td>IoU 0.5463 vs 0.5437: +0.003, within noise on 136 holdout chips</td><td><span class="pill bad">rejected</span></td></tr>
-    <tr><td>Director, Land and Capital playbooks</td><td>Mean grader score across 3 missions: 0.67 → 1.00. Lessons learned: cap sites at 30 units, run the sensitivity sweep, report fairness</td><td><span class="pill good">promoted</span></td></tr>
+    <tr><td>Director, Land and Capital playbooks</td><td>Lesson memory lifts the system's mean grader score across 3 missions from 0.67 to 1.00. Tested with lessons switched off, each rewritten playbook adds +0.11 in turn (Capital, then Director, then Land), so a fresh deploy with no memory keeps the gain. Lessons: run the sensitivity sweep, report the measured fairness gap, cap sites at 30 units</td><td><span class="pill good">promoted ×3</span></td></tr>
     <tr><td>Underwriter skill library</td><td>A sandbox stress test saved once, then reused by later runs</td><td><span class="pill good">reused</span></td></tr>
   </table></div>
-  <div class="callout col">The graders check outcomes, not phrasing. Did the plan reach the target with a buffer? Does every family clear 95%? Is every URL in the brief a verified source? Did the sensitivity analysis actually run? A brief with one invented citation fails.</div>
+  <div class="callout col">The graders check outcomes against the run's own tool results, not phrasing. Every shortlisted unit must trace to a site the CNN search returned. Every mission family needs its own optimizer result at 95%. Every URL and bare domain must be a verified source. The sensitivity sweep must actually vary hard cost. A three-line brief stuffed with the right keywords scores 0.22.</div>
 </section>
 
 <section>

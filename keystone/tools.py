@@ -121,14 +121,14 @@ def mortgage_optimize(income: Income, household_size: HouseholdSize = 4, savings
 @validate_call
 def capital_plan(target_homes: Annotated[int, Field(ge=1, le=5_000)] = 100, family_income: Income = 95_000,
                  appraised_value: HomeValue = 750_000, rate: Rate = 0.0, term_years: Term = 30, payment_cap: Cap = 0.30,
-                 calhome_per_unit: Money = 60_000, ahp_per_unit: Money = 40_000,
+                 reserve_fund: Money = 0, calhome_per_unit: Money = 60_000, ahp_per_unit: Money = 40_000,
                  max_units_per_site: Annotated[int, Field(ge=1, le=500)] = 30,
                  hard_cost_per_sqft: Annotated[float, Field(gt=0, le=2_000)] | None = None) -> dict:
     """Path-to-N plan: which sites, per-unit cost, capital recovered from mortgages, and the philanthropy gap."""
     cost = dict(config.COST_ASSUMPTIONS)  # per-call copy: an override must never leak into later requests
     if hard_cost_per_sqft is not None:
         cost["hard_cost_per_sqft"] = hard_cost_per_sqft
-    d = sus.Design(rate=rate, term_years=term_years, payment_cap=payment_cap)
+    d = sus.Design(rate=rate, term_years=term_years, payment_cap=payment_cap, reserve_fund=reserve_fund)
     return capital.plan(target_homes, sus.Family(income=family_income), d, appraised_value,
                         calhome=calhome_per_unit, ahp=ahp_per_unit, max_units_per_site=max_units_per_site, cost_inputs=cost)
 
