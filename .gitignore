@@ -9,7 +9,6 @@ data/raw/*.csv
 data/raw/osm_*.json
 data/raw/source_docs/
 data/processed/parking_chips.npz
-data/processed/naip_index.json
 
 # large or per-run outputs
 docs/keystone_demo.mp4

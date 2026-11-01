@@ -57,9 +57,19 @@ jobs:
           curl -fsS localhost:8000/api/demo/trace | python3 -c "import json,sys; t=json.load(sys.stdin); assert t['grade']['score'] == 1.0"
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/mcp/ -d '{}')" = 401
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/api/mission -H 'Authorization: Bearer ci-token' -H 'content-type: application/json' -d '{"policy": "scripted"}')" = 200
-      - name: Agent sandbox works inside the container
+      - name: Unprivileged container (Render-like) - the sandbox fails closed and says so
         run: |
-          python3 -c "import json; h=json.load(open('healthz.json')); s=h['sandbox']; print(s); assert s['ok'], 'sandbox unavailable in an unprivileged container: ' + s.get('error', '')"
+          # Docker's default seccomp/proc masking forbids new namespaces, so bubblewrap cannot start. Keystone must refuse
+          # to run agent code (never run it unsandboxed) and report it on /healthz.
+          python3 -c "import json; h=json.load(open('healthz.json')); s=h['sandbox']; print(s); assert h['degraded'] == ['sandbox'] and not s['ok'] and s['kind'] == 'bubblewrap'"
+      - name: Host that allows namespaces (VM, Fly Machines) - the sandbox works in the same image
+        run: |
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          docker run -d --name ks2 -p 8001:8000 -e KEYSTONE_API_TOKEN=ci-token --security-opt seccomp=unconfined \
+            --security-opt apparmor=unconfined --security-opt systempaths=unconfined keystone
+          for i in $(seq 1 60); do curl -fsS localhost:8001/healthz >/dev/null 2>&1 && break; sleep 2; done
+          curl -fsS localhost:8001/healthz | tee healthz2.json
+          python3 -c "import json; s=json.load(open('healthz2.json'))['sandbox']; assert s['ok'], s"
       - name: Server log on failure
         if: failure()
-        run: docker logs ks
+        run: docker logs ks; docker logs ks2 || true

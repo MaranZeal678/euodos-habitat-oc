@@ -309,3 +309,15 @@ def test_rate_limit_key_uses_the_proxy_added_address(monkeypatch):
     assert server.client_key(req) == "203.0.113.9"  # the client-supplied 6.6.6.6 is ignored
     monkeypatch.setattr(server, "PROXY_HOPS", 0)
     assert server.client_key(req) == "10.0.0.1"
+
+
+def test_site_inspection_falls_back_to_the_stored_scan_without_imagery(monkeypatch):
+    # a fresh server or an imagery outage must not kill missions: the site analyst gets the offline CNN scan, flagged
+    from keystone.models import site_score
+
+    def offline(*a, **k):
+        raise ConnectionError("imagery host unreachable")
+    monkeypatch.setattr(site_score, "score_site", offline)
+    apn = next(s["apn"] for s in tools._sites() if s.get("viable"))
+    out = tools.sites_inspect(apn=apn, keep_parking_share=0.7)
+    assert "unavailable (ConnectionError)" in out["live_rescan"] and out["units_townhome"] > 0 and "parcel_sqm" in out

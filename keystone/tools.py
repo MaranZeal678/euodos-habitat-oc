@@ -61,7 +61,14 @@ def sites_inspect(apn: Annotated[str, Field(pattern=r"^[0-9A-Za-z-]{3,20}$", des
     site = next((s for s in raw if s.get("apn") == apn), None)
     if site is None:
         return {"error": f"APN {apn} not in faith-site inventory"}
-    out = score_site(site, keep_parking_share=keep_parking_share)
+    try:
+        out = score_site(site, keep_parking_share=keep_parking_share)
+    except Exception as e:  # noqa: BLE001 - imagery is remote; without it, fall back to the stored offline scan
+        stored = next((s for s in _sites() if s.get("apn") == apn and "cnn_error" not in s), None)
+        if stored is None:
+            return {"error": f"live imagery unavailable ({type(e).__name__}) and no stored scan for APN {apn}"}
+        return {**stored, "live_rescan": f"unavailable ({type(e).__name__}); stored offline scan at 50% parking kept",
+                "keep_parking_share": 0.5}
     return {k: v for k, v in out.items() if not k.endswith("_bounds")}
 
 

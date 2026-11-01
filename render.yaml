@@ -1,4 +1,7 @@
 # One-click deploy on Render (Blueprint). Set ANTHROPIC_API_KEY and KEYSTONE_API_TOKEN as secrets in the dashboard.
+# Render containers cannot create Linux namespaces, so the agent code sandbox (bubblewrap) refuses to run there and
+# /healthz reports degraded:[sandbox]; everything else works. For sandboxed agent analysis, run the same image on a
+# host that allows namespaces (a VM, Fly Machines) with --security-opt seccomp=unconfined (CI proves both cases).
 services:
   - type: web
     name: keystone

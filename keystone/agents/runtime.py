@@ -85,6 +85,8 @@ class Hierarchy:
             data: Any = json.loads(text)
         except ValueError:
             data = {"text": text}
+        if res.is_error and not (isinstance(data, dict) and "error" in data):  # agents check for an "error" key
+            data = {"error": text[:500]}
         self.tool_results.append({"agent": agent, "tool": name, "args": args, "result": data})
         self.trace.log(type="tool", agent=agent, node=CURRENT_NODE.get(), depth=depth, tool=name, args=args, secs=round(time.time() - t0, 2),
                        error=bool(res.is_error), summary=_summarize(data))
