@@ -64,6 +64,7 @@ th { color: var(--text-secondary); font-weight: 600; }
 td.n, th.n { text-align: right; }
 .scroll { max-height: 520px; overflow: auto; }
 label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+input[aria-invalid="true"] { border-color: var(--serious); outline: 1px solid var(--serious); }
 input, select { width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-0);
   color: var(--text-primary); font: inherit; margin-top: 2px; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 12px; }
@@ -228,13 +229,43 @@ async function initMap() {
 }
 
 // ---------------------------------------------------------------- families
-const FIELDS = [["income", "Household income ($/yr)", 92000], ["household_size", "Household size", 4], ["savings", "Liquid savings ($)", 4000],
-  ["monthly_debts", "Other debts ($/mo)", 350], ["income_volatility", "Job-loss risk multiplier", 1.2], ["home_value", "Appraised home value ($)", 750000], ["min_sustain", "Target P(sustained 10y)", 0.95]];
-$("#famForm").innerHTML = FIELDS.map(([k, l, v]) => `<label>${l}<input id="f_${k}" type="number" step="any" value="${v}"></label>`).join("");
+// [key, label, default, min, max, step]: bounds mirror the API's request model so the browser flags bad input first
+// step "any" except household size: an HTML step counts from min, so a coarse step would reject ordinary values
+const FIELDS = [["income", "Household income ($/yr)", 92000, 1, 2000000, "any"], ["household_size", "Household size", 4, 1, 8, 1],
+  ["savings", "Liquid savings ($)", 4000, 0, 20000000, "any"], ["monthly_debts", "Other debts ($/mo)", 350, 0, 1000000, "any"],
+  ["income_volatility", "Job-loss risk multiplier", 1.2, 0, 5, "any"], ["home_value", "Appraised home value ($)", 750000, 10000, 20000000, "any"],
+  ["min_sustain", "Target P(sustained 10y)", 0.95, 0.5, 0.999, "any"]];
+$("#famForm").innerHTML = FIELDS.map(([k, l, v, lo, hi, st]) =>
+  `<label>${l}<input id="f_${k}" type="number" min="${lo}" max="${hi}" step="${st}" value="${v}" required></label>`).join("");
+function famError(msg) {
+  $("#famStatus").textContent = msg; $("#famStatus").style.color = "var(--serious)"; $("#famStatus").setAttribute("role", "alert");
+}
 $("#famGo").onclick = async () => {
-  $("#famStatus").textContent = "simulating 108 designs × 1,500 paths…";
+  FIELDS.forEach(([k]) => $("#f_" + k).removeAttribute("aria-invalid"));
+  $("#famStatus").style.color = ""; $("#famStatus").removeAttribute("role");
+  const badField = FIELDS.find(([k]) => !$("#f_" + k).checkValidity());
+  if (badField) {
+    const el = $("#f_" + badField[0]); el.setAttribute("aria-invalid", "true"); el.focus();
+    return famError(`${badField[1]}: enter ${badField[5] === 1 ? "a whole number" : "a number"} from ${badField[3].toLocaleString("en-US")} to ${badField[4].toLocaleString("en-US")}.`);
+  }
   const body = Object.fromEntries(FIELDS.map(([k]) => [k, +$("#f_" + k).value]));
-  const r = await api("/api/optimize", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  $("#famStatus").textContent = "simulating 108 designs × 1,500 paths…";
+  $("#famGo").disabled = true;
+  let res, r;
+  try {
+    res = await fetch("/api/optimize", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+    r = await res.json();
+  } catch (e) {
+    $("#famGo").disabled = false;
+    return famError("Couldn't reach the Keystone server. Check that it is running, then try again.");
+  }
+  $("#famGo").disabled = false;
+  if (!res.ok) {  // 422 from the request model: name the field and the rule
+    const d = Array.isArray(r.detail) ? r.detail[0] : null;
+    const f = d && FIELDS.find(([k]) => k === d.loc[d.loc.length - 1]);
+    if (f) $("#f_" + f[0]).setAttribute("aria-invalid", "true");
+    return famError(f ? `${f[1]}: ${d.msg}.` : `The server rejected the request (${res.status}). Check the inputs and try again.`);
+  }
   $("#famStatus").textContent = "";
   const b = r.best, base = r.market_rate_baseline, uw = b.underwriting;
   $("#famOut").innerHTML = `

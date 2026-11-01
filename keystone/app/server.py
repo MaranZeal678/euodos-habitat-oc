@@ -62,9 +62,12 @@ app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 _tasks = {}
 
 
+NO_CACHE = {"Cache-Control": "no-cache"}  # pages revalidate, so a redeploy never shows a stale dashboard or demo
+
+
 @app.get("/demo")
 def demo():
-    return FileResponse(HERE / "demo.html")
+    return FileResponse(HERE / "demo.html", headers=NO_CACHE)
 
 
 @app.get("/healthz")
@@ -101,7 +104,7 @@ def hk_watchlist(month: int = 36, scenario: Literal["market", "standard", "keyst
 
 @app.get("/")
 def index():
-    return FileResponse(HERE / "index.html")
+    return FileResponse(HERE / "index.html", headers=NO_CACHE)
 
 
 @app.get("/api/summary")
