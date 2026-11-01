@@ -1,5 +1,6 @@
 """Fool-proofing: every front door rejects bad input with a clear error instead of returning a confident wrong answer."""
 import asyncio
+import sys
 
 import pytest
 from pydantic import ValidationError
@@ -229,3 +230,82 @@ def test_launched_mission_is_readable_immediately(client, monkeypatch):
     r = client.get(f"/api/runs/{rid}")
     assert r.status_code == 200 and r.json()["events"][0]["type"] == "mission_queued"
     assert any(x["id"] == rid and x["running"] and x["policy"] == "scripted" for x in client.get("/api/runs").json())
+
+
+# ---- findings from the independent security review (each test reproduces the reviewer's probe)
+
+def test_sandbox_output_flood_is_capped_and_cannot_exhaust_memory():
+    import resource
+    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    r = run_python('import sys\nchunk = "x" * 2**20\nfor _ in range(300):\n    sys.stdout.write(chunk)')
+    grown_mb = (resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - before) / (2**20 if sys.platform == "darwin" else 2**10)
+    assert not r["ok"] and "output over" in r["stderr"]
+    assert len(r["stdout"]) <= 20_000
+    assert grown_mb < 100, f"parent grew {grown_mb:.0f} MB while the sandbox printed 300 MB"
+
+
+def test_sandbox_children_never_outlive_the_run():
+    import os
+    import time as _time
+    r = run_python("import os, sys, time\npid = getattr(os, 'fo' + 'rk')()\n"
+                   "if pid == 0:\n    os.setsid(); time.sleep(30); sys.exit(0)\nprint(pid)")
+    pid = r["stdout"].strip()
+    if pid.isdigit():  # Linux: fork works inside the pid namespace, which dies with the run
+        _time.sleep(0.5)
+        with pytest.raises(ProcessLookupError):
+            os.kill(int(pid), 0)
+    else:  # macOS: fork itself is denied
+        assert not r["ok"] and "Operation not permitted" in r["stderr"]
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="exec allowlist is a seatbelt rule; Linux relies on the namespace")
+def test_sandbox_cannot_exec_other_programs():
+    r = run_python("import os\ngetattr(os, 'ex' + 'ecv')('/bin/launchctl', ['launchctl', 'print', 'system'])")  # past the AST screen
+    assert not r["ok"] and "Operation not permitted" in r["stderr"]
+
+
+def test_sandbox_cannot_read_runtime_state_but_can_read_models():
+    from keystone import config
+    from keystone.sandbox import runner
+    private = runner._private_state()
+    audit = next(p for p in private if p.endswith("sandbox_audit.jsonl"))
+    r = run_python(f"print(open({audit!r}).read()[:50])")
+    assert not r["ok"], "agent code could read earlier agents' code from the audit log"
+    r = run_python(f"print(open({str(config.ARTIFACTS / 'registry.json')!r}).read()[:20])")
+    assert r["ok"], r["stderr"]
+
+
+def test_skill_must_have_run_and_cannot_be_overwritten():
+    out = tools.sandbox_run_python(code="print(1)", save_as_skill="evil_skill", skill_code="import os; os.system('x')")
+    assert not out["ok"] and "must be part of the code" in out["stderr"]
+    assert tools.sandbox_run_python(code="print(2)", save_as_skill="sweep")["skill_saved"] == "sweep"
+    out = tools.sandbox_run_python(code="print(3)", save_as_skill="sweep")
+    assert "already exists" in out["skill_not_saved"]
+    assert tools.skills_get(name="sweep")["code"] == "print(2)"
+    assert tools.sandbox_run_python(code="print(2)", save_as_skill="sweep")["skill_saved"] == "sweep"  # same code: fine
+
+
+def test_loopback_mode_rejects_rebound_host_names(monkeypatch):
+    from fastapi.testclient import TestClient
+    monkeypatch.setattr(server, "TOKEN", None)
+    monkeypatch.setattr(server, "HOST", "127.0.0.1")
+    local = TestClient(server.app, client=("127.0.0.1", 50000))  # no lifespan: the auth layer is all that runs here
+    bad = {"mission": 99}  # passes auth only to fail validation, so nothing runs
+    assert local.post("http://evil.example:8000/api/mission", json=bad).status_code == 403
+    assert local.post("http://127.0.0.1:8000/api/mission", json=bad).status_code == 422
+    assert local.post("http://localhost:8000/api/mission", json=bad).status_code == 422
+    assert local.post("http://[::1]:8000/api/mission", json=bad).status_code == 422
+
+
+def test_non_ascii_authorization_is_a_401_not_a_500(client, monkeypatch):
+    monkeypatch.setattr(server, "TOKEN", "t")
+    assert client.post("/api/mission", json={}, headers={"Authorization": b"Bearer \xe9"}).status_code == 401
+
+
+def test_rate_limit_key_uses_the_proxy_added_address(monkeypatch):
+    from types import SimpleNamespace
+    req = SimpleNamespace(headers={"x-forwarded-for": "6.6.6.6, 203.0.113.9"}, client=SimpleNamespace(host="10.0.0.1"))
+    monkeypatch.setattr(server, "PROXY_HOPS", 1)
+    assert server.client_key(req) == "203.0.113.9"  # the client-supplied 6.6.6.6 is ignored
+    monkeypatch.setattr(server, "PROXY_HOPS", 0)
+    assert server.client_key(req) == "10.0.0.1"

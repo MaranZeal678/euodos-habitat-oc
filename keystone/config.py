@@ -17,7 +17,7 @@ DATA = ROOT / "data" / "processed" if _DEFAULT else ROOT / "data" / REGION_ID / 
 ARTIFACTS = ROOT / "artifacts" if _DEFAULT else ROOT / "artifacts" / REGION_ID  # trained models + registry (shipped)
 # Runtime state the product writes as it works: agent runs, skills, lessons, sandbox audit. Point KEYSTONE_STATE_DIR
 # at a persistent disk in production; child processes (the stdio MCP server) inherit it, so tests stay isolated too.
-STATE = Path(os.environ["KEYSTONE_STATE_DIR"]) if os.environ.get("KEYSTONE_STATE_DIR") else ARTIFACTS
+STATE = Path(os.environ["KEYSTONE_STATE_DIR"]).resolve() if os.environ.get("KEYSTONE_STATE_DIR") else ARTIFACTS
 for _d in (DATA_RAW, DATA, ARTIFACTS, STATE):
     _d.mkdir(parents=True, exist_ok=True)
 

@@ -62,15 +62,32 @@ def trust_loopback():
     return HOST in LOOPBACK
 
 
+def host_name(host):
+    return host[1:].split("]")[0] if host.startswith("[") else host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+
+
+PROXY_HOPS = int(os.environ.get("KEYSTONE_PROXY_HOPS", "0"))  # reverse proxies in front (Render: 1)
+
+
+def client_key(request):
+    """The address to rate-limit. Behind N trusted proxies the real client is the Nth entry from the right of
+    X-Forwarded-For (entries further left are client-supplied and spoofable); otherwise the TCP peer."""
+    xff = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if PROXY_HOPS and len(xff) >= PROXY_HOPS:
+        return xff[-PROXY_HOPS]
+    return request.client.host if request.client else ""
+
+
 @app.middleware("http")
 async def auth(request: Request, call_next):
     protected = request.url.path.startswith("/mcp") or (request.method == "POST" and request.url.path == "/api/mission")
     if protected:
         if TOKEN:
-            got = request.headers.get("authorization", "")
-            if not secrets.compare_digest(got, f"Bearer {TOKEN}"):
+            got = request.headers.get("authorization", "").encode("latin-1", "replace")  # bytes: non-ASCII can't 500
+            if not secrets.compare_digest(got, f"Bearer {TOKEN}".encode()):
                 return JSONResponse({"error": "missing or invalid bearer token"}, status_code=401)
-        elif not trust_loopback() or (request.client.host if request.client else "") not in LOOPBACK:
+        elif (not trust_loopback() or (request.client.host if request.client else "") not in LOOPBACK
+              or host_name(request.headers.get("host", "")) not in LOOPBACK):  # a rebound DNS name keeps its own Host
             return JSONResponse({"error": "set KEYSTONE_API_TOKEN to use this endpoint from another machine"}, status_code=403)
     return await call_next(request)
 
@@ -179,7 +196,7 @@ class FamilyIn(BaseModel):
 
 class RateLimiter:
     """Token bucket per client: `burst` calls at once, refilled at `rate` per second. In-process, so per worker.
-    The key is the peer address uvicorn resolved (it honours X-Forwarded-For only from FORWARDED_ALLOW_IPS)."""
+    The key comes from client_key (the proxy-added client address when KEYSTONE_PROXY_HOPS is set)."""
 
     def __init__(self, rate, burst, max_clients=10_000):
         self.rate, self.burst, self.max_clients = rate, burst, max_clients
@@ -204,7 +221,7 @@ optimize_slots = threading.BoundedSemaphore(4)       # at most 4 optimizations b
 
 @app.post("/api/optimize")
 def optimize(f: FamilyIn, request: Request):
-    if not optimize_limiter.allow(request.client.host if request.client else ""):
+    if not optimize_limiter.allow(client_key(request)):
         raise HTTPException(429, "too many requests from this client; wait a few seconds", headers={"Retry-After": "2"})
     if not optimize_slots.acquire(blocking=False):
         raise HTTPException(429, "the optimizer is busy with other families; try again in a few seconds", headers={"Retry-After": "3"})

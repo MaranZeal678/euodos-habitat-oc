@@ -158,9 +158,13 @@ def sandbox_run_python(code: Annotated[str, Field(min_length=1, max_length=50_00
     given, the code (or just `skill_code`, the reusable body without run-specific inputs) is added to the skill
     library so future runs can reuse it (Voyager-style)."""
     from keystone.sandbox.runner import run_python
+    if save_as_skill and skill_code is not None and skill_code not in code:
+        return {"ok": False, "stdout": "", "stderr": "skill_code must be part of the code that runs, so a saved skill has run"}
     out = run_python(code, agent="mcp")
     if out["ok"] and save_as_skill:
-        out["skill_saved"] = skills.save(save_as_skill, skill_code or code, skill_description)
+        saved = skills.save(save_as_skill, skill_code or code, skill_description)
+        out["skill_saved" if saved else "skill_not_saved"] = save_as_skill if saved else \
+            f"a different skill named {save_as_skill} already exists; pick a new name"
     return out
 
 

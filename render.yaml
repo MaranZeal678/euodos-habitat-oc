@@ -8,6 +8,8 @@ services:
     envVars:
       - key: KEYSTONE_REGION
         value: orange_county_ca
+      - key: KEYSTONE_PROXY_HOPS  # Render's edge proxy adds the real client address to X-Forwarded-For
+        value: "1"
       - key: KEYSTONE_STATE_DIR  # runs, skills library, agent lessons: they must survive deploys for self-improvement
         value: /app/state
       - key: ANTHROPIC_API_KEY

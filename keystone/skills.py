@@ -24,9 +24,13 @@ def index():
 
 
 def save(name, code, description=""):
+    """Add a verified skill. An existing skill is never replaced by different code (agents run skills by name, so a
+    silent overwrite would change what every later run executes); returns None in that case."""
     name = re.sub(r"[^a-z0-9_]", "_", name.lower())[:60]
     with _lock:
         idx = index()
+        if name in idx and (DIR / f"{name}.py").exists() and (DIR / f"{name}.py").read_text() != code:
+            return None
         _write(DIR / f"{name}.py", code)
         entry = idx.get(name, {"uses": 0, "created": time.strftime("%Y-%m-%d %H:%M")})
         entry.update({"description": description, "updated": time.strftime("%Y-%m-%d %H:%M"), "lines": code.count("\n") + 1})
