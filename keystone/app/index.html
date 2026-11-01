@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystone · Keys to 100</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3ef; --surface-1: #fcfcfb; --border: #e2e0d8;
+  --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7a7974;
+  --series-1: #2a78d6; --seq-low: #9ec5f4; --seq-high: #184f95;
+  --good: #1a7f37; --serious: #c4321f; --accent-bg: #eaf2fc;
+  --grid: #ecebe6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface-0: #111110; --surface-1: #1a1a19; --border: #2e2d2a;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --series-1: #3987e5; --seq-low: #1c5cab; --seq-high: #9ec5f4;
+    --good: #4cc26a; --serious: #ff6b57; --accent-bg: #16253a; --grid: #262523;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #111110; --surface-1: #1a1a19; --border: #2e2d2a;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --series-1: #3987e5; --seq-low: #1c5cab; --seq-high: #9ec5f4;
+  --good: #4cc26a; --serious: #ff6b57; --accent-bg: #16253a; --grid: #262523;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { padding: 28px 24px 8px; max-width: 1280px; margin: 0 auto; }
+header h1 { margin: 0; font-size: 26px; letter-spacing: -0.01em; }
+header p { margin: 4px 0 0; color: var(--text-secondary); max-width: 860px; }
+nav { position: sticky; top: 0; z-index: 1000; background: var(--surface-0); border-bottom: 1px solid var(--border); }
+nav div { max-width: 1280px; margin: 0 auto; padding: 0 16px; display: flex; gap: 4px; overflow-x: auto; }
+nav button { background: none; border: 0; padding: 12px 12px; color: var(--text-secondary); font: inherit; cursor: pointer;
+  border-bottom: 2px solid transparent; white-space: nowrap; }
+nav button.on { color: var(--text-primary); border-bottom-color: var(--series-1); font-weight: 600; }
+main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+section { display: none; } section.on { display: block; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.card h2 { margin: 0 0 4px; font-size: 17px; } .card h3 { margin: 0 0 8px; font-size: 15px; }
+.sub { color: var(--text-secondary); font-size: 13px; margin: 0 0 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+.tile .v { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tile .l { color: var(--text-secondary); font-size: 13px; }
+.tile .s { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+.grid2 > * { min-width: 0; }
+.report { overflow-x: auto; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+#map { height: 520px; border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--text-secondary); font-weight: 600; }
+td.n, th.n { text-align: right; }
+.scroll { max-height: 520px; overflow: auto; }
+label { display: block; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+input, select { width: 100%; padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-0);
+  color: var(--text-primary); font: inherit; margin-top: 2px; }
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 4px 12px; }
+.btn { background: var(--series-1); color: #fff; border: 0; border-radius: 6px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--series-1); border: 1px solid var(--series-1); }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); color: var(--text-secondary); }
+.pill.good { color: var(--good); border-color: var(--good); } .pill.bad { color: var(--serious); border-color: var(--serious); }
+.tree { font-size: 13px; }
+.node { border-left: 2px solid var(--border); margin: 4px 0 4px 10px; padding-left: 10px; }
+.node > .hd { font-weight: 600; cursor: pointer; }
+.node .tool { color: var(--text-secondary); font-family: ui-monospace, Menlo, monospace; font-size: 12px; margin: 2px 0; }
+.node .task { color: var(--text-muted); font-size: 12px; white-space: pre-wrap; max-height: 60px; overflow: hidden; }
+.report { font-size: 14px; } .report table { margin: 8px 0; } .report h1 { font-size: 20px; } .report h2 { font-size: 16px; margin-top: 18px; }
+.report pre { background: var(--surface-0); padding: 8px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+svg text { fill: var(--text-secondary); font-size: 11px; }
+.tip { position: fixed; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 8px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.12); display: none; z-index: 2000; }
+.arch { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.arch .card { margin: 0; } .arch ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-secondary); }
+code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.muted { color: var(--text-muted); }
+a { color: var(--series-1); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Keystone <a href="/demo" class="btn" style="font-size:13px;vertical-align:middle;margin-left:10px;text-decoration:none">▶ Mission control demo</a></h1>
+  <p>An agentic operating system for Habitat for Humanity Orange County's <b>Keys to 100</b>. It finds land with a CNN, keeps families housed with a Monte Carlo mortgage designer, sizes the capital gap on real HMDA data, and improves itself through gated champion/challenger loops. UCI Merage Center for Real Estate × Habitat OC Impact Lab.</p>
+</header>
+<nav><div id="tabs"></div></nav>
+<main>
+  <section id="overview"></section>
+  <section id="land">
+    <div class="grid2">
+      <div class="card"><h2>SB 4 faith-land sites</h2><p class="sub">Each dot is an OSM place of worship joined to its OC Public Works parcel and scored by the parking-lot U-Net on NAIP 2022 imagery. Dot size and shade show estimated townhome yield.</p><div id="map"></div></div>
+      <div class="card"><h2>Top viable sites</h2><p class="sub">Developable = 50% of detected parking + 50% of lawn · 16 du/ac for-sale townhomes (assumption) · SB 4 allows 30–40 du/ac in OC</p><div class="scroll"><table id="siteTable"></table></div></div>
+    </div>
+  </section>
+  <section id="families">
+    <div class="card"><h2>Family sustainability designer</h2>
+      <p class="sub">Two-layer simulate-and-optimize (Ardon et al. 2024). The inner layer is a 10-year monthly Monte Carlo with job loss, insurance shocks, repairs and stewardship. The outer layer searches 108 mortgage designs for the cheapest one that keeps P(sustained ownership) at or above the target.</p>
+      <div class="form" id="famForm"></div>
+      <button class="btn" id="famGo" style="margin-top:8px">Design mortgage</button> <span id="famStatus" class="muted"></span>
+    </div>
+    <div id="famOut"></div>
+  </section>
+  <section id="agents">
+    <div class="card"><h2>Agent hierarchy</h2><p class="sub">Director (Claude Opus 5.5) → division leads (Opus 5.5) → workers (Sonnet 5.5). Every tool call goes over MCP to the Keystone server; analysis code runs in the OS sandbox. Without API credentials the same hierarchy runs a deterministic scripted policy.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
+        <label style="min-width:280px">Mission<select id="missionSel"></select></label>
+        <label style="min-width:160px">Policy<select id="policySel"><option value="auto">auto</option><option value="claude">claude</option><option value="scripted">scripted (offline)</option></select></label>
+        <button class="btn" id="launch" style="margin-bottom:8px">Launch mission</button>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Runs</h3><div class="scroll" style="max-height:200px"><table id="runTable"></table></div><h3 style="margin-top:12px">Trace</h3><div id="trace" class="tree scroll"></div></div>
+      <div class="card"><h3>Brief</h3><div id="grade"></div><div id="report" class="report scroll" style="max-height:900px"></div></div>
+    </div>
+  </section>
+  <section id="improve">
+    <div class="card"><h2>Self-improvement</h2><p class="sub">Agents may <i>recommend</i>. Deterministic gates decide. A challenger, whether a CNN, a credit model or an agent playbook, is promoted only if it beats the champion on the same frozen evaluation and passes its guardrails (fairness gap for credit models).</p><div id="impChart"></div></div>
+    <div class="card"><h3>Model &amp; playbook registry</h3><div class="scroll"><table id="regTable"></table></div></div>
+  </section>
+  <section id="arch"></section>
+</main>
+<div class="tip" id="tip"></div>
+<script>
+const $ = s => document.querySelector(s);
+const fmt = (n, d = 0) => n == null ? "—" : Number(n).toLocaleString("en-US", {maximumFractionDigits: d, minimumFractionDigits: d});
+const usd = n => "$" + fmt(n);
+const pct = (n, d = 0) => (n * 100).toFixed(d) + "%";
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const tip = $("#tip");
+function showTip(e, html) { tip.innerHTML = html; tip.style.display = "block"; tip.style.left = (e.clientX + 12) + "px"; tip.style.top = (e.clientY + 12) + "px"; }
+function hideTip() { tip.style.display = "none"; }
+const api = (p, o) => fetch(p, o).then(r => r.json());
+
+const TABS = [["overview", "Overview"], ["land", "Land · CNN"], ["families", "Families · sustainability"], ["agents", "Agents · MCP"], ["improve", "Self-improvement"], ["arch", "Architecture"]];
+$("#tabs").innerHTML = TABS.map(([id, t]) => `<button data-t="${id}">${t}</button>`).join("");
+function show(id) {
+  document.querySelectorAll("section").forEach(s => s.classList.toggle("on", s.id === id));
+  document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.t === id));
+  try { localStorage.setItem("ks_tab", id); } catch (e) {}
+  if (id === "land") initMap();
+}
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => show(b.dataset.t));
+
+// ---------------------------------------------------------------- overview
+let SUM;
+async function overview() {
+  SUM = await api("/api/summary");
+  const g24 = SUM.market_gap.find(g => g.year === 2024);
+  const cnn = SUM.champions.parking_cnn, mg = SUM.champions.market_gap;
+  const imp = SUM.improve;
+  $("#overview").innerHTML = `
+  <div class="tiles">
+    <div class="tile"><div class="l">Viable SB 4 faith sites</div><div class="v">${fmt(SUM.viable_sites)}</div><div class="s">of ${SUM.parcels_scored} parcels scored by the CNN</div></div>
+    <div class="tile"><div class="l">Townhome capacity found</div><div class="v">${fmt(SUM.townhome_units)}</div><div class="s">${(SUM.townhome_units / 100).toFixed(0)}× the Keys to 100 goal</div></div>
+    <div class="tile"><div class="l">Low-income purchase denials, 2024</div><div class="v">${pct(g24.low_income_denial_rate)}</div><div class="s">${fmt(g24.low_income_denied)} OC families ≤80% AMI · HMDA</div></div>
+    <div class="tile"><div class="l">Parking CNN (holdout IoU)</div><div class="v">${cnn.metrics.iou.toFixed(2)}</div><div class="s">U-Net · NAIP RGB+NIR · v${cnn.version}</div></div>
+    <div class="tile"><div class="l">Market-gap model (AUC)</div><div class="v">${mg.metrics.auc.toFixed(3)}</div><div class="s">fairness gap ${mg.metrics.fairness_gap} · ${mg.data_version}</div></div>
+    <div class="tile"><div class="l">Agent eval score</div><div class="v">${imp.length ? imp[imp.length - 1].challenger.toFixed(2) : "—"}</div><div class="s">${imp.length ? `from ${imp[0].baseline.toFixed(2)} over ${imp.length} generation(s)` : "run the improve loop"}</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Why families lose homes, and what Keystone does about it</h2>
+      <table><tr><th>Evidence</th><th>Design response in Keystone</th></tr>
+      <tr><td>Liquidity, not equity, drives default (<a href="https://doi.org/10.1257/aer.20181243" target="_blank">Ganong &amp; Noel 2020</a>). Halving the payment cuts delinquency ~55% (<a href="https://doi.org/10.1257/pol.20150007" target="_blank">Fuster &amp; Willen 2017</a>)</td><td>The optimizer searches payment structure: rate, term, cap, income-indexed payments, reserve funds</td></tr>
+      <tr><td>Stewarded CLT loans: 1.3% vs 8.6% serious delinquency (<a href="https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/" target="_blank">Thaden 2011</a>)</td><td>Simulator models a steward that detects 90+ DPD early and cures 82% of cases</td></tr>
+      <tr><td>Insurance shocks push constrained owners into delinquency (<a href="https://doi.org/10.24149/wp2505r1" target="_blank">Ge et al., Dallas Fed</a>)</td><td>Insurance premium shocks are part of every stress test</td></tr>
+      <tr><td>ML can widen racial gaps (<a href="https://doi.org/10.1111/jofi.13090" target="_blank">Fuster et al. 2022</a>)</td><td>Protected attributes are excluded from features, and a fairness gap guardrail blocks promotion</td></tr>
+      <tr><td>Orange County has 1,907 developable faith-owned acres (<a href="https://github.com/Terner-Center/SB4-Analysis" target="_blank">Terner 2023</a>)</td><td>The CNN finds and measures surplus parking on each parcel</td></tr></table>
+    </div>
+    <div class="card"><h2>Low-income denial reasons, ${g24.year}</h2><p class="sub">OC home-purchase applicants ≤80% AMI who were denied (HMDA, n=${g24.low_income_denied})</p><div id="denialChart"></div>
+      <p class="sub" style="margin-top:12px">Low-income households filed ${pct(g24.low_income_share_of_applications, 1)} of OC purchase applications. HCD 2026 OC AMI (4-person) is ${usd(SUM.income_limits.ami_4p)}.</p></div>
+  </div>`;
+  hbar("#denialChart", Object.entries(g24.low_income_denial_reasons).map(([k, v]) => ({label: k, value: v})), v => fmt(v) + " denials");
+}
+
+function hbar(sel, data, tipFmt) {
+  const W = 460, rowH = 26, L = 170, H = data.length * rowH + 8, max = Math.max(...data.map(d => d.value));
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  data.forEach((d, i) => {
+    const w = (W - L - 50) * d.value / max, y = i * rowH + 4;
+    s += `<text x="${L - 8}" y="${y + 15}" text-anchor="end">${d.label}</text>
+      <rect x="${L}" y="${y + 3}" width="${Math.max(w, 2)}" height="${rowH - 8}" rx="4" fill="${css("--series-1")}" data-t="${d.label}: ${tipFmt(d.value)}"></rect>
+      <text x="${L + w + 6}" y="${y + 15}">${fmt(d.value)}</text>`;
+  });
+  $(sel).innerHTML = s + "</svg>";
+  $(sel).querySelectorAll("rect").forEach(r => { r.onmousemove = e => showTip(e, r.dataset.t); r.onmouseleave = hideTip; });
+}
+
+// ---------------------------------------------------------------- land
+let MAP;
+async function initMap() {
+  if (MAP) { setTimeout(() => MAP.invalidateSize(), 50); return; }
+  const sites = await api("/api/sites");
+  MAP = L.map("map").setView([33.72, -117.83], 10);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {attribution: "© OpenStreetMap contributors", maxZoom: 19}).addTo(MAP);
+  const maxU = Math.max(...sites.map(s => s.units_townhome));
+  sites.forEach(s => {
+    const t = s.units_townhome / maxU;
+    L.circleMarker([s.lat, s.lon], {radius: 3 + 12 * Math.sqrt(t), weight: 1, color: s.viable ? css("--seq-high") : css("--text-muted"),
+      fillColor: s.viable ? css("--series-1") : css("--text-muted"), fillOpacity: s.viable ? 0.35 + 0.5 * t : 0.25})
+      .bindPopup(`<b>${s.name}</b><br>${s.address || ""}, ${s.city || ""}<br>APN ${s.apn}<br>Parcel ${fmt(s.parcel_sqm / 4046.86, 2)} ac · CNN parking ${fmt(s.parking_sqm)} m²<br>Developable ${s.developable_acres} ac → <b>${s.units_townhome} townhomes</b> (SB 4 cap ${s.units_sb4_cap})`)
+      .addTo(MAP);
+  });
+  const v = sites.filter(s => s.viable).slice(0, 60);
+  $("#siteTable").innerHTML = `<tr><th>Site</th><th>City</th><th class="n">Parking m²</th><th class="n">Dev. ac</th><th class="n">Units</th></tr>` +
+    v.map(s => `<tr data-lat="${s.lat}" data-lon="${s.lon}" style="cursor:pointer"><td>${s.name}<div class="muted">APN ${s.apn}</div></td><td>${s.city || ""}</td><td class="n">${fmt(s.parking_sqm)}</td><td class="n">${s.developable_acres}</td><td class="n">${s.units_townhome}</td></tr>`).join("");
+  $("#siteTable").querySelectorAll("tr[data-lat]").forEach(r => r.onclick = () => MAP.setView([+r.dataset.lat, +r.dataset.lon], 17));
+}
+
+// ---------------------------------------------------------------- families
+const FIELDS = [["income", "Household income ($/yr)", 92000], ["household_size", "Household size", 4], ["savings", "Liquid savings ($)", 4000],
+  ["monthly_debts", "Other debts ($/mo)", 350], ["income_volatility", "Job-loss risk multiplier", 1.2], ["home_value", "Appraised home value ($)", 750000], ["min_sustain", "Target P(sustained 10y)", 0.95]];
+$("#famForm").innerHTML = FIELDS.map(([k, l, v]) => `<label>${l}<input id="f_${k}" type="number" step="any" value="${v}"></label>`).join("");
+$("#famGo").onclick = async () => {
+  $("#famStatus").textContent = "simulating 108 designs × 1,500 paths…";
+  const body = Object.fromEntries(FIELDS.map(([k]) => [k, +$("#f_" + k).value]));
+  const r = await api("/api/optimize", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  $("#famStatus").textContent = "";
+  const b = r.best, base = r.market_rate_baseline, uw = b.underwriting;
+  $("#famOut").innerHTML = `
+  <div class="tiles">
+    <div class="tile"><div class="l">Income band (HCD 2026)</div><div class="v">${r.limits.pct_ami}%</div><div class="s">of AMI · ${r.limits.category.replace("_", " ")} · ${r.limits.habitat_oc_eligible_band ? "in Habitat OC band" : "outside Habitat OC band"}</div></div>
+    <div class="tile"><div class="l">P(conventional denial)</div><div class="v">${pct(r.market.p_denied)}</div><div class="s">HMDA model · DTI ${r.market.implied_dti}% at market rate</div></div>
+    <div class="tile"><div class="l">P(keeps home 10 yrs)</div><div class="v" style="color:var(--good)">${pct(b.p_sustained_10y, 1)}</div><div class="s">vs ${pct(base.p_sustained_10y, 1)} with a market-rate first, no steward</div></div>
+    <div class="tile"><div class="l">Monthly housing cost</div><div class="v">${usd(uw.piti_hoa)}</div><div class="s">${pct(uw.front_end_ratio)} of gross income</div></div>
+    <div class="tile"><div class="l">Subsidy (PV)</div><div class="v">${usd(b.subsidy_cost)}</div><div class="s">silent second ${usd(uw.silent_second)}</div></div>
+    <div class="tile"><div class="l">Owner equity at year 10</div><div class="v">${usd(b.median_owner_equity_10y)}</div><div class="s">median, with a 25% appreciation share (assumption)</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Cost vs sustainability frontier</h3><p class="sub">Each dot is one Pareto-efficient design. ${r.meets_target ? "The highlighted dot is the cheapest design that meets the target." : "No design meets the target; the most sustainable one is shown."}</p><div id="frontier"></div></div>
+    <div class="card"><h3>Recommended design</h3><p><b>${b.design}</b></p>
+      <table><tr><td>First mortgage</td><td class="n">${usd(uw.first_mortgage)}</td></tr><tr><td>Silent second (deferred)</td><td class="n">${usd(uw.silent_second)}</td></tr>
+      <tr><td>Down payment</td><td class="n">${usd(uw.down_payment)}</td></tr><tr><td>Property-tax base (restricted value)</td><td class="n">${usd(uw.tax_base)}</td></tr>
+      <tr><td>P(ever 90+ days late)</td><td class="n">${pct(b.p_ever_90dpd, 1)}</td></tr><tr><td>Median lowest cash buffer</td><td class="n">${usd(b.median_buffer_low)}</td></tr></table>
+      <p class="sub" style="margin-top:8px">Hazard inputs are labelled assumptions; there is no public Habitat loan-performance data. Agents stress-test them in the sandbox.</p></div>
+  </div>`;
+  frontier("#frontier", r.pareto_frontier, b.design);
+};
+
+function frontier(sel, pts, best) {
+  const W = 520, H = 260, P = {l: 56, r: 12, t: 10, b: 34};
+  const xs = pts.map(p => p.subsidy_cost), ys = pts.map(p => p.p_sustained_10y);
+  const x0 = Math.min(...xs) * 0.95, x1 = Math.max(...xs) * 1.05, y0 = Math.min(...ys) - 0.01, y1 = 1;
+  const X = v => P.l + (v - x0) / (x1 - x0) * (W - P.l - P.r), Y = v => H - P.b - (v - y0) / (y1 - y0) * (H - P.t - P.b);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  for (let i = 0; i <= 4; i++) { const v = y0 + (y1 - y0) * i / 4; s += `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css("--grid")}"/><text x="${P.l - 6}" y="${Y(v) + 4}" text-anchor="end">${pct(v, 1)}</text>`; }
+  for (let i = 0; i <= 3; i++) { const v = x0 + (x1 - x0) * i / 3; s += `<text x="${X(v)}" y="${H - 14}" text-anchor="middle">${usd(v / 1000)}k</text>`; }
+  s += `<text x="${(W + P.l) / 2}" y="${H - 1}" text-anchor="middle">subsidy PV per home</text>`;
+  s += `<polyline fill="none" stroke="${css("--series-1")}" stroke-width="2" points="${pts.map(p => X(p.subsidy_cost) + "," + Y(p.p_sustained_10y)).join(" ")}"/>`;
+  pts.forEach(p => { const on = p.design === best;
+    s += `<circle cx="${X(p.subsidy_cost)}" cy="${Y(p.p_sustained_10y)}" r="${on ? 7 : 5}" fill="${on ? css("--series-1") : css("--surface-1")}" stroke="${css("--series-1")}" stroke-width="2" data-t="<b>${p.design}</b><br>${usd(p.subsidy_cost)} · ${pct(p.p_sustained_10y, 1)} sustained"/>`; });
+  $(sel).innerHTML = s + "</svg>";
+  $(sel).querySelectorAll("circle").forEach(c => { c.onmousemove = e => showTip(e, c.dataset.t); c.onmouseleave = hideTip; });
+}
+
+// ---------------------------------------------------------------- agents
+let CUR;
+async function agents() {
+  const ms = await api("/api/missions");
+  $("#missionSel").innerHTML = ms.map((m, i) => `<option value="${i}">${m.name}</option>`).join("");
+  await loadRuns(true);
+}
+$("#launch").onclick = async () => {
+  const r = await api("/api/mission", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({mission: +$("#missionSel").value, policy: $("#policySel").value})});
+  CUR = r.run_id; setTimeout(() => loadRuns(), 800);
+};
+async function loadRuns(pickFirst) {
+  const runs = await api("/api/runs");
+  if (pickFirst && !CUR && runs.length) CUR = runs[0].id;
+  $("#runTable").innerHTML = `<tr><th>Run</th><th>Policy</th><th class="n">Score</th></tr>` + runs.map(r =>
+    `<tr data-id="${r.id}" style="cursor:pointer;${r.id === CUR ? "background:var(--accent-bg)" : ""}"><td>${r.id}</td><td>${r.policy || ""}</td><td class="n">${r.running || !r.done ? "running…" : r.score?.toFixed(2) ?? "—"}</td></tr>`).join("");
+  $("#runTable").querySelectorAll("tr[data-id]").forEach(t => t.onclick = () => { CUR = t.dataset.id; loadRuns(); });
+  if (CUR) await loadRun(CUR);
+  if (runs.some(r => r.running || !r.done)) setTimeout(() => loadRuns(), 2000);
+}
+async function loadRun(id) {
+  const r = await api("/api/runs/" + id);
+  const nodes = {}, roots = [];
+  r.events.forEach(e => {
+    if (e.type === "agent_start") { nodes[e.node] = {...e, kids: [], tools: [], out: null}; (e.parent ? nodes[e.parent]?.kids : roots)?.push(nodes[e.node]); }
+    if (e.type === "agent_end" && nodes[e.node]) nodes[e.node].done = true;
+  });
+  r.events.filter(e => e.type === "tool").forEach(e => nodes[e.node]?.tools.push(e));
+  const render = n => `<div class="node"><div class="hd">${n.agent} <span class="pill">${n.model.replace("claude-", "")}</span> <span class="pill">playbook ${n.playbook_version}</span> ${n.done ? "" : '<span class="pill">running</span>'}</div>
+    <div class="task">${escapeHtml(n.task).slice(0, 300)}</div>
+    ${n.tools.map(t => `<div class="tool" title="${escapeHtml(t.summary || "")}">↳ mcp:${t.tool}(${escapeHtml(JSON.stringify(t.args)).slice(0, 90)}) · ${t.secs}s${t.error ? " · error" : ""}</div>`).join("")}
+    ${n.kids.map(render).join("")}</div>`;
+  $("#trace").innerHTML = roots.map(render).join("") || "<span class='muted'>waiting…</span>";
+  const g = r.grade;
+  $("#grade").innerHTML = g ? `<p>Grade <b>${g.score.toFixed(2)}</b> ` + Object.entries(g.checks).map(([k, v]) => `<span class="pill ${v ? "good" : "bad"}">${v ? "✓" : "✗"} ${k.replaceAll("_", " ")}</span>`).join(" ") + "</p>" : "";
+  $("#report").innerHTML = r.report ? marked.parse(r.report) : "<span class='muted'>The brief appears when the Director finishes.</span>";
+}
+const escapeHtml = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+// ---------------------------------------------------------------- improve
+async function improve() {
+  const reg = await api("/api/registry");
+  const rows = [];
+  Object.entries(reg).forEach(([name, es]) => es.forEach(e => rows.push({name, ...e})));
+  $("#regTable").innerHTML = `<tr><th>Artifact</th><th>Version</th><th>Metrics</th><th>Status</th><th>Gate reasoning</th></tr>` + rows.map(e =>
+    `<tr><td>${e.name}</td><td>${e.version}</td><td>${Object.entries(e.metrics).filter(([k, v]) => typeof v !== "object").map(([k, v]) => `${k} ${v}`).join("<br>")}</td>
+     <td><span class="pill ${e.status === "champion" ? "good" : e.status === "rejected" ? "bad" : ""}">${e.status}</span></td><td class="muted">${(e.decision_reasons || []).join("<br>")}</td></tr>`).join("");
+  const imp = SUM?.improve || [];
+  if (!imp.length) { $("#impChart").innerHTML = "<p class='muted'>Run <code>python -m keystone.agents.improve</code> to populate.</p>"; return; }
+  const pts = [{g: "baseline", v: imp[0].baseline}, ...imp.map((x, i) => ({g: "gen " + (i + 1), v: x.challenger, x}))];
+  const W = 620, H = 230, P = {l: 44, r: 24, t: 26, b: 28};
+  const X = i => P.l + i * (W - P.l - P.r) / Math.max(pts.length - 1, 1), Y = v => H - P.b - (v - 0.5) / 0.5 * (H - P.t - P.b);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:720px">`;
+  [0.5, 0.75, 1].forEach(v => s += `<line x1="${P.l}" x2="${W - P.r}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css("--grid")}"/><text x="${P.l - 6}" y="${Y(v) + 4}" text-anchor="end">${v.toFixed(2)}</text>`);
+  s += `<polyline fill="none" stroke="${css("--series-1")}" stroke-width="2" points="${pts.map((p, i) => X(i) + "," + Y(p.v)).join(" ")}"/>`;
+  pts.forEach((p, i) => { s += `<circle cx="${X(i)}" cy="${Y(p.v)}" r="5" fill="${css("--series-1")}" data-t="<b>${p.g}</b>: mean eval score ${p.v.toFixed(3)}${p.x ? "<br>agents changed: " + p.x.implicated.join(", ") + "<br>" + Object.entries(p.x.decisions).map(([a, d]) => a + " → " + d).join("<br>") : ""}"/><text x="${X(i)}" y="${H - 8}" text-anchor="middle">${p.g}</text><text x="${X(i)}" y="${Y(p.v) - 10}" text-anchor="middle">${p.v.toFixed(2)}</text>`; });
+  $("#impChart").innerHTML = `<h3>Agent hierarchy: mean grader score across ${3} eval missions</h3>` + s + "</svg>";
+  $("#impChart").querySelectorAll("circle").forEach(c => { c.onmousemove = e => showTip(e, c.dataset.t); c.onmouseleave = hideTip; });
+}
+
+// ---------------------------------------------------------------- architecture
+$("#arch").innerHTML = `<div class="card"><h2>How the pieces fit</h2><p class="sub">Patterns adopted from the agent literature. Each one is cited in the research brief.</p>
+<div class="arch">
+ <div class="card"><h3>Agent hierarchy</h3><ul><li>Director → Land / Family / Capital leads → Site analysts &amp; Underwriters</li><li>Parallel <code>delegate</code> fan-out and a progress ledger (Magentic-One; Anthropic multi-agent research)</li><li>Least-privilege tool sets per agent; depth ≤ 3</li></ul></div>
+ <div class="card"><h3>MCP</h3><ul><li>13 namespaced tools and 2 resources on one Keystone MCP server (stdio or Streamable HTTP)</li><li>Read-only annotations; tool output is treated as data, never instructions</li><li>The same server plugs into Claude Desktop, Claude Code, or the API MCP connector</li></ul></div>
+ <div class="card"><h3>Sandbox</h3><ul><li>Agent-written Python runs under the macOS seatbelt (bubblewrap on Linux): no network, writes only to temp, secrets scrubbed</li><li>AST screen plus OS boundary; every run audit-logged</li><li>Red-team tested: an obfuscated socket import is blocked at the OS layer</li></ul></div>
+ <div class="card"><h3>CNN</h3><ul><li>Compact U-Net on 4-band NAIP + NDVI (Qiam et al. 2024 show NIR helps)</li><li>Weakly supervised by 7,753 OSM parking polygons; 680 chips</li><li>Applied to 305 faith parcels to measure surplus parking</li></ul></div>
+ <div class="card"><h3>Self-improving models</h3><ul><li>Temporal champion/challenger on HMDA 2022→2023→2024</li><li>CNN challengers retrained and gated on a frozen holdout</li><li>Promotion is decided by code, with a fairness guardrail (Lim et al. 2026)</li></ul></div>
+ <div class="card"><h3>Self-improving agents</h3><ul><li>Code graders on final state (τ-bench style); failures become Reflexion lessons</li><li>Playbooks are rewritten from lessons (DSPy / Promptbreeder) and promoted only through the gate</li><li>Voyager-style skill library of verified sandbox code</li></ul></div>
+</div></div>`;
+
+(async () => {
+  await overview(); agents(); improve();
+  let t = "overview"; try { t = localStorage.getItem("ks_tab") || t; } catch (e) {}
+  show(TABS.some(x => x[0] === t) ? t : "overview");
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "id": "orange_county_ca",
+  "name": "Orange County, California",
+  "affiliate": "Habitat for Humanity of Orange County",
+  "state_fips": "06",
+  "county_fips": "06059",
+  "bbox": [-118.13, 33.38, -117.41, 33.95],
+  "hmda_years": [2022, 2023, 2024],
+  "parcel_service": {
+    "url": "https://ocgis.com/arcpub/rest/services/LegalLotsAttributeOpenData/FeatureServer/0",
+    "area_field": "Shape__Area", "area_to_sqm": 0.092903,
+    "fields": {"apn": "AssessmentNo", "address": "SiteAddress", "city": "SiteCityState", "zip": "SiteZip5",
+               "assessed": "AssdAmt", "land_value": "LandVal", "improved_value": "ImprovedVal",
+               "general_plan": "GPLU_DESC", "zoning": "ZC_DESCR", "zclass": "ZCLASS"}
+  },
+  "ami_4p": 138600,
+  "income_limits_4p": {"extremely_low": 39400, "very_low": 93050, "low": 148850, "moderate": 166300},
+  "income_limits_source": "https://www.hcd.ca.gov/sites/default/files/docs/grants-and-funding/income-limits-2026.pdf",
+  "median_home_price": 1480000,
+  "market_30y_rate": 0.0686,
+  "price_source": "https://www.car.org/aboutus/mediacenter/newsreleases/2026releases/sept2026sales",
+  "faith_land_law": {
+    "name": "SB 4 (Gov. Code 65913.16)", "by_right": true,
+    "density_residential_zone": 30, "density_nonresidential_zone": 40, "ownership_deed_years": 45,
+    "url": "https://www.hcd.ca.gov/sites/default/files/docs/planning-and-community/aff-hsg-faith-higher-ed-sb-4.pdf"
+  },
+  "benchmark": {"developable_faith_acres": 1907, "faith_parcels": 707, "median_parcel_acres": 1.6,
+                "source": "https://github.com/Terner-Center/SB4-Analysis"},
+  "property_tax_rate": 0.011
+}

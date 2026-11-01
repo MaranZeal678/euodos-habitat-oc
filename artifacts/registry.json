@@ -1,0 +1,322 @@
+{
+  "parking_cnn": [
+    {
+      "version": "20261031_153932",
+      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/parking_unet_20261031_153932.pt",
+      "metrics": {
+        "iou": 0.5437,
+        "pixel_acc": 0.8493
+      },
+      "params": {
+        "epochs": 30,
+        "width": 24,
+        "lr": 0.002,
+        "seed": 0,
+        "n_train": 544,
+        "n_holdout": 136
+      },
+      "primary": "iou",
+      "data_version": null,
+      "created": "2026-10-31T22:39:32+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    },
+    {
+      "version": "20261031_155915",
+      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/parking_unet_20261031_155914.pt",
+      "metrics": {
+        "iou": 0.5463,
+        "pixel_acc": 0.8419
+      },
+      "params": {
+        "epochs": 40,
+        "width": 32,
+        "lr": 0.002,
+        "seed": 1,
+        "n_train": 544,
+        "n_holdout": 136
+      },
+      "primary": "iou",
+      "data_version": null,
+      "created": "2026-10-31T22:59:15+00:00",
+      "status": "rejected",
+      "decision_reasons": [
+        "iou: challenger 0.5463 vs champion 0.5437 (gain +0.0026, need > 0.0)",
+        "re-gated with min_gain 0.01 (gain +0.0026 is within holdout noise on 136 chips) -> rejected"
+      ]
+    }
+  ],
+  "market_gap": [
+    {
+      "version": "20261031_154232",
+      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2022.pkl",
+      "metrics": {
+        "auc": 0.7606,
+        "brier": 0.069,
+        "fairness_gap": 0.0192,
+        "fairness_by_group": {
+          "Asian": 0.0087,
+          "Joint": 0.0192,
+          "White": 0.0057
+        },
+        "n_test": 15489
+      },
+      "params": {
+        "max_iter": 300,
+        "learning_rate": 0.05,
+        "max_leaf_nodes": 31,
+        "l2_regularization": 1.0,
+        "train_years": [
+          2022
+        ],
+        "test_year": 2023
+      },
+      "primary": "auc",
+      "data_version": "HMDA OC [2022]->2023",
+      "created": "2026-10-31T22:42:32+00:00",
+      "status": "retired",
+      "decision_reasons": [
+        "no champion yet"
+      ],
+      "rescored_on": 2024
+    },
+    {
+      "version": "20261031_154234",
+      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2022_2023.pkl",
+      "metrics": {
+        "auc": 0.7787,
+        "brier": 0.0671,
+        "fairness_gap": 0.014,
+        "fairness_by_group": {
+          "Asian": 0.0044,
+          "Joint": 0.014,
+          "White": 0.0026
+        },
+        "n_test": 15489
+      },
+      "params": {
+        "max_iter": 300,
+        "learning_rate": 0.05,
+        "max_leaf_nodes": 31,
+        "l2_regularization": 1.0,
+        "train_years": [
+          2022,
+          2023
+        ],
+        "test_year": 2024
+      },
+      "primary": "auc",
+      "data_version": "HMDA OC [2022, 2023]->2024",
+      "created": "2026-10-31T22:42:34+00:00",
+      "status": "retired",
+      "decision_reasons": [
+        "auc: challenger 0.7787 vs champion 0.7606 (gain +0.0181, need > 0.002)",
+        "guardrail fairness_gap: 0.014 vs 0.0192 (+0.005 allowed) -> ok"
+      ],
+      "rescored_on": 2024
+    },
+    {
+      "version": "20261031_154236",
+      "path": "/Users/maran/Desktop/AnthropicHousing/artifacts/market_gap_2023.pkl",
+      "metrics": {
+        "auc": 0.7824,
+        "brier": 0.0677,
+        "fairness_gap": 0.0063,
+        "fairness_by_group": {
+          "Asian": 0.0034,
+          "Joint": 0.0063,
+          "White": 0.0014
+        },
+        "n_test": 15489
+      },
+      "params": {
+        "max_iter": 300,
+        "learning_rate": 0.05,
+        "max_leaf_nodes": 15,
+        "l2_regularization": 1.0,
+        "train_years": [
+          2023
+        ],
+        "test_year": 2024
+      },
+      "primary": "auc",
+      "data_version": "HMDA OC [2023]->2024",
+      "created": "2026-10-31T22:42:36+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "auc: challenger 0.7824 vs champion 0.7787 (gain +0.0037, need > 0.002)",
+        "guardrail fairness_gap: 0.0063 vs 0.014 (+0.005 allowed) -> ok"
+      ]
+    }
+  ],
+  "playbook:director": [
+    {
+      "version": "20261031_155432",
+      "path": "Break the mission into land, family and capital workstreams and delegate them in parallel (one delegate call each, in the same turn). Give each lead an objective, the output you need back, and boundaries. Record progress with ledger_update after each round; re-plan if a lead stalls. Then write the final brief: path to the target with named sites, a mortgage design per family with P(sustained 10y), the capital gap, risks, and the next three actions. Cite a URL for every external fact and label model assumptions as assumptions.",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "retired",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    },
+    {
+      "version": "20261031_155733",
+      "path": "Break the mission into land, family and capital workstreams and delegate them in parallel (one delegate call each, in the same turn). Give each lead an objective, the output you need back, and boundaries. Record progress with ledger_update after each round; re-plan if a lead stalls. Then write the final brief: path to the target with named sites, a mortgage design per family with P(sustained 10y), the capital gap, risks, and the next three actions. Cite a URL for every external fact and label model assumptions as assumptions. Rules learned: Report the market-gap model's fairness metrics (calibration gap by race group) from models_registry in the brief.",
+      "metrics": {
+        "eval_score": 1.0
+      },
+      "params": {
+        "lessons": 1,
+        "policy": "scripted"
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:57:33+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "eval_score: challenger 1.0 vs champion 0.667 (gain +0.3330, need > 0.0)"
+      ]
+    }
+  ],
+  "playbook:land_lead": [
+    {
+      "version": "20261031_155432",
+      "path": "Search the CNN-scored inventory, shortlist sites that together reach the unit target, and delegate verification of the top sites to site_analyst workers in parallel. Report a table of sites, units and caveats.",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "retired",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    },
+    {
+      "version": "20261031_155733",
+      "path": "Search the CNN-scored inventory, shortlist sites that together reach the unit target, and delegate verification of the top sites to site_analyst workers in parallel. Report a table of sites, units and caveats. Rules learned: Cap any single site at 30 units and diversify across mid-size sites to limit congregation risk.",
+      "metrics": {
+        "eval_score": 1.0
+      },
+      "params": {
+        "lessons": 1,
+        "policy": "scripted"
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:57:33+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "eval_score: challenger 1.0 vs champion 0.667 (gain +0.3330, need > 0.0)"
+      ]
+    }
+  ],
+  "playbook:capital_lead": [
+    {
+      "version": "20261031_155432",
+      "path": "Run capital_plan for the target. Use market_gap_report to size demand from HMDA. Report the per-home gap, total philanthropy need, and the funding stack with source URLs.",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "retired",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    },
+    {
+      "version": "20261031_155733",
+      "path": "Run capital_plan for the target. Use market_gap_report to size demand from HMDA. Report the per-home gap, total philanthropy need, and the funding stack with source URLs. Rules learned: Always run a sensitivity sweep in the sandbox over hard cost and note discount rate before reporting the gap.",
+      "metrics": {
+        "eval_score": 1.0
+      },
+      "params": {
+        "lessons": 1,
+        "policy": "scripted"
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:57:33+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "eval_score: challenger 1.0 vs champion 0.667 (gain +0.3330, need > 0.0)"
+      ]
+    }
+  ],
+  "playbook:underwriter": [
+    {
+      "version": "20261031_155432",
+      "path": "Run mortgage_optimize, then stress-test the chosen design in the sandbox (job-loss risk x1.5, insurance shock) using keystone.models.sustainability. Check skills_list first and reuse a skill if one fits; if you write a new reusable sweep, save it with save_as_skill.",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    }
+  ],
+  "playbook:family_lead": [
+    {
+      "version": "20261031_155432",
+      "path": "For each family: classify income with income_limits, check market access with family_market_score, then delegate one underwriter per family in parallel to find a sustainable mortgage design. Report a per-family table: AMI band, P(market denial), chosen design, P(sustained 10y), subsidy.",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    }
+  ],
+  "playbook:site_analyst": [
+    {
+      "version": "20261031_155432",
+      "path": "Re-run sites_inspect on the APN with keep_parking_share 0.5 and 0.7 and report units under both, plus anything that could block SB 4 (non-faith owner, campus, odd geometry).",
+      "metrics": {
+        "eval_score": 0.667
+      },
+      "params": {
+        "seed": true
+      },
+      "primary": "eval_score",
+      "data_version": null,
+      "created": "2026-10-31T22:54:32+00:00",
+      "status": "champion",
+      "decision_reasons": [
+        "no champion yet"
+      ]
+    }
+  ]
+}

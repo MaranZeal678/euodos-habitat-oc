@@ -1,0 +1,21 @@
+# environments
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# raw public data: re-download with `python -m keystone.pipeline`
+data/raw/*.csv
+data/raw/osm_*.json
+data/raw/source_docs/
+data/processed/parking_chips.npz
+data/processed/naip_index.json
+
+# large or per-run outputs
+docs/keystone_demo.mp4
+artifacts/runs/
+artifacts/*.log
+artifacts/chip_check.png
+artifacts/siteplan_check.png
+artifacts/parking_unet_20261031_155914.pt
+.DS_Store

@@ -1,0 +1,9 @@
+{
+  "stress_test_design": {
+    "uses": 11,
+    "created": "2026-10-31 16:03",
+    "description": "Stress-test a mortgage design: job-loss x1.5 and insurance shocks",
+    "updated": "2026-10-31 16:03",
+    "lines": 9
+  }
+}

@@ -1,0 +1,309 @@
+<title>Keystone for Keys to 100</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single reading column (about 68ch) with full-width data tables and a parcel-plan "site card" motif */
+:root {
+  --paper: #f5f7f6; --sheet: #ffffff; --ink: #14201c; --ink-2: #44524d; --ink-3: #6f7c77;
+  --rule: #d9e1de; --accent: #0f6b5c; --accent-soft: #e2f0ec; --mark: #a86a00; --mark-soft: #f7ecd8;
+  --good: #1f7a3a; --bad: #b3361f;
+  --display: "Newsreader", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0f1513; --sheet: #161e1b; --ink: #e6ece9; --ink-2: #b7c3be; --ink-3: #8a9792;
+  --rule: #2a3632; --accent: #5cc1aa; --accent-soft: #15302a; --mark: #e0a84a; --mark-soft: #33280f;
+  --good: #5fcf7e; --bad: #ff8a73; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: #0f1513; --sheet: #161e1b; --ink: #e6ece9; --ink-2: #b7c3be; --ink-3: #8a9792;
+  --rule: #2a3632; --accent: #5cc1aa; --accent-soft: #15302a; --mark: #e0a84a; --mark-soft: #33280f;
+  --good: #5fcf7e; --bad: #ff8a73; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font: 16px/1.6 var(--body); margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 48px 80px; display: grid; gap: 56px; }
+.col { max-width: 68ch; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(34px, 6vw, 54px); font-weight: 650; letter-spacing: -0.015em; }
+h2 { font-size: clamp(24px, 3.4vw, 32px); font-weight: 650; }
+h3 { font-size: 20px; font-weight: 500; }
+p { margin: 0; }
+.eyebrow { font: 500 12px/1.4 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.lede { font-size: 19px; color: var(--ink-2); }
+section { display: grid; gap: 18px; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.muted { color: var(--ink-3); }
+.mono { font-family: var(--mono); font-size: 13px; }
+/* hero figure */
+.thesis { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: end; }
+@media (max-width: 760px) { .thesis { grid-template-columns: 1fr; } }
+.bignum { font: 650 clamp(64px, 12vw, 120px)/0.9 var(--display); color: var(--accent); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.bignum-cap { font: 500 14px/1.4 var(--body); color: var(--ink-2); margin-top: 10px; max-width: 34ch; }
+/* parcel plan site card */
+.plan { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 16px; }
+.plan svg { width: 100%; height: auto; display: block; }
+.plan .cap { font: 12px/1.5 var(--mono); color: var(--ink-3); margin-top: 8px; }
+/* numbers strip */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); }
+@media (max-width: 760px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.strip > div { padding: 14px 14px 16px 0; display: grid; gap: 2px; align-content: start; }
+.strip .v { font: 650 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.strip .l { font-size: 13px; color: var(--ink-2); }
+.strip .s { font: 11px/1.4 var(--mono); color: var(--ink-3); }
+/* tables */
+.tbl { overflow-x: auto; background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font: 500 11px/1.4 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); background: var(--paper); }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; white-space: nowrap; }
+td.hl { background: var(--accent-soft); font-weight: 600; }
+/* engines */
+.engines { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--rule); }
+@media (max-width: 760px) { .engines { grid-template-columns: 1fr; } }
+.engines > div { padding: 18px 20px 18px 0; display: grid; gap: 8px; align-content: start; }
+.engines > div + div { border-left: 1px solid var(--rule); padding-left: 20px; }
+@media (max-width: 760px) { .engines > div + div { border-left: 0; border-top: 1px solid var(--rule); padding-left: 0; } }
+.tag { display: inline-block; font: 500 11px/1.6 var(--mono); padding: 0 7px; border-radius: 3px; background: var(--mark-soft); color: var(--mark); margin-right: 4px; }
+.engines ul, .col ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--ink-2); font-size: 15px; }
+/* hierarchy diagram */
+.tree { background: var(--sheet); border: 1px solid var(--rule); border-radius: 4px; padding: 20px; overflow-x: auto; }
+.tree svg { min-width: 680px; width: 100%; height: auto; display: block; }
+.tree text { font-family: var(--body); fill: var(--ink); }
+.callout { border-left: 3px solid var(--mark); background: var(--mark-soft); padding: 14px 16px; border-radius: 0 4px 4px 0; color: var(--ink); }
+.pill { display: inline-block; font: 500 11px/1.6 var(--mono); padding: 0 7px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.bad { color: var(--bad); }
+.bars { display: grid; gap: 6px; font-size: 13px; }
+.bar { display: grid; grid-template-columns: 190px minmax(0, 1fr) 44px; gap: 10px; align-items: center; }
+@media (max-width: 520px) { .bar { grid-template-columns: 120px minmax(0, 1fr) 36px; } }
+.bar .track { height: 14px; }
+.bar .fill { height: 14px; border-radius: 0 4px 4px 0; background: var(--accent); }
+.bar .num { font-family: var(--mono); text-align: right; color: var(--ink-2); }
+.bib { display: grid; gap: 10px; font-size: 14px; color: var(--ink-2); }
+.bib b { color: var(--ink); font-weight: 600; }
+details summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+footer { border-top: 1px solid var(--rule); padding-top: 16px; font-size: 13px; color: var(--ink-3); }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .6s ease; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:28px">
+  <div class="eyebrow">UCI Merage Center for Real Estate × Habitat for Humanity of Orange County · Impact Lab · Oct 2026</div>
+  <div class="thesis">
+    <div style="display:grid;gap:18px">
+      <h1>Keystone for Keys to 100</h1>
+      <p class="lede">An agent-run system that finds buildable faith-owned land with a CNN, designs mortgages families can keep through a decade of shocks, and sizes the capital gap on real lending data. Its models and agents improve only when a deterministic gate confirms they got better.</p>
+    </div>
+    <div>
+      <div class="bignum">2,696</div>
+      <div class="bignum-cap">for-sale townhomes of capacity the parking-lot CNN found on 166 faith-owned Orange County parcels: about 27 times the 100-home goal, even after half of each lot stays parking.</div>
+    </div>
+  </div>
+  <div class="strip">
+    <div><span class="v">$1.48M</span><span class="l">OC median single-family price</span><span class="s">C.A.R., Sept 2026</span></div>
+    <div><span class="v">$138,600</span><span class="l">OC area median income, family of 4</span><span class="s">CA HCD 2026</span></div>
+    <div><span class="v">24%</span><span class="l">of low-income OC buyers denied a mortgage</span><span class="s">HMDA 2024, ≤80% AMI</span></div>
+    <div><span class="v">5.9%</span><span class="l">of OC's very-low-income RHNA target reported as progress</span><span class="s">HCD APR, Oct 2026</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="eyebrow">The product</div>
+  <h2>An operating system for nonprofit homeownership</h2>
+  <p class="col">Keystone finds buildable land, designs mortgages families can keep, and keeps them in their homes. A team of AI agents does the work, and a small affiliate staff supervises it. The first customer is a Habitat affiliate (affiliates operate in all 50 states, DC and Puerto Rico). Next come the 314 land trusts and shared-equity programs in 46 states, and the lenders behind them. The wedge is faith land: California's SB 4 makes it buildable by right, Florida passed its own version in 2025, and bills are pending in about ten more states. Each new state needs a region config file, not new code.</p>
+  <figure class="plan" style="margin:0">
+    <video src="img/keystone_demo_720p.mp4" poster="img/demo_act1_land.png" controls playsinline preload="metadata" style="width:100%;border-radius:3px;display:block;background:#000"></video>
+    <figcaption class="cap">The 2:18 mission-control demo, recorded frame by frame from the running product. Orange County outline and numbers, CNN scans of four OC congregations, 100 OC families over 10 years, and the capital waterfall. The agent rail on the right replays a real graded run.</figcaption>
+  </figure>
+  <figure class="plan" style="margin:0">
+    <img src="img/demo_act1_land.png" alt="Mission control demo: the CNN's parking mask in teal over aerial imagery of Crossline Church, with 30 generated townhomes rising in 3D" style="width:100%;border-radius:3px;display:block">
+    <figcaption class="cap">Demo, Act 1. Real NAIP imagery and the real CNN parking mask (teal) for Crossline Church, Laguna Hills, with the generated 30-townhome site plan rising in 3D. The agent rail replays a graded run's MCP calls.</figcaption>
+  </figure>
+  <figure class="plan" style="margin:0">
+    <img src="img/demo_act2_families.png" alt="Mission control demo: three 100-home grids after 10 years showing 58, 79 and 88 families still home" style="width:100%;border-radius:3px;display:block">
+    <figcaption class="cap">Demo, Act 2. The same 100 families live 10 years under three ways of financing, with identical layoffs, insurance spikes and repairs. Still home at year 10: 58 with market-rate loans, 79 with a standard 0% loan, 88 with Keystone designs plus the Steward agent. Families are synthetic; their incomes are sampled from 2024 HMDA applicants in Habitat OC's band.</figcaption>
+  </figure>
+  <div class="tbl"><table>
+    <tr><th>Module</th><th>What a staff member gets</th><th>AI under the hood</th></tr>
+    <tr><td>Land Radar</td><td>Ranked faith parcels, CNN scan, generated site plan, congregation letter</td><td>U-Net CNN, lattice site planner, Land lead and Site-analyst agents</td></tr>
+    <tr><td>Mortgage Designer</td><td>A term sheet per family that keeps P(still home at year 10) ≥ 95%</td><td>Monte Carlo optimizer; Underwriter agents stress-test in the sandbox</td></tr>
+    <tr><td>HomeKeeper</td><td>Watchlist of homeowners under strain before a missed payment, with a workout and an outreach draft for each</td><td>Steward agent; a human approves every message</td></tr>
+    <tr><td>Capital Planner</td><td>Per-home waterfall, sensitivity range, CalHome and AHP drafts</td><td>HMDA model with a fairness gate; Capital lead agent</td></tr>
+    <tr><td>Agent Console + MCP</td><td>Mission control and graded traces, plus an MCP endpoint for Claude Desktop, Claude Code or any MCP host</td><td>Director → leads → workers; gated self-improvement</td></tr>
+  </table></div>
+  <div class="callout col"><b>Moat.</b> No public data on Habitat loan performance exists. Every affiliate on HomeKeeper adds real delinquency and cure outcomes, which recalibrate the sustainability model through the same champion/challenger gate. More affiliates make the model better, and a better model draws more affiliates. <b>Deploy:</b> one Docker container serves the dashboard, the demo, the API and the MCP server. <code>KEYSTONE_REGION</code> picks the market.</div>
+</section>
+
+<section>
+  <div class="eyebrow">The problem</div>
+  <h2>Families in Orange County fail on monthly cash flow, not on wanting to own</h2>
+  <div class="col" style="display:grid;gap:14px">
+    <p>Habitat OC has built 239 homes since 1988 and set out in November 2024 to build 100 more (<a href="https://prnewswire.com/news-releases/habitat-for-humanity-oc-celebrates-inaugural-keys-to-100-gala-302312178.html">Keys to 100</a>). Three constraints stand in the way: land in a county where the median house costs $1.48 million, capital tied up in 0% mortgages, and the risk that a family who closes can't keep the home. More than half of low-income first-time buyers nationally return to renting within five years (<a href="https://doi.org/10.7936/K71J998S">Reid 2005</a>).</p>
+    <p>Real lending data shows where the market breaks. In 2024, 1,458 Orange County households earning 80% of area median income or less applied for a home-purchase mortgage. A quarter were denied, and debt-to-income was the reason on 59% of those denials.</p>
+  </div>
+  <div class="plan" style="max-width:640px">
+    <div style="font-weight:600;margin-bottom:10px">Why low-income OC applicants were denied, 2024 <span class="muted" style="font-weight:400">· n = 349 denials</span></div>
+    <div class="bars" id="bars"></div>
+    <div class="cap">Source: HMDA loan-level data, Orange County (06059), home purchase, owner-occupied first liens; primary denial reason. Keystone analysis.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">What we built</div>
+  <h2>Three engines, one agent hierarchy</h2>
+  <div class="engines">
+    <div><span><span class="tag">CNN</span><span class="tag">SB 4</span></span><h3>Land</h3>
+      <ul><li>Places of worship from OpenStreetMap joined to Orange County Public Works parcel records</li>
+      <li>A compact U-Net reads 0.6 m NAIP imagery in RGB, near-infrared and NDVI, trained on 680 chips labelled by 7,753 OSM parking polygons</li>
+      <li>Holdout IoU 0.54 and pixel accuracy 0.85 against noisy labels</li></ul></div>
+    <div><span><span class="tag">Monte Carlo</span><span class="tag">optimizer</span></span><h3>Families</h3>
+      <ul><li>A 10-year monthly simulation of job loss, insurance-premium shocks, repairs and a Habitat steward</li>
+      <li>Searches 108 mortgage designs (rate, term, payment cap, reserve, income-indexed payments)</li>
+      <li>Returns the cheapest design that keeps P(still owning at year 10) ≥ 95%</li></ul></div>
+    <div><span><span class="tag">HMDA</span><span class="tag">fairness gate</span></span><h3>Capital</h3>
+      <ul><li>Gradient-boosted denial model trained on 52,075 OC lending decisions from 2022–2024</li>
+      <li>Protected attributes are excluded, and promotion is blocked if the race-group calibration gap widens</li>
+      <li>Path-to-100 planner values 0% notes at present value, not face value</li></ul></div>
+  </div>
+  <div class="tree">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Agent hierarchy diagram">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/></marker></defs>
+      <g fill="none" stroke="var(--ink-3)" stroke-width="1.2" marker-end="url(#ah)">
+        <path d="M450 62 L170 110"/><path d="M450 62 L450 110"/><path d="M450 62 L730 110"/>
+        <path d="M170 152 L110 196"/><path d="M170 152 L230 196"/><path d="M450 152 L390 196"/><path d="M450 152 L510 196"/>
+      </g>
+      <g stroke="var(--rule)" stroke-width="1">
+        <rect x="350" y="18" width="200" height="44" rx="4" fill="var(--accent-soft)" stroke="var(--accent)"/>
+        <rect x="80" y="110" width="180" height="42" rx="4" fill="var(--sheet)"/><rect x="360" y="110" width="180" height="42" rx="4" fill="var(--sheet)"/><rect x="640" y="110" width="180" height="42" rx="4" fill="var(--sheet)"/>
+        <rect x="40" y="196" width="140" height="40" rx="4" fill="var(--sheet)"/><rect x="190" y="196" width="140" height="40" rx="4" fill="var(--sheet)"/>
+        <rect x="330" y="196" width="120" height="40" rx="4" fill="var(--sheet)"/><rect x="460" y="196" width="120" height="40" rx="4" fill="var(--sheet)"/>
+        <rect x="610" y="196" width="250" height="68" rx="4" fill="var(--mark-soft)" stroke="var(--mark)"/>
+      </g>
+      <g font-size="14" text-anchor="middle">
+        <text x="450" y="38" font-weight="600">Director</text><text x="450" y="54" font-size="11" fill="var(--ink-2)">Opus 5.5 · ledger · final brief</text>
+        <text x="170" y="129" font-weight="600">Land lead</text><text x="170" y="144" font-size="11">Opus 5.5</text>
+        <text x="450" y="129" font-weight="600">Family lead</text><text x="450" y="144" font-size="11">Opus 5.5</text>
+        <text x="730" y="129" font-weight="600">Capital lead</text><text x="730" y="144" font-size="11">Opus 5.5</text>
+        <text x="110" y="214" font-size="12">Site analyst</text><text x="110" y="228" font-size="10">Sonnet 5.5</text>
+        <text x="260" y="214" font-size="12">Site analyst</text><text x="260" y="228" font-size="10">Sonnet 5.5</text>
+        <text x="390" y="214" font-size="12">Underwriter</text><text x="390" y="228" font-size="10">Sonnet 5.5</text>
+        <text x="520" y="214" font-size="12">Underwriter</text><text x="520" y="228" font-size="10">Sonnet 5.5</text>
+        <text x="735" y="216" font-size="12" font-weight="600">Keystone MCP server</text>
+        <text x="735" y="233" font-size="11">13 tools · 2 resources</text>
+        <text x="735" y="250" font-size="11">OS sandbox · skill library · registry</text>
+      </g>
+      <g fill="none" stroke="var(--mark)" stroke-dasharray="4 4" stroke-width="1.2"><path d="M730 152 L735 196"/><path d="M580 216 L610 216"/></g>
+      <text x="450" y="290" text-anchor="middle" font-size="12" fill="var(--ink-2)">Every agent reaches tools over MCP with a least-privilege tool set · parallel delegation · depth ≤ 3</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Results · Land</div>
+  <h2>Four congregations could host the first 100 homes</h2>
+  <p class="col">The Land lead caps any one site at 30 units. Agents learned this rule themselves after a grader flagged the first plan for putting all 100 homes on one campus. With 70% of the parking kept, the four sites together still hold 272 units. SB 4 lets these parcels build by right at 30 units per acre or more in Orange County, with a 45-year affordability restriction on ownership units (<a href="https://www.hcd.ca.gov/sites/default/files/docs/planning-and-community/aff-hsg-faith-higher-ed-sb-4.pdf">HCD fact sheet</a>).</p>
+  <div class="tbl"><table>
+    <tr><th>Site</th><th>City</th><th>APN</th><th class="n">CNN parking (m²)</th><th class="n">Units, 50% parking kept</th><th class="n">Units, 70% kept</th><th class="n">Allocated</th></tr>
+    <tr><td>Crossline Church</td><td>Laguna Hills</td><td class="mono">588-081-21</td><td class="n">45,292</td><td class="n">120</td><td class="n">85</td><td class="n hl">30</td></tr>
+    <tr><td>Mariners Church Worship Center</td><td>Irvine</td><td class="mono">478-234-05</td><td class="n">31,494</td><td class="n">104</td><td class="n">79</td><td class="n hl">30</td></tr>
+    <tr><td>Needham Chapel</td><td>Costa Mesa</td><td class="mono">419-151-13</td><td class="n">29,108</td><td class="n">86</td><td class="n">63</td><td class="n hl">30</td></tr>
+    <tr><td>Friends Church</td><td>Yorba Linda</td><td class="mono">343-491-29</td><td class="n">30,705</td><td class="n">70</td><td class="n">45</td><td class="n hl">30</td></tr>
+  </table></div>
+  <p class="muted" style="font-size:14px">An OSM place of worship does not prove faith ownership. Needham Chapel sits on a college campus, which SB 4 also covers. Every site needs a title check and a fire- and flood-zone screen before outreach. Across the county, viable sites cluster in Anaheim (19), Orange (15), Irvine (14) and Westminster (14). The Terner Center's statewide inventory counts 1,907 developable faith-owned acres in Orange County (<a href="https://github.com/Terner-Center/SB4-Analysis">SB4-Analysis</a>).</p>
+</section>
+
+<section>
+  <div class="eyebrow">Results · Families</div>
+  <h2>Payment design keeps families housed</h2>
+  <p class="col">Default is driven by liquidity, not equity. Cutting payments reduced default where cutting principal did not (<a href="https://doi.org/10.1257/aer.20181243">Ganong &amp; Noel 2020</a>), and halving a payment cuts the delinquency hazard by about 55% (<a href="https://doi.org/10.1257/pol.20150007">Fuster &amp; Willen 2017</a>). Stewarded community-land-trust loans ran at 1.3% serious delinquency against 8.6% in the market (<a href="https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/">Thaden 2011</a>). Keystone therefore optimizes the monthly payment and keeps a steward in the loop.</p>
+  <div class="tbl"><table>
+    <tr><th>Family (example applicants)</th><th class="n">Income</th><th class="n">% AMI</th><th class="n">P(market denial)</th><th>Chosen design</th><th class="n">P(owns at yr 10)</th><th class="n">Under stress</th><th class="n">Subsidy PV</th></tr>
+    <tr><td>Garcia · 4 · warehouse + childcare</td><td class="n">$92,000</td><td class="n">66%</td><td class="n">94%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">99.2%</td><td class="n">98.7%</td><td class="n">$152,801</td></tr>
+    <tr><td>Nguyen · 3 · nurse aide</td><td class="n">$71,000</td><td class="n">57%</td><td class="n">94%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">99.5%</td><td class="n">99.1%</td><td class="n">$212,896</td></tr>
+    <tr><td>Okafor · 5 · rideshare + retail</td><td class="n">$108,000</td><td class="n">72%</td><td class="n">92%</td><td>4% · 40 yr · 35% cap · income-indexed</td><td class="n hl">97.5%</td><td class="n">95.9%</td><td class="n">$107,014</td></tr>
+  </table></div>
+  <p class="muted" style="font-size:14px">The stress test multiplies job-loss risk by 1.5 and raises the yearly insurance-shock probability to 15%; it runs as agent-written code in the sandbox. For the Garcia family, the same home with a market-rate first mortgage and no steward gives 85.6%. Families are illustrative and hazard rates are assumptions, because no public Habitat loan-performance data exists.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Results · Capital</div>
+  <h2>About $16M of philanthropy closes the gap for 100 homes</h2>
+  <p class="col">Each townhome costs about $539,000 to build at an assumed $375 per square foot, with land contributed through SB 4. The buyer's 0% first mortgage has a face value of $519,000 but is worth $269,000 at a 5% discount rate. That difference is why 0% lending ties up capital. After an assumed $100,000 per home from <a href="https://www.hcd.ca.gov/funding/hosn">CalHome</a> and <a href="https://www.fhlbsf.com/products/community-programs-grants/ahp">FHLBank SF AHP</a>, the gap is $162,907 per home.</p>
+  <div class="tbl" style="max-width:640px"><table>
+    <tr><th>Hard cost / sf</th><th class="n">Discount 4%</th><th class="n">5%</th><th class="n">6%</th></tr>
+    <tr><td>$325</td><td class="n">$5.8M</td><td class="n">$9.1M</td><td class="n">$11.9M</td></tr>
+    <tr><td>$375</td><td class="n">$12.9M</td><td class="n hl">$16.3M</td><td class="n">$19.1M</td></tr>
+    <tr><td>$425</td><td class="n">$20.1M</td><td class="n">$23.5M</td><td class="n">$26.3M</td></tr>
+  </table></div>
+  <p class="muted" style="font-size:14px">Philanthropy needed for 100 homes. The Capital lead ran this sweep in the sandbox. Per-unit public funding and hard cost are planning assumptions.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Self-improvement</div>
+  <h2>Agents recommend; gates decide</h2>
+  <p class="col">Keystone runs one promotion rule for everything it learns: a challenger replaces the champion only if it beats it on the same frozen evaluation and passes its guardrails. Agents can propose changes but never approve their own. The approach follows validation-gated governance (<a href="https://arxiv.org/abs/2606.03321">Lim et al. 2026</a>), Reflexion lesson memory (<a href="https://arxiv.org/abs/2303.11366">Shinn et al. 2023</a>) and a Voyager-style skill library (<a href="https://arxiv.org/abs/2305.16291">Wang et al. 2023</a>).</p>
+  <div class="tbl"><table>
+    <tr><th>What learned</th><th>Evidence</th><th>Gate decision</th></tr>
+    <tr><td>HMDA denial model, as each new year arrived</td><td>AUC on newest year: 0.761 → 0.779 → 0.782. Race-group calibration gap 0.019 → 0.014 → 0.006</td><td><span class="pill good">promoted ×2</span></td></tr>
+    <tr><td>Parking CNN challenger (wider, 40 epochs)</td><td>IoU 0.5463 vs 0.5437: +0.003, within noise on 136 holdout chips</td><td><span class="pill bad">rejected</span></td></tr>
+    <tr><td>Director, Land and Capital playbooks</td><td>Mean grader score across 3 missions: 0.67 → 1.00. Lessons learned: cap sites at 30 units, run the sensitivity sweep, report fairness</td><td><span class="pill good">promoted</span></td></tr>
+    <tr><td>Underwriter skill library</td><td>A sandbox stress test saved once, then reused by later runs</td><td><span class="pill good">reused</span></td></tr>
+  </table></div>
+  <div class="callout col">The graders check outcomes, not phrasing. Did the plan reach the target with a buffer? Does every family clear 95%? Is every URL in the brief a verified source? Did the sensitivity analysis actually run? A brief with one invented citation fails.</div>
+</section>
+
+<section>
+  <div class="eyebrow">Architecture</div>
+  <h2>Current agent practice, applied to housing</h2>
+  <div class="tbl"><table>
+    <tr><th>Capability</th><th>How Keystone does it</th><th>Grounding</th></tr>
+    <tr><td>Agent hierarchy</td><td>Director → 3 leads → workers, with parallel delegation, a progress ledger and least-privilege tools. Leads run on Claude Opus 5.5 and workers on Claude Sonnet 5.5, both with adaptive thinking</td><td><a href="https://www.anthropic.com/engineering/multi-agent-research-system">Anthropic 2025</a>, <a href="https://arxiv.org/abs/2411.04468">Magentic-One</a></td></tr>
+    <tr><td>MCP</td><td>One Keystone server with 13 namespaced tools and 2 resources, over stdio or Streamable HTTP. It also plugs into Claude Desktop and Claude Code</td><td><a href="https://modelcontextprotocol.io/specification/latest">MCP spec 2026-07-28</a></td></tr>
+    <tr><td>Sandbox</td><td>Agent-written Python runs under macOS seatbelt or Linux bubblewrap, with no network, writes only to its own folder, and secrets scrubbed. Red-team tests pass</td><td><a href="https://www.anthropic.com/engineering/claude-code-sandboxing">Anthropic 2025</a>, <a href="https://www.anthropic.com/engineering/code-execution-with-mcp">code execution with MCP</a></td></tr>
+    <tr><td>CNN</td><td>U-Net on NAIP RGB + NIR + NDVI, weakly supervised by OSM</td><td><a href="https://arxiv.org/abs/2412.13179">Qiam et al. 2024</a>, <a href="https://doi.org/10.1080/01944363.2024.2345730">Jo et al. 2025</a></td></tr>
+    <tr><td>Simulate and optimize</td><td>Household Monte Carlo inside a design search</td><td><a href="https://arxiv.org/abs/2411.00563">Ardon et al. 2024</a></td></tr>
+    <tr><td>Fair ML</td><td>Protected attributes excluded, with a calibration-gap guardrail on promotion</td><td><a href="https://doi.org/10.1111/jofi.13090">Fuster et al. 2022</a></td></tr>
+    <tr><td>Evals</td><td>Code graders on final state across 3 missions, with transcripts kept for review</td><td><a href="https://arxiv.org/abs/2406.12045">τ-bench</a>, <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents">Anthropic 2026</a></td></tr>
+  </table></div>
+</section>
+
+<section>
+  <div class="eyebrow">Limits and next steps</div>
+  <h2>What the prototype cannot claim yet</h2>
+  <div class="col" style="display:grid;gap:14px">
+    <ul>
+      <li>No public Habitat loan-performance data exists, so hazard rates are literature-guided assumptions. The first step is to calibrate on Habitat OC's own servicing history: delinquencies, cures and buybacks.</li>
+      <li>OSM parking labels are incomplete. Hand-labelling 300 OC chips would replace the weak labels.</li>
+      <li>HMDA records access to credit, not loan performance. The next step is to pretrain on the Freddie Mac loan-level dataset (registration required) and adapt the model to Habitat's portfolio.</li>
+      <li>Sites still need CAL FIRE and FEMA flood screens, which are SB 4 exclusions, plus an LLM zoning reader for OC's 34 cities (<a href="https://conference.nber.org/conf_papers/f233049.pdf">Bartik et al. 2026</a> report 96% agreement with human coders).</li>
+      <li>The agents ran here on the offline scripted policy, because the build machine had no API credentials. The Claude policy's loop is covered by tests against a mocked API; a live run needs only an API key.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow">Evidence</div>
+  <details><summary>All sources (every link was opened and checked on 31 Oct 2026)</summary>
+  <div class="bib" style="margin-top:14px">
+    <div><b>Orange County context.</b> <a href="https://www.hcd.ca.gov/sites/default/files/docs/grants-and-funding/income-limits-2026.pdf">CA HCD 2026 income limits</a> · <a href="https://www.car.org/aboutus/mediacenter/newsreleases/2026releases/sept2026sales">C.A.R. Sept 2026</a> · <a href="https://data.ca.gov/dataset/rhna-progress-report">HCD RHNA progress</a> · <a href="https://habitatoc.org/keys-to-100-raises-330000-for-affordable-homeownership-in-orange-county/">Habitat OC Keys to 100</a> · <a href="https://habitatoc.org/myths-facts/">Habitat OC terms</a> · <a href="https://www.boe.ca.gov/proptaxes/pdf/lta23044.pdf">BOE welfare exemption</a> · <a href="https://www.insurance.ca.gov/0200-industry/0105-alert/upload/FAIR-Plan-growth-slows-below-2-as-Californias-insurance-market-continues-to-show-signs-of-recovery.pdf">CDI FAIR Plan 2026</a></div>
+    <div><b>Ownership sustainability.</b> <a href="https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/">Thaden 2011</a> · <a href="https://www.lincolninst.edu/publications/working-papers/outperforming-market">Thaden 2010</a> · <a href="https://doi.org/10.7936/w9p5-s022">Chun et al. 2026 (Habitat wealth study)</a> · <a href="https://doi.org/10.1257/aer.20181243">Ganong &amp; Noel 2020</a> · <a href="https://doi.org/10.1257/pol.20150007">Fuster &amp; Willen 2017</a> · <a href="https://doi.org/10.1007/s11146-015-9501-8">Tian et al. 2016</a> · <a href="https://doi.org/10.24149/wp2505r1">Ge et al. (Dallas Fed)</a> · <a href="https://www.urban.org/research/publication/va-loans-outperform-fha-loans-why-and-what-can-we-learn">Goodman et al. 2014</a> · <a href="https://doi.org/10.1080/10835547.2011.12091305">Ding et al. 2011</a> · <a href="https://doi.org/10.1080/10511482.2019.1596965">Theodos et al. 2019</a> · <a href="https://doi.org/10.7936/K71J998S">Reid 2005</a></div>
+    <div><b>Credit ML and fairness.</b> <a href="https://arxiv.org/abs/1607.02470">Sirignano et al. 2021</a> · <a href="https://doi.org/10.1111/jofi.13090">Fuster et al. 2022</a> · <a href="https://doi.org/10.1016/j.jfineco.2021.05.047">Bartlett et al. 2022</a> · <a href="https://arxiv.org/abs/2105.07554">Blattner &amp; Nelson 2021</a> · <a href="https://doi.org/10.3386/w29840">Di Maggio et al. 2022</a></div>
+    <div><b>Vision and land.</b> <a href="https://doi.org/10.1080/01944363.2024.2345730">Jo et al. 2025</a> · <a href="https://arxiv.org/abs/2412.13179">Qiam et al. 2024</a> · <a href="https://doi.org/10.1016/j.cities.2024.105019">Jun et al. 2024</a> · <a href="https://doi.org/10.1126/science.aaf7894">Jean et al. 2016</a> · <a href="https://arxiv.org/abs/1807.07155">Law et al. 2019</a> · <a href="https://ternercenter.berkeley.edu/research-and-policy/faith-based-and-college-land-housing/">Terner 2023 (SB 4)</a> · <a href="https://ternercenter.berkeley.edu/?p=3232">Terner 2023 (SB 9)</a> · <a href="https://ternercenter.berkeley.edu/hard-construction-costs-apartments-california">Terner 2020 (costs)</a> · <a href="https://doi.org/10.1177/00420980231156352">Mleczko &amp; Desmond 2023</a></div>
+    <div><b>Simulation.</b> <a href="https://arxiv.org/abs/2411.00563">Ardon et al. 2024</a> · <a href="https://arxiv.org/abs/2402.17932">Garg et al. 2024</a> · <a href="https://doi.org/10.1257/aer.102.3.53">Geanakoplos et al. 2012</a> · <a href="https://ideas.repec.org/a/eee/jhouse/v20y2011i2p101-119.html">Follain &amp; Giertz 2011</a></div>
+    <div><b>Agents.</b> <a href="https://www.anthropic.com/engineering/building-effective-agents">Building effective agents</a> · <a href="https://arxiv.org/abs/2603.22489">MCP tool-poisoning threat model</a> · <a href="https://arxiv.org/abs/2505.22954">Darwin Gödel Machine</a> · <a href="https://arxiv.org/abs/2506.13131">AlphaEvolve</a> · <a href="https://arxiv.org/abs/2310.03714">DSPy</a></div>
+  </div></details>
+</section>
+
+<footer>Data: HMDA (FFIEC), OC Public Works parcels, OpenStreetMap contributors (ODbL), USDA NAIP via Microsoft Planetary Computer, Terner Center SB4-Analysis. Example families are illustrative. Figures marked as assumptions are planning inputs, not findings.</footer>
+</div>
+
+<script>
+const D = [["Debt-to-income ratio", 206], ["Credit history", 53], ["Collateral", 32], ["Other", 21], ["Application incomplete", 16], ["Unverifiable information", 10], ["Employment history", 5], ["Insufficient cash", 5]];
+const max = D[0][1];
+document.getElementById("bars").innerHTML = D.map(([k, v]) =>
+  `<div class="bar"><span>${k}</span><div class="track"><div class="fill" style="width:${(v / max * 100).toFixed(1)}%" title="${k}: ${v} denials"></div></div><span class="num">${v}</span></div>`).join("");
+</script>

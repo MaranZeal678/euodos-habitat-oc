@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystone · Mission Control</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/deck.gl@9.0.38/dist.min.js"></script>
+<style>
+/* Mission control: full-bleed 3D map, agent rail on the right, narration along the bottom */
+:root {
+  --void: #04080a; --glass: rgba(6, 13, 15, 0.9); --line: rgba(120, 220, 200, 0.18);
+  --ink: #e9f5f2; --ink-2: #9fb7b1; --ink-3: #62807a;
+  --teal: #2ee6be; --amber: #ffcf5a; --orange: #ff9a3c; --red: #ff4d5a; --blue: #7fb2ff; --lost: #3b2b30;
+  --display: "Sora", ui-sans-serif, system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink); font: 14px/1.45 var(--display); overflow: hidden; }
+#map { position: absolute; inset: 0; right: 360px; z-index: 0; }
+#top, #caption, #hud, #act2, #act3, #final, #controls { z-index: 6; }
+#rail { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; background: #061012; border-left: 1px solid var(--line); display: flex; flex-direction: column; }
+#top { position: absolute; top: 0; left: 0; right: 360px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none;
+  background: linear-gradient(180deg, rgba(4, 8, 10, .85), rgba(4, 8, 10, 0)); }
+.brand { font: 700 20px/1 var(--display); letter-spacing: .32em; }
+.brand small { display: block; font: 400 11px/1.6 var(--mono); letter-spacing: .08em; color: var(--ink-2); margin-top: 6px; }
+.acts { display: flex; gap: 6px; margin-top: 12px; }
+.acts span { font: 500 11px/1 var(--mono); padding: 6px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-3); }
+.acts span.on { color: var(--void); background: var(--teal); border-color: var(--teal); }
+.counter { text-align: right; }
+.counter .n { font: 700 64px/0.95 var(--display); color: var(--teal); font-variant-numeric: tabular-nums; text-shadow: 0 0 30px rgba(46, 230, 190, .35); }
+.counter .l { font: 400 12px/1.4 var(--mono); color: var(--ink-2); }
+.counter .goal { height: 4px; width: 240px; background: rgba(255,255,255,.08); border-radius: 2px; margin: 8px 0 0 auto; overflow: hidden; }
+.counter .goal i { display: block; height: 100%; width: 0; background: var(--teal); transition: width .4s; }
+#caption { position: absolute; left: 0; right: 360px; bottom: 0; padding: 28px 28px 22px; pointer-events: none;
+  background: linear-gradient(0deg, rgba(4, 8, 10, .92), rgba(4, 8, 10, 0)); }
+#caption p { margin: 0; font: 600 clamp(18px, 2.1vw, 28px)/1.3 var(--display); max-width: 980px; text-wrap: balance; transition: opacity .35s; }
+#caption .sub { font: 400 13px/1.5 var(--mono); color: var(--ink-2); margin-top: 8px; }
+#controls { position: absolute; right: 382px; top: 112px; display: flex; gap: 6px; z-index: 5; }
+#controls button { background: var(--glass); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 7px 11px; font: 500 12px var(--mono); cursor: pointer; }
+#controls button:hover { border-color: var(--teal); }
+#hud { position: absolute; left: 22px; top: 140px; width: 360px; background: var(--glass); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  backdrop-filter: blur(6px); font: 12px/1.55 var(--mono); color: var(--ink-2); opacity: 0; transition: opacity .5s; }
+#hud b { color: var(--ink); font-weight: 500; }
+#hud .t { font: 600 15px/1.3 var(--display); color: var(--ink); margin-bottom: 6px; }
+#hud .row { display: flex; justify-content: space-between; gap: 8px; }
+#hud .bar { height: 3px; background: rgba(255,255,255,.08); margin: 8px 0 2px; } #hud .bar i { display: block; height: 100%; background: var(--teal); width: 0; }
+/* rail */
+.rail-h { padding: 16px 16px 10px; border-bottom: 1px solid var(--line); }
+.rail-h .t { font: 600 13px/1 var(--mono); letter-spacing: .14em; color: var(--ink-2); }
+.rail-h .s { font: 11px/1.5 var(--mono); color: var(--ink-3); margin-top: 6px; }
+#tree { padding: 12px 16px; display: grid; gap: 5px; border-bottom: 1px solid var(--line); }
+.ag { display: flex; align-items: center; gap: 8px; font: 12px/1.3 var(--mono); color: var(--ink-3); transition: color .3s; }
+.ag i { width: 8px; height: 8px; border-radius: 50%; background: #1e3330; flex: none; transition: background .3s, box-shadow .3s; }
+.ag.on { color: var(--ink); } .ag.on i { background: var(--teal); box-shadow: 0 0 10px var(--teal); }
+.ag.done i { background: #2a6b5e; }
+.ag .m { margin-left: auto; font-size: 10px; color: var(--ink-3); }
+#log { flex: 1; overflow: hidden; padding: 10px 16px; display: flex; flex-direction: column-reverse; gap: 6px; mask-image: linear-gradient(0deg, #000 70%, transparent); }
+.ev { font: 11px/1.45 var(--mono); color: var(--ink-2); border-left: 2px solid var(--line); padding-left: 8px; animation: in .35s ease; }
+.ev b { color: var(--teal); font-weight: 500; } .ev.st b { color: var(--blue); } .ev.sb b { color: var(--amber); }
+@keyframes in { from { opacity: 0; transform: translateY(6px); } }
+.rail-f { padding: 12px 16px; border-top: 1px solid var(--line); font: 11px/1.5 var(--mono); color: var(--ink-3); }
+/* act 2 panel */
+#act2 { position: absolute; left: 22px; top: 150px; bottom: 150px; width: min(760px, calc(100vw - 420px)); background: var(--glass); border: 1px solid var(--line);
+  border-radius: 12px; padding: 18px; backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity .6s; display: flex; flex-direction: column; gap: 12px; }
+#act2 .hdr { display: flex; justify-content: space-between; align-items: baseline; }
+#act2 .clock { font: 700 26px/1 var(--display); font-variant-numeric: tabular-nums; }
+#act2 .clock small { font: 400 12px var(--mono); color: var(--ink-2); margin-left: 8px; }
+#grids { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1; min-height: 0; }
+.gcol { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.gcol .gt { font: 500 12px/1.3 var(--mono); color: var(--ink-2); min-height: 32px; }
+.gcol canvas { width: 100%; aspect-ratio: 1; }
+.gcol .own { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.gcol .own small { font: 400 12px var(--mono); color: var(--ink-2); margin-left: 6px; }
+.gcol.k .own { color: var(--teal); }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font: 11px var(--mono); color: var(--ink-2); }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+/* act 3 panel */
+#act3 { position: absolute; left: 22px; top: 150px; width: min(820px, calc(100vw - 420px)); background: var(--glass); border: 1px solid var(--line); border-radius: 12px;
+  padding: 20px; backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transition: opacity .6s; display: grid; gap: 18px; }
+.wf { display: grid; gap: 8px; }
+.wfr { display: grid; grid-template-columns: 210px minmax(0, 1fr) 96px; gap: 10px; align-items: center; font: 12px var(--mono); color: var(--ink-2); }
+.wfr .tr { height: 18px; position: relative; } .wfr .tr i { position: absolute; top: 0; height: 18px; border-radius: 3px; transition: width .9s cubic-bezier(.2,.8,.2,1), left .9s; width: 0; }
+.wfr .v { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.docs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.doc { border: 1px solid var(--line); border-radius: 8px; padding: 10px; font: 11px/1.45 var(--mono); color: var(--ink-2); opacity: 0; transform: translateY(8px); transition: all .5s; min-height: 92px; }
+.doc.on { opacity: 1; transform: none; } .doc b { display: block; color: var(--ink); font: 600 12px/1.3 var(--display); margin-bottom: 4px; }
+#final { position: absolute; inset: 0; right: 360px; display: grid; place-items: center; background: radial-gradient(ellipse at center, rgba(4,8,10,.55), rgba(4,8,10,.92)); opacity: 0; pointer-events: none; transition: opacity .8s; }
+#final .card { text-align: center; display: grid; gap: 22px; padding: 24px; }
+#final h1 { margin: 0; font: 700 clamp(30px, 4vw, 52px)/1.1 var(--display); letter-spacing: -.01em; }
+#final .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 26px; }
+#final .stats div { display: grid; gap: 4px; } #final .stats b { font: 700 40px/1 var(--display); color: var(--teal); font-variant-numeric: tabular-nums; }
+#final .stats span { font: 11px/1.4 var(--mono); color: var(--ink-2); max-width: 170px; }
+#final .url { font: 12px var(--mono); color: var(--ink-3); }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--void); z-index: 20; font: 13px var(--mono); color: var(--ink-2); }
+#start { position: absolute; inset: 0; right: 360px; display: grid; place-items: center; z-index: 10; background: rgba(4, 8, 10, .55); }
+#start button { font: 600 18px var(--display); padding: 16px 28px; border-radius: 999px; border: 1px solid var(--teal); background: rgba(46, 230, 190, .12); color: var(--ink); cursor: pointer; letter-spacing: .04em; }
+#start button:focus-visible, #controls button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+@media (max-width: 1100px) { #rail { width: 300px; } #map, #top, #caption, #act2, #final, #start { right: 300px; } #controls { right: 322px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="top">
+  <div>
+    <div class="brand">KEYSTONE<small>Mission control · Habitat for Humanity Orange County · Keys to 100</small></div>
+    <div class="acts"><span data-a="1">01 Find the land</span><span data-a="2">02 Keep families home</span><span data-a="3">03 Fund &amp; ship</span></div>
+  </div>
+  <div class="counter"><div class="n" id="cnt">0</div><div class="l" id="cntl">homes sited · goal 100</div><div class="goal"><i id="goalbar"></i></div></div>
+</div>
+<div id="hud"></div>
+<div id="act2">
+  <div class="hdr"><div><div style="font:600 17px var(--display)">The same 100 families, three ways to finance them</div>
+    <div style="font:11px var(--mono);color:var(--ink-2);margin-top:4px">Every family faces the same layoffs, insurance spikes and repairs in the same months. Synthetic families; incomes sampled from 2024 HMDA mortgage applicants in Orange County within Habitat OC's 30–80% AMI band (CA HCD 2026 limits). Each buys a $750k OC townhome.</div></div>
+    <div class="clock" id="clock">Year 0<small>month 0</small></div></div>
+  <div id="grids"></div>
+  <div class="legend"><span><i style="background:var(--teal)"></i>current</span><span><i style="background:var(--amber)"></i>cash under one payment</span><span><i style="background:var(--orange)"></i>missed a payment</span><span><i style="background:var(--red)"></i>90+ days late</span><span><i style="background:var(--lost);outline:1px solid #6a4a52"></i>home lost</span><span><i style="background:transparent;outline:2px solid var(--blue)"></i>steward reaches out</span></div>
+</div>
+<div id="act3"></div>
+<div id="final"></div>
+<div id="caption"><p id="cap"></p><div class="sub" id="capsub"></div></div>
+<div id="controls"><button id="bPrev" title="Previous scene (←)">◀</button><button id="bPlay" title="Play / pause (space)">Pause</button><button id="bNext" title="Next scene (→)">▶</button><button id="bRe" title="Restart (R)">↺</button></div>
+<aside id="rail">
+  <div class="rail-h"><div class="t">AGENT HIERARCHY · MCP</div><div class="s" id="railsub">Replaying a graded run of the agent team</div></div>
+  <div id="tree"></div>
+  <div id="log"></div>
+  <div class="rail-f" id="railf">Claude Opus 5.5 leads · Claude Sonnet 5.5 workers · every tool call over MCP · analysis code runs in an OS sandbox</div>
+</aside>
+<div id="start"><button id="go">▶ Start the demo · 2 min</button></div>
+<div id="loading">Loading parcels, CNN scans and portfolio…</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => Number(n).toLocaleString("en-US");
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const COL = { teal: [46, 230, 190], amber: [255, 207, 90], orange: [255, 154, 60], red: [255, 77, 90], lost: [59, 43, 48], blue: [127, 178, 255], dim: [70, 96, 92], home: [255, 236, 200] };
+const STATE_COL = [COL.teal, COL.amber, COL.orange, COL.red, COL.lost];
+const EV = { JOB: 1, INS: 2, REP: 4, STEW: 8, CURE: 16, LOST: 32 };
+
+let FEAT, COUNTY, PORT, TRACE, CAP, OC;
+const S = { county: 0, countyFade: 1, sites: [], month: 0, familyMode: false, pulse: 0, homesSited: 0, beacons: 0, ocLine: 0 };
+
+// ------------------------------------------------------------------ data
+async function load() {
+  [FEAT, COUNTY, PORT, TRACE, CAP] = await Promise.all([
+    fetch("/static/demo/featured.json").then(r => r.json()), fetch("/static/demo/county.json").then(r => r.json()),
+    fetch("/static/demo/portfolio.json").then(r => r.json()), fetch("/api/demo/trace").then(r => r.json()).catch(() => null),
+    fetch("/api/demo/capital").then(r => r.json()), fetch("/static/demo/oc_boundary.json").then(r => r.json())]).then(x => { OC = x.pop(); return x; });
+  await Promise.all(FEAT.map(async (f, k) => {
+    const img = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.src = src; });
+    const [rgb, mask, outline] = await Promise.all([img(f.img_rgb), img(f.img_mask), img(f.img_outline)]);
+    const c = document.createElement("canvas"); c.width = mask.width; c.height = mask.height;
+    S.sites[k] = { rgb, mask, outline, canvas: c, ctx: c.getContext("2d", { willReadFrequently: true }), img: 0, scan: 0, rise: 0, lastScan: -1, scanData: null,
+      bounds: [f.quad[0], f.quad[3], f.quad[2], f.quad[1]] };
+  }));
+  // families 0..99 live in the first 100 planned homes
+  let fi = 0;
+  FEAT.forEach((f, k) => f.homes.forEach(h => { h.site = k; h.fam = fi < 100 ? fi : -1; fi++; }));
+}
+
+function scanImage(k) {
+  const s = S.sites[k];
+  const p = Math.round(s.scan * 200) / 200;
+  if (p === s.lastScan) return s.scanData;
+  const { ctx, mask } = s, W = mask.width, H = mask.height;
+  ctx.clearRect(0, 0, W, H);
+  const x = W * p;
+  if (x > 0) ctx.drawImage(mask, 0, 0, x, H, 0, 0, x, H);
+  if (p > 0 && p < 1) {
+    const g = ctx.createLinearGradient(x - 40, 0, x + 2, 0);
+    g.addColorStop(0, "rgba(46,230,190,0)"); g.addColorStop(1, "rgba(200,255,240,0.95)");
+    ctx.fillStyle = g; ctx.fillRect(x - 40, 0, 42, H);
+  }
+  s.lastScan = p; s.scanData = ctx.getImageData(0, 0, W, H);
+  return s.scanData;
+}
+
+// ------------------------------------------------------------------ map + deck
+let map, overlay;
+function initMap() {
+  map = new maplibregl.Map({ container: "map", style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+    center: [-117.86, 33.74], zoom: 9.6, pitch: 50, bearing: -18, antialias: true, attributionControl: { compact: true } });
+  overlay = new deck.MapboxOverlay({ interleaved: false, layers: [] });
+  map.addControl(overlay);
+}
+
+function homeColor(h) {
+  if (S.familyMode && h.fam >= 0) {
+    const st = +PORT.families[h.fam].keystone.states[Math.min(119, Math.floor(S.month))];
+    return [...STATE_COL[st], st === 4 ? 160 : 245];
+  }
+  if (S.familyMode) return [...COL.dim, 120];
+  return [...COL.home, 250];
+}
+
+function render() {
+  const layers = [];
+  if (S.ocLine > 0.01) layers.push(new deck.GeoJsonLayer({  // Orange County, CA (OpenStreetMap admin boundary)
+    id: "oc", data: OC, stroked: true, filled: true, getFillColor: [46, 230, 190, Math.round(14 * S.ocLine)],
+    getLineColor: [255, 207, 90, Math.round(230 * S.ocLine)], lineWidthUnits: "pixels", getLineWidth: 2.5,
+    updateTriggers: { getFillColor: S.ocLine, getLineColor: S.ocLine } }));
+  layers.push(new deck.ColumnLayer({
+    id: "county", data: COUNTY, diskResolution: 6, radius: 260, extruded: true, pickable: false,
+    getPosition: d => [d.lon, d.lat],
+    getElevation: (d, { index }) => d.units * 60 * clamp(S.county * 1.6 - (index / COUNTY.length) * 0.6),
+    getFillColor: d => d.viable ? [...COL.teal, Math.round(200 * S.countyFade)] : [...COL.dim, Math.round(90 * S.countyFade)],
+    updateTriggers: { getElevation: S.county, getFillColor: S.countyFade }, visible: S.countyFade > 0.01,
+  }));
+  FEAT.forEach((f, k) => {
+    const s = S.sites[k];
+    if (s.img > 0.01) {
+      layers.push(new deck.BitmapLayer({ id: "rgb" + k, image: s.rgb, bounds: s.bounds, opacity: s.img }));
+      layers.push(new deck.BitmapLayer({ id: "out" + k, image: s.outline, bounds: s.bounds, opacity: s.img }));
+    }
+    if (s.scan > 0) layers.push(new deck.BitmapLayer({ id: "mask" + k, image: scanImage(k), bounds: s.bounds, opacity: S.familyMode ? 0.22 : 0.8 }));
+  });
+  if (S.beacons > 0.01 && !S.familyMode) layers.push(new deck.ColumnLayer({  // sited villages read as warm beacons from county zoom
+    id: "beacons", data: FEAT.map((f, k) => ({ f, k })).filter(d => S.sites[d.k].rise > 0.5), diskResolution: 24, radius: 420, extruded: true,
+    getPosition: d => [d.f.lon, d.f.lat], getElevation: d => d.f.units * 160 * S.beacons * (d.k < 4 ? 1 : 0.55),
+    getFillColor: d => d.k < 4 ? [...COL.home, 235] : [...COL.home, 120], material: { ambient: .8, diffuse: .4 },
+    updateTriggers: { getElevation: S.beacons } }));
+  const homes = FEAT.flatMap((f, k) => S.sites[k].rise > 0 ? f.homes : []);
+  layers.push(new deck.SolidPolygonLayer({
+    id: "homes", data: homes, extruded: true, wireframe: false, getPolygon: h => h.polygon,
+    getElevation: h => { const r = S.sites[h.site].rise; const t = clamp(r * 1.8 - (h.i / FEAT[h.site].homes.length) * 0.8); return 10.5 * ease(t); },
+    getFillColor: homeColor, material: { ambient: 0.62, diffuse: 0.55, shininess: 32 },
+    updateTriggers: { getElevation: FEAT.map((f, k) => S.sites[k].rise).join(), getFillColor: [S.familyMode, Math.floor(S.month)] },
+  }));
+  if (S.familyMode) {
+    const m = Math.floor(S.month);
+    const ring = homes.filter(h => h.fam >= 0 && (PORT.families[h.fam].keystone.events[m] & EV.STEW));
+    layers.push(new deck.ScatterplotLayer({ id: "steward", data: ring, stroked: true, filled: false, radiusUnits: "meters",
+      getPosition: h => { const p = h.polygon; return [(p[0][0] + p[2][0]) / 2, (p[0][1] + p[2][1]) / 2, 12]; },
+      getRadius: 9 + 5 * Math.sin(S.pulse), lineWidthMinPixels: 2, getLineColor: [...COL.blue, 255], updateTriggers: { getRadius: S.pulse } }));
+  }
+  overlay.setProps({ layers });
+}
+
+// ------------------------------------------------------------------ narration, HUD, counter
+function caption(t, sub = "") {
+  const p = $("#cap"); p.style.opacity = 0;
+  setTimeout(() => { p.textContent = t; $("#capsub").textContent = sub; p.style.opacity = 1; }, 180);
+}
+function setCount(n, label) {
+  S.homesSited = n; $("#cnt").textContent = fmt(Math.round(n));
+  if (label) $("#cntl").textContent = label;
+  $("#goalbar").style.width = Math.min(100, n) + "%";
+}
+function setAct(a) { document.querySelectorAll(".acts span").forEach(s => s.classList.toggle("on", +s.dataset.a === a)); }
+function hudPanel(title, rows, foot = "") {
+  $("#hud").style.opacity = 1;
+  $("#hud").innerHTML = `<div class="t">${title}</div>` + rows.map(([l, v]) => `<div class="row"><span>${l}</span><b>${v}</b></div>`).join("") +
+    (foot ? `<div style="margin-top:8px;color:var(--ink-3);font-size:11px">${foot}</div>` : "");
+}
+function hudCities() {
+  const by = {};
+  COUNTY.filter(c => c.viable).forEach(c => { const k = (c.city || "").trim(); by[k] = by[k] || { n: 0, u: 0 }; by[k].n++; by[k].u += c.units; });
+  const top = Object.entries(by).sort((a, b) => b[1].n - a[1].n).slice(0, 8), max = top[0][1].n;
+  $("#hud").style.opacity = 1;
+  $("#hud").innerHTML = `<div class="t">Where the land is</div><div style="margin-bottom:6px">Viable faith-owned sites in ${Object.keys(by).length} Orange County cities</div>` +
+    top.map(([c, v]) => `<div style="display:grid;grid-template-columns:96px 1fr 70px;gap:8px;align-items:center;margin:3px 0"><span>${c}</span><span style="height:6px;border-radius:0 3px 3px 0;background:var(--teal);width:${v.n / max * 100}%"></span><b style="text-align:right">${v.n} · ${fmt(v.u)}</b></div>`).join("") +
+    `<div style="margin-top:6px;color:var(--ink-3);font-size:11px">sites · townhome capacity</div>`;
+}
+function hudSite(k, phase) {
+  if (STEPS[si] && STEPS[si].act !== 1) return;
+  const f = FEAT[k];
+  $("#hud").style.opacity = 1;
+  $("#hud").innerHTML = `<div class="t">${f.name}</div><div>${f.address || ""}, ${f.city} · APN ${f.apn}</div>
+    <div class="bar"><i style="width:${phase >= 1 ? 100 : 0}%;transition:width 2.2s"></i></div>
+    <div class="row"><span>Parcel</span><b>${f.parcel_acres} acres</b></div>
+    <div class="row"><span>CNN parking found</span><b>${phase >= 1 ? fmt(f.parking_sqm) + " m²" : "scanning…"}</b></div>
+    <div class="row"><span>Model</span><b>U-Net · NAIP 0.6 m RGB+NIR</b></div>
+    <div class="row"><span>Site plan</span><b>${phase >= 2 ? f.units + " townhomes · " + Math.ceil(f.units / 5) + " buildings" : "—"}</b></div>
+    <div class="row"><span>Law</span><b>SB 4 · by right · 45-yr deed</b></div>`;
+}
+
+// ------------------------------------------------------------------ agent rail (replays a real graded run)
+const AGENTS = [["director", "Director", "opus"], ["land_lead", "Land lead", "opus"], ["site_analyst", "Site analysts ×4", "sonnet"], ["family_lead", "Family lead", "opus"],
+  ["underwriter", "Underwriters ×3", "sonnet"], ["capital_lead", "Capital lead", "opus"], ["steward", "Steward", "sonnet"]];
+$("#tree").innerHTML = AGENTS.map(([k, n, m], i) => `<div class="ag" id="ag_${k}" style="padding-left:${i === 0 ? 0 : (["site_analyst", "underwriter"].includes(k) ? 28 : 14)}px"><i></i>${n}<span class="m">${m} 5.5</span></div>`).join("");
+const ACT_AGENTS = { 1: ["land_lead", "site_analyst"], 2: ["family_lead", "underwriter", "steward"], 3: ["capital_lead", "director"] };
+let replayQ = [];
+function agentOn(k, on) { const e = $("#ag_" + k); if (e) { e.classList.toggle("on", on); if (!on) e.classList.add("done"); } }
+function logEv(html, cls = "") { const d = document.createElement("div"); d.className = "ev " + cls; d.innerHTML = html; $("#log").prepend(d); while ($("#log").children.length > 40) $("#log").lastChild.remove(); }
+function queueAct(a) {
+  if (!TRACE) return;
+  replayQ = TRACE.events.filter(e => e.type === "tool" && ACT_AGENTS[a].includes(e.agent));
+}
+function replayTick() {
+  if (!replayQ.length) return;
+  const e = replayQ.shift();
+  AGENTS.forEach(([k]) => agentOn(k, k === e.agent || k === "director"));
+  const args = JSON.stringify(e.args).replace(/"/g, "").slice(0, 60);
+  logEv(`<b>${e.agent}</b> → mcp:${e.tool}(${args}) <span style="color:var(--ink-3)">${e.secs}s</span>`, e.tool.startsWith("sandbox") ? "sb" : e.agent === "steward" ? "st" : "");
+}
+
+// ------------------------------------------------------------------ act 2 grids
+const GRID = {};
+function buildGrids() {
+  $("#grids").innerHTML = Object.entries(PORT.scenarios).map(([k, t]) => `<div class="gcol ${k === "keystone" ? "k" : ""}"><div class="gt">${t}</div><canvas id="g_${k}" width="420" height="420"></canvas><div class="own" id="o_${k}">100<small>still home</small></div></div>`).join("");
+  Object.keys(PORT.scenarios).forEach(k => GRID[k] = $("#g_" + k).getContext("2d"));
+}
+function house(ctx, x, y, s, fill, stroke) {
+  ctx.beginPath(); ctx.moveTo(x + s / 2, y); ctx.lineTo(x + s, y + s * .42); ctx.lineTo(x + s, y + s); ctx.lineTo(x, y + s); ctx.lineTo(x, y + s * .42); ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2.2; ctx.stroke(); }
+}
+function drawGrids() {
+  const m = Math.min(119, Math.floor(S.month));
+  Object.keys(PORT.scenarios).forEach(k => {
+    const ctx = GRID[k]; ctx.clearRect(0, 0, 420, 420);
+    let own = 0;
+    PORT.families.forEach((f, i) => {
+      const st = +f[k].states[m], x = (i % 10) * 42 + 6, y = Math.floor(i / 10) * 42 + 6;
+      if (st !== 4) own++;
+      const c = STATE_COL[st];
+      house(ctx, x, y, 30, `rgba(${c[0]},${c[1]},${c[2]},${st === 4 ? .55 : .95})`, st === 4 ? "rgba(140,90,100,.7)" : null);
+      let ev = 0; for (let j = Math.max(0, m - 1); j <= m; j++) ev |= f[k].events[j];
+      if (ev & EV.STEW) { ctx.beginPath(); ctx.arc(x + 15, y + 17, 19 + 3 * Math.sin(S.pulse), 0, 7); ctx.strokeStyle = "rgba(127,178,255,.95)"; ctx.lineWidth = 2; ctx.stroke(); }
+      else if (ev & (EV.JOB | EV.INS)) { ctx.beginPath(); ctx.arc(x + 15, y + 17, 18, 0, 7); ctx.strokeStyle = ev & EV.JOB ? "rgba(255,77,90,.8)" : "rgba(255,154,60,.8)"; ctx.lineWidth = 1.5; ctx.stroke(); }
+    });
+    $("#o_" + k).innerHTML = `${own}<small>still home</small>`;
+  });
+  const y = Math.floor(m / 12), mm = m % 12;
+  $("#clock").innerHTML = `Year ${y + 1}<small>month ${m + 1} of 120</small>`;
+}
+let lastStewMonth = -1;
+function stewardFeed() {
+  const m = Math.floor(S.month);
+  if (m === lastStewMonth) return; lastStewMonth = m;
+  PORT.families.forEach(f => {
+    const e = f.keystone.events;
+    if (!(e[m] & EV.STEW)) return;
+    let recent = 0; for (let j = Math.max(0, m - 12); j <= m; j++) recent |= e[j];
+    const cause = recent & EV.JOB ? "job loss → payment reset to income cap" : recent & EV.INS ? "insurance spike → escrow reserve draw" : recent & EV.REP ? "major repair → repair program" : "thin buffer → reserve plan";
+    logEv(`<b>steward</b> → ${f.name.split(" ")[0]} ${f.name.split(" ")[1][0]}. · M${m + 1} · ${cause}`, "st");
+  });
+}
+
+// ------------------------------------------------------------------ act 3
+function buildAct3() {
+  const c = CAP, u = c.unit_cost.total;
+  const rows = [["Build cost per home", u, 0, u, COL.dim], ["Buyer's 0% mortgage (present value)", c.first_mortgage_pv, u - c.first_mortgage_pv, u, COL.teal],
+    ["Down payment", c.capital_recovered_per_unit - c.first_mortgage_pv, u - c.capital_recovered_per_unit, u - c.first_mortgage_pv, COL.teal],
+    ["CalHome + FHLBank AHP (assumed)", c.public_per_unit, c.per_unit_gap_after_public_sources, u - c.capital_recovered_per_unit, COL.blue],
+    ["Gap per home → philanthropy", c.per_unit_gap_after_public_sources, 0, c.per_unit_gap_after_public_sources, COL.amber]];
+  $("#act3").innerHTML = `<div><div style="font:600 18px var(--display)">Who pays for one $${fmt(Math.round(u / 1000))}k townhome</div>
+    <div style="font:11px var(--mono);color:var(--ink-2);margin-top:4px">Land contributed under SB 4 · hard cost $375/sf and per-home public funding are planning assumptions · a 0% note is worth its present value at 5%, not its $${fmt(Math.round(c.first_mortgage_face / 1000))}k face value</div></div>
+    <div class="wf">${rows.map(([l, v, left], i) => `<div class="wfr"><span>${l}</span><div class="tr"><i id="wf${i}" data-l="${left / u * 100}" data-w="${v / u * 100}" style="left:${left / u * 100}%;background:rgb(${rows[i][4]})"></i></div><span class="v">$${fmt(Math.round(v))}</span></div>`).join("")}</div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:12px">
+      <span style="font:12px var(--mono);color:var(--ink-2)">× 100 homes = philanthropy needed (sandbox sweep range $5.8M–$26.3M) · for scale: the 2026 Keys to 100 gala raised $330,000</span>
+      <span style="font:700 34px var(--display);color:var(--amber)">$${(c.philanthropy_needed_total / 1e6).toFixed(1)}M</span></div>
+    <div><div style="font:11px var(--mono);color:var(--ink-2);margin-bottom:8px">DRAFTED BY THE AGENTS FOR HUMAN REVIEW</div><div class="docs">
+      <div class="doc"><b>4 congregation letters</b>Laguna Hills, Irvine, Costa Mesa, Yorba Linda: SB 4 by-right path, ground lease, 30 homes each</div>
+      <div class="doc"><b>3 family term sheets</b>Rate, term, payment cap, income-indexed reset, steward enrollment</div>
+      <div class="doc"><b>CalHome + AHP packet</b>Per-home gap, unit mix, AMI targeting, HMDA demand evidence</div>
+      <div class="doc"><b>Steward call list</b>Families flagged before a missed payment, with a workout for each</div></div></div>`;
+}
+function playAct3() { document.querySelectorAll("[id^=wf]").forEach((e, i) => setTimeout(() => e.style.width = e.dataset.w + "%", 300 + i * 450)); document.querySelectorAll(".doc").forEach((d, i) => setTimeout(() => d.classList.add("on"), 2600 + i * 500)); }
+
+function buildFinal() {
+  const k = PORT.summary.keystone, m = PORT.summary.market, imp = CAP.improve, mg = CAP.champions.market_gap;
+  $("#final").innerHTML = `<div class="card"><div style="font:12px var(--mono);letter-spacing:.2em;color:var(--teal)">KEYSTONE · BUILT FOR HABITAT FOR HUMANITY OF ORANGE COUNTY</div>
+    <h1>Keys to 100, mapped, financed and kept</h1>
+    <div class="stats"><div><b>120</b><span>homes sited on 4 faith-owned OC lots (goal 100)</span></div>
+    <div><b>${k.still_own}<small style="font-size:20px;color:var(--ink-2)"> vs ${m.still_own}</small></b><span>of 100 OC families still home at year 10, Keystone vs market-rate loans</span></div>
+    <div><b>$${(CAP.philanthropy_needed_total / 1e6).toFixed(1)}M</b><span>capital gap sized, with a funding stack</span></div>
+    <div><b>${imp.length ? imp[0].baseline.toFixed(2) + "→" + imp[imp.length - 1].challenger.toFixed(2) : "—"}</b><span>agent eval score after self-improvement · market-gap AUC ${mg.metrics.auc}</span></div></div>
+    <div class="url">Orange County data: HMDA 2022–24 · OC Public Works parcels · NAIP 2022 · OpenStreetMap · CA HCD 2026 · C.A.R. · Terner Center · 45+ verified sources</div></div>`;
+}
+
+// ------------------------------------------------------------------ timeline
+function fly(o, ms) { map.flyTo({ padding: { left: 0, top: 0, right: 0, bottom: 0 }, ...o, duration: ms, essential: true }); }
+function siteCam(k, zoom = 17.2, extra = 0) {  // padding resets so act-2/3 offsets never leak into act 1
+  const f = FEAT[k], p = f.homes.length ? f.homes : [{ polygon: [[f.lon, f.lat]] }];
+  const xs = p.flatMap(h => h.polygon.map(q => q[0])), ys = p.flatMap(h => h.polygon.map(q => q[1]));
+  return { center: [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2], zoom, pitch: 62, bearing: (f.bearing + 25 + extra) % 360 - 180,
+    padding: { left: 0, top: 0, right: 0, bottom: 0 } };
+}
+const anim = (k, key, from, to, ms, delay = 0) => tweens.push({ obj: S.sites[k], key, from, to, ms, t0: performance.now() + delay });
+const animS = (key, from, to, ms, delay = 0) => tweens.push({ obj: S, key, from, to, ms, t0: performance.now() + delay });
+// step-scoped delayed actions: cleared on every scene change so nothing from an old scene fires in a new one
+const later = (fn, ms) => timers.push({ fn, at: performance.now() + ms });
+let tweens = [], timers = [];
+
+function siteSteps(k, fast) {
+  const f = FEAT[k];
+  const d = fast ? 0.55 : 1;
+  return [
+    { act: 1, dur: 3600 * d, enter() { fly(siteCam(k, 16.6), 3200 * d); hudSite(k, 0); anim(k, "img", 0, 1, 1800 * d); caption(fast ? `${f.name}, ${f.city}` : `${f.name}, ${f.city}. A ${f.parcel_acres}-acre parcel owned by a congregation.`, "OC Public Works parcel · NAIP 2022 aerial at 0.6 m"); } },
+    { act: 1, dur: 3800 * d, enter() { anim(k, "scan", 0, 1, 3300 * d); later(() => hudSite(k, 1), 3300 * d); caption(`The CNN reads the imagery pixel by pixel and finds ${fmt(f.parking_sqm)} m² of surface parking.`, "U-Net · RGB + near-infrared + NDVI · trained on 7,753 OpenStreetMap parking lots"); } },
+    { act: 1, dur: 4400 * d, enter() { hudSite(k, 2); anim(k, "rise", 0, 1, 3400 * d); fly(siteCam(k, 17.6, 40), 4300 * d); const s0 = S.homesSited; tweens.push({ obj: { set v(x) { setCount(x); } }, key: "v", from: s0, to: s0 + f.units, ms: 3400 * d, t0: performance.now() });
+      caption(fast ? `+${f.units} townhomes` : `Keystone lays out ${f.units} townhomes on half the parking, with setbacks and drive aisles. The congregation keeps the rest.`, "SB 4: by-right approval · ≥30 homes/acre allowed in OC · 45-year affordability"); } },
+  ];
+}
+
+let STEPS;
+function buildSteps() { STEPS = [
+  { act: 1, dur: 6500, enter() { fly({ center: [-117.80, 33.68], zoom: 9.35, pitch: 45, bearing: -18 }, 3000); animS("ocLine", 0, 1, 2500); queueAct(1);
+      caption("Orange County, California. 34 cities. Median home price: $1.48 million.", "C.A.R., Sept 2026 · county boundary from OpenStreetMap");
+      hudPanel("Orange County by the numbers", [["Median single-family price", "$1,480,000"], ["Area median income, family of 4", "$138,600"],
+        ["Low-income limit, family of 4", "$148,850"], ["Low-income buyers denied a mortgage, 2024", "24%"], ["Very-low-income RHNA progress (units reported)", "2,719 of 46,416"]],
+        "C.A.R. Sept 2026 · CA HCD 2026 limits · HMDA 2024 · HCD RHNA progress (6th cycle)"); } },
+  { act: 1, dur: 6000, enter() { fly({ center: [-117.86, 33.74], zoom: 9.7, pitch: 52, bearing: -10 }, 6000);
+      caption("Habitat for Humanity of Orange County has built 239 homes since 1988. Keys to 100 commits to 100 more.", "Recent builds: West Washington Ave, Santa Ana · Richman Park, Fullerton · Stanton duplexes · Keys to 100 gala raised $330,000 in Sept 2026");
+      hudPanel("Habitat for Humanity of Orange County", [["Homes built since 1988", "239"], ["Goal", "Keys to 100"], ["Buyer income band", "30–80% of AMI"], ["Payment cap", "≈30–35% of income"], ["Sweat equity", "200–500 hours"]],
+        "habitatoc.org · PR Newswire, Nov 2024"); } },
+  { act: 1, dur: 7000, enter() { $("#hud").style.opacity = 0; animS("county", 0, 1, 5500); fly({ center: [-117.86, 33.74], zoom: 10.1, pitch: 58, bearing: 12 }, 7000);
+      tweens.push({ obj: { set v(x) { setCount(x, "townhomes of capacity found in OC"); } }, key: "v", from: 0, to: COUNTY.filter(c => c.viable).reduce((a, c) => a + c.units, 0), ms: 5500, t0: performance.now() });
+      caption("The constraint is land. Keystone scanned every faith-owned parcel in Orange County.", "305 parcels · OpenStreetMap places of worship joined to OC Public Works parcel records · SB 4 (2023) lets congregations build affordable homes by right"); } },
+  { act: 1, dur: 5500, enter() { hudCities(); caption("Room for 2,696 townhomes across 33 OC cities, even after each congregation keeps half its parking.", "Terner Center counts 1,907 developable faith-owned acres in Orange County"); } },
+  { act: 1, dur: 1200, enter() { $("#hud").style.opacity = 0; animS("countyFade", 1, 0, 1200); animS("ocLine", 1, 0, 1000); setCount(0, "homes sited · goal 100"); } },
+  ...siteSteps(0, false), ...siteSteps(1, true), ...siteSteps(2, true), ...siteSteps(3, true),
+  { act: 1, dur: 6500, enter() { $("#hud").style.opacity = 0; for (let k = 4; k < FEAT.length; k++) { anim(k, "img", 0, 1, 1500); anim(k, "scan", 0, 1, 2500); anim(k, "rise", 0, 1, 3500); }
+      fly({ center: [-117.82, 33.71], zoom: 10.4, pitch: 55, bearing: -10 }, 5000); animS("countyFade", 0, 0.45, 3000); animS("beacons", 0, 1, 2500, 3800); animS("ocLine", 0, 1, 2500, 2500);
+      caption("120 homes sited across four Orange County congregations, from Yorba Linda to Laguna Hills. Six more sites are ready behind them.", "The Land lead caps any one site at 30 homes; agents learned that rule from their own graders"); } },
+  // ---- act 2
+  { act: 2, dur: 5500, enter() { setAct(2); queueAct(2); $("#hud").style.opacity = 0; fly({ ...siteCam(0, 16.9, 80), pitch: 55, padding: { left: Math.min(760, innerWidth * 0.45), top: 80, right: 0, bottom: 0 } }, 4000); S.familyMode = true; S.month = 0; $("#act2").style.opacity = 1; drawGrids(); animS("beacons", 1, 0, 1500); animS("countyFade", S.countyFade, 0, 1500);
+      setCount(0, "families still home at year 10 · Keystone");
+      animS("ocLine", S.ocLine, 0, 1000);
+      caption("Building homes is half the job. Keeping Orange County families in them is the other half.", "More than half of low-income first-time buyers return to renting within 5 years (Reid 2005)"); } },
+  { act: 2, dur: 30000, enter() { animS("month", 0, 119.99, 28000); caption("100 Orange County families earning 30–80% of area median income. Same layoffs, insurance spikes and repairs. Three ways to finance them.", "Red ring: job loss · orange ring: insurance spike · blue ring: the Steward agent reaches out before a payment is missed"); },
+    tick() { drawGrids(); stewardFeed(); setCount(+$("#o_keystone").textContent.match(/\d+/)[0]); } },
+  { act: 2, dur: 7500, enter() { const k = PORT.summary;
+      caption(`Year 10: ${k.market.still_own} families still home with market loans, ${k.standard.still_own} with a standard 0% loan, ${k.keystone.still_own} with Keystone.`, `Keystone pairs payments sized to cash flow (Ganong & Noel 2020) with stewardship (Thaden 2011). ${k.keystone.steward_contacts} early steward contacts`); } },
+  // ---- act 3
+  { act: 3, dur: 9000, enter() { setAct(3); $("#hud").style.opacity = 0; queueAct(3); $("#act2").style.opacity = 0; S.familyMode = false; buildAct3(); $("#act3").style.opacity = 1; playAct3(); animS("beacons", 0, 1, 3000, 6000); animS("countyFade", 0, 0.35, 3000, 6000);
+      fly({ center: [-117.82, 33.71], zoom: 10.6, pitch: 60, bearing: 25, padding: { left: Math.min(860, innerWidth * 0.5), top: 0, right: 0, bottom: 0 } }, 9000); setCount(120, "homes sited · goal 100");
+      animS("ocLine", 0, 1, 2500, 4000);
+      caption("Every Orange County home has a price. Keystone shows who pays it.", "Capital lead: capital_plan + a sandboxed sensitivity sweep · demand sized from real HMDA denials"); } },
+  { act: 3, dur: 6500, enter() { caption("The agents draft the follow-through. Graders turn mistakes into lessons, and a gate decides what ships.", "Agent eval score 0.67 → 1.00 · the CNN challenger was rejected as noise · every citation checked against verified sources"); } },
+  { act: 3, dur: 14000, enter() { $("#act3").style.opacity = 0; buildFinal(); $("#final").style.opacity = 1; caption(""); animS("ocLine", S.ocLine, 1, 2000); fly({ center: [-117.82, 33.71], zoom: 10.2, pitch: 60, bearing: 80, padding: { left: 0, top: 0, right: 0, bottom: 0 } }, 14000); } },
+]; }
+
+let si = -1, stepT0 = 0, playing = false, pausedAt = 0, lastReplay = 0;
+function goto(i) {
+  tweens = []; timers = [];
+  si = clamp(i, 0, STEPS.length - 1); stepT0 = performance.now();
+  const act = STEPS[si].act; setAct(act);
+  if (act !== 3) { $("#act3").style.opacity = 0; $("#final").style.opacity = 0; }
+  if (act !== 2) $("#act2").style.opacity = 0;
+  STEPS[si].enter();
+}
+function resetAll() {
+  S.county = 0; S.countyFade = 1; S.month = 0; S.beacons = 0; S.ocLine = 0; S.familyMode = false; setCount(0, "homes sited · goal 100");
+  S.sites.forEach(s => { s.img = 0; s.scan = 0; s.rise = 0; s.lastScan = -1; });
+  $("#hud").style.opacity = 0; $("#log").innerHTML = ""; lastStewMonth = -1;
+  document.querySelectorAll(".ag").forEach(a => a.classList.remove("on", "done"));
+}
+function frame(now) {
+  if (playing) {
+    tweens = tweens.filter(tw => { if (now < tw.t0) return true; const p = clamp((now - tw.t0) / tw.ms); tw.obj[tw.key] = lerp(tw.from, tw.to, ease(p)); return p < 1; });
+    timers = timers.filter(t => { if (now >= t.at) { t.fn(); return false; } return true; });
+    const st = STEPS[si];
+    if (st && st.tick) st.tick(now - stepT0);
+    if (now - lastReplay > 650) { replayTick(); lastReplay = now; }
+    if (st && now - stepT0 > st.dur && si < STEPS.length - 1) goto(si + 1);
+  }
+  S.pulse = now / 180;
+  render();
+  requestAnimationFrame(frame);
+}
+function play() { playing = true; $("#bPlay").textContent = "Pause"; if (pausedAt) { const d = performance.now() - pausedAt; stepT0 += d; tweens.forEach(t => t.t0 += d); timers.forEach(t => t.at += d); pausedAt = 0; } }
+function pause() { playing = false; pausedAt = performance.now(); $("#bPlay").textContent = "Play"; }
+function jumpTo(i) {  // replay instantly up to step i so state is consistent, then continue
+  resetAll(); playing = true;
+  for (let j = 0; j < i; j++) { si = j; timers = []; STEPS[j].enter(); tweens.forEach(t => t.obj[t.key] = t.to); tweens = []; timers.forEach(t => t.fn()); timers = []; if (STEPS[j].tick) STEPS[j].tick(1e9); }
+  goto(i);
+}
+$("#bPlay").onclick = () => playing ? pause() : play();
+$("#bNext").onclick = () => jumpTo(si + 1);
+$("#bPrev").onclick = () => jumpTo(si - 1);
+$("#bRe").onclick = () => jumpTo(0);
+addEventListener("keydown", e => { if (e.key === " ") { e.preventDefault(); $("#bPlay").click(); } if (e.key === "ArrowRight") $("#bNext").click(); if (e.key === "ArrowLeft") $("#bPrev").click(); if (e.key.toLowerCase() === "r") $("#bRe").click(); });
+
+(async () => {
+  initMap();
+  await load();
+  buildGrids(); buildSteps();
+  if (TRACE) $("#railsub").textContent = `Replaying run ${TRACE.id} · graded ${TRACE.grade.score.toFixed(2)} · ${TRACE.events.filter(e => e.type === "tool").length} MCP calls`;
+  $("#loading").remove();
+  requestAnimationFrame(frame);
+  const auto = new URLSearchParams(location.search).has("autoplay");
+  const start = () => { $("#start").remove(); goto(0); play(); };
+  if (auto) start(); else $("#go").onclick = start;
+})();
+</script>
+</body>
+</html>

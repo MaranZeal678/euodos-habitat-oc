@@ -1,0 +1,26 @@
+{
+  "_readme": "Copy to <region_id>.json, fill every field from a primary source, then run: python -m keystone.pipeline --region <region_id>. Fields marked null are required.",
+  "id": null,
+  "name": null,
+  "affiliate": null,
+  "state_fips": null,
+  "county_fips": null,
+  "bbox": null,
+  "hmda_years": [2022, 2023, 2024],
+  "parcel_service": {
+    "url": "ArcGIS FeatureServer layer URL that supports point-intersect queries with outSR=4326 and f=geojson",
+    "area_field": null, "area_to_sqm": null,
+    "fields": {"apn": null, "address": null, "city": null, "zip": null, "assessed": null, "land_value": null,
+               "improved_value": null, "general_plan": null, "zoning": null, "zclass": null}
+  },
+  "ami_4p": null,
+  "income_limits_4p": {"extremely_low": null, "very_low": null, "low": null, "moderate": null},
+  "income_limits_source": null,
+  "median_home_price": null,
+  "market_30y_rate": null,
+  "price_source": null,
+  "faith_land_law": {"name": null, "by_right": null, "density_residential_zone": null, "density_nonresidential_zone": null,
+                     "ownership_deed_years": null, "url": null},
+  "benchmark": {},
+  "property_tax_rate": null
+}

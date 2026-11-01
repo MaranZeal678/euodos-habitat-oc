@@ -1,0 +1,8 @@
+# ingestion + CNN training/inference (keystone.pipeline); torch CPU wheels in Docker
+-r requirements.txt
+torch==2.15.0
+rasterio==1.5.2
+pystac-client==0.9.1
+planetary-computer==1.0.0
+matplotlib==3.11.2
+pytest==9.2.0

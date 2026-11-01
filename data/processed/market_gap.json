@@ -1,0 +1,65 @@
+[
+  {
+    "year": 2022,
+    "applications": 21136,
+    "low_income_applications": 2342,
+    "low_income_share_of_applications": 0.111,
+    "low_income_denial_rate": 0.236,
+    "all_denial_rate": 0.111,
+    "low_income_denied": 552,
+    "low_income_denial_reasons": {
+      "Debt-to-income ratio": 277,
+      "Credit history": 136,
+      "Collateral": 44,
+      "Credit application incomplete": 31,
+      "Other": 28,
+      "Unverifiable information": 16,
+      "Insufficient cash": 13,
+      "Employment history": 6
+    },
+    "median_price_low_income_approved_k": 575.0,
+    "median_income_low_income_applicants_k": 75.0
+  },
+  {
+    "year": 2023,
+    "applications": 15450,
+    "low_income_applications": 1591,
+    "low_income_share_of_applications": 0.103,
+    "low_income_denial_rate": 0.281,
+    "all_denial_rate": 0.116,
+    "low_income_denied": 447,
+    "low_income_denial_reasons": {
+      "Debt-to-income ratio": 270,
+      "Credit history": 85,
+      "Collateral": 39,
+      "Credit application incomplete": 17,
+      "Other": 15,
+      "Unverifiable information": 11,
+      "Insufficient cash": 6,
+      "Employment history": 4
+    },
+    "median_price_low_income_approved_k": 555.0,
+    "median_income_low_income_applicants_k": 82.0
+  },
+  {
+    "year": 2024,
+    "applications": 15489,
+    "low_income_applications": 1458,
+    "low_income_share_of_applications": 0.094,
+    "low_income_denial_rate": 0.239,
+    "all_denial_rate": 0.108,
+    "low_income_denied": 349,
+    "low_income_denial_reasons": {
+      "Debt-to-income ratio": 206,
+      "Credit history": 53,
+      "Collateral": 32,
+      "Other": 21,
+      "Credit application incomplete": 16,
+      "Unverifiable information": 10,
+      "Employment history": 5,
+      "Insufficient cash": 5
+    },
+    "median_price_low_income_approved_k": 665.0,
+    "median_income_low_income_applicants_k": 79.0
+  }
+]

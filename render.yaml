@@ -1,0 +1,18 @@
+# One-click deploy on Render (Blueprint). Set ANTHROPIC_API_KEY and KEYSTONE_API_TOKEN as secrets in the dashboard.
+services:
+  - type: web
+    name: keystone
+    runtime: docker
+    plan: standard
+    healthCheckPath: /healthz
+    envVars:
+      - key: KEYSTONE_REGION
+        value: orange_county_ca
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: KEYSTONE_API_TOKEN
+        generateValue: true
+    disk:
+      name: keystone-artifacts
+      mountPath: /app/artifacts/runs
+      sizeGB: 5

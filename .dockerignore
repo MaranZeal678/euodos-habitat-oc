@@ -1,0 +1,13 @@
+.venv
+.claude
+**/__pycache__
+data/raw/source_docs
+data/raw/*.json
+data/raw/hmda_oc_2022.csv
+data/raw/hmda_oc_2023.csv
+data/processed/parking_chips.npz
+artifacts/runs
+artifacts/*.png
+artifacts/*.log
+tests
+docs

@@ -1,0 +1,23 @@
+[
+  {
+    "agent": "capital_lead",
+    "lesson": "Always run a sensitivity sweep in the sandbox over hard cost and note discount rate before reporting the gap.",
+    "run_id": "20261031_155432_ce15",
+    "grader": "sensitivity_run",
+    "ts": "2026-10-31 15:56"
+  },
+  {
+    "agent": "director",
+    "lesson": "Report the market-gap model's fairness metrics (calibration gap by race group) from models_registry in the brief.",
+    "run_id": "20261031_155432_ce15",
+    "grader": "fairness_reported",
+    "ts": "2026-10-31 15:56"
+  },
+  {
+    "agent": "land_lead",
+    "lesson": "Cap any single site at 30 units and diversify across mid-size sites to limit congregation risk.",
+    "run_id": "20261031_155432_ce15",
+    "grader": "diversified_sites",
+    "ts": "2026-10-31 15:56"
+  }
+]
