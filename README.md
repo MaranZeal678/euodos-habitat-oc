@@ -2,11 +2,6 @@
 
 > For a nonprofit project manager handed a land offer: Euodos finds the fastest legal path for that address, shows offer-to-move-in in 2.4 years instead of 4.2, and proves the families can afford and keep the homes.
 
-**Team:** [team name]
-**Members:** [names]
-**Lane:** 2 Clear it
-**Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
-
 ## The real user
 
 Maria Reyes (a made-up persona) runs real estate at Habitat for Humanity of Orange County. Crossline Church in Laguna Hills (APN 588-081-21, a real public parcel) offers part of its parking lot. She has to answer a board question fast: can 30 families move in within two years, under which law, and who pays?
