@@ -66,12 +66,12 @@ visually and strongly cover all the features and what sets Euodos apart.
 unverified=0
 
 REALITY: premise-table pass 8 premises, 0 unverified keystone/tools.py:39
-REALITY: already-done pass no prior work on lanes or a scenario mode in git log docs/LANES_CEO_REVIEW.md:1
+REALITY: already-done pass no prior work on lanes or a scenario mode in git log hackathon-info/LANES_CEO_REVIEW.md:1
 REALITY: surface-check pass routes cited (/demo, /api/optimize, /api/mission) exist keystone/app/server.py:1
 REALITY: binding-decisions pass no recorded branch decisions; CLAUDE.md routing only CLAUDE.md:1
 REALITY: numbers pass figures reused from the corrected models (39/69/85, $7.4M vs $16.4M) [measured: commits 5a3cd12, c5627c4] keystone/models/capital.py:40
-REALITY: deferred-asks pass no linked issue docs/LANES_CEO_REVIEW.md:1
-REALITY: pr-count pass default one PR per wave (no .gstack/ship-policy.json) docs/LANES_CEO_REVIEW.md:1
+REALITY: deferred-asks pass no linked issue hackathon-info/LANES_CEO_REVIEW.md:1
+REALITY: pr-count pass default one PR per wave (no .gstack/ship-policy.json) hackathon-info/LANES_CEO_REVIEW.md:1
 
 ## 0C. Dream state
 
@@ -274,7 +274,7 @@ Acceptance criteria (Clarity 1):
 Corrected reality rows (round 1):
 
 REALITY: already-done pass git log since 2026-11-01 shows no lane, scenario or sign-in work (latest: 17301c6 routing rules) CLAUDE.md:1
-REALITY: deferred-asks pass no linked issue; the lab brief is the user's screenshot docs/LANES_CEO_REVIEW.md:9
+REALITY: deferred-asks pass no linked issue; the lab brief is the user's screenshot hackathon-info/LANES_CEO_REVIEW.md:9
 REALITY: numbers finding 39/69/85 [measured: keystone/app/static/demo/portfolio.json summary]; $7.4M vs $16.4M [measured: keystone/app/static/demo/reference_run.json report, capital section] [re-measure before gate]; neither is pinned by a test keystone/app/static/demo/portfolio.json:1
 
 Pending decisions from round 1:

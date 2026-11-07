@@ -3,7 +3,7 @@
 The page's clock (performance.now, Date.now, requestAnimationFrame, setTimeout) is replaced by a virtual clock that
 advances exactly 1/fps per frame; each frame waits for map tiles before it is captured and piped into ffmpeg.
 
-  .venv/bin/python scripts/record_demo.py --out docs/keystone_demo.mp4            # server must be running on :8000
+  .venv/bin/python scripts/record_demo.py --out hackathon-info/keystone_demo.mp4            # server must be running on :8000
   .venv/bin/python scripts/record_demo.py --seconds 5 --out /tmp/test.mp4         # quick test
 """
 import argparse
@@ -50,7 +50,7 @@ VIRTUAL_CLOCK = """
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8000/demo")
-    ap.add_argument("--out", default="docs/keystone_demo.mp4")
+    ap.add_argument("--out", default="hackathon-info/keystone_demo.mp4")
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--height", type=int, default=1080)

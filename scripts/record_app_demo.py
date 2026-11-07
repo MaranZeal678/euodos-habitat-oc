@@ -8,7 +8,7 @@ phrase, timed to the audio. Shots are recorded in real time and cut to their slo
 run are sped up, and the spotlight label says so.
 
   KEYSTONE_DEMO_LOGIN=1 .venv/bin/uvicorn keystone.app.server:app --port 8010
-  .venv/bin/python scripts/record_app_demo.py --url http://localhost:8010 --out docs/euodos_30s.mp4
+  .venv/bin/python scripts/record_app_demo.py --url http://localhost:8010 --out hackathon-info/euodos_30s.mp4
 """
 import argparse
 import json
@@ -323,7 +323,7 @@ def cut(raw, cuts, workdir, out):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8010")
-    ap.add_argument("--out", default="docs/euodos_30s.mp4")
+    ap.add_argument("--out", default="hackathon-info/euodos_30s.mp4")
     a = ap.parse_args()
     work = Path(tempfile.mkdtemp(prefix="keystone_rec_"))
     raw, cuts = record(a.url, work)

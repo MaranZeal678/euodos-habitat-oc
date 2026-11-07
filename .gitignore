@@ -11,7 +11,7 @@ data/raw/source_docs/
 data/processed/parking_chips.npz
 
 # large or per-run outputs
-docs/keystone_demo.mp4
+hackathon-info/keystone_demo.mp4
 artifacts/runs/
 artifacts/*.log
 artifacts/chip_check.png

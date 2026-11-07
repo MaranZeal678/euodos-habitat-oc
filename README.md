@@ -24,7 +24,7 @@ Plus a one-page printable summary, a source dialog on every headline, and a team
 
 **Demo video:** uploaded on the hub
 **Mac app:** [Euodos for Mac (Apple Silicon)](https://github.com/MaranZeal678/euodos-releases/releases/latest). Demo sign-in `maria@habitat-oc.demo` / `keys-to-100`.
-**For engineers:** flowcharts and system design in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**For engineers:** flowcharts and system design in [hackathon-info/ARCHITECTURE.md](hackathon-info/ARCHITECTURE.md).
 
 ## How Claude is used
 
@@ -113,7 +113,7 @@ Euodos uses AI on the three technical problems between Habitat OC and 100 more h
 
 All of it is run by a **hierarchy of Claude agents** (Director → Land / Family / Capital leads → Site analysts & Underwriters). The agents reach every tool through an **MCP server**, run their own analysis code in an **OS-level sandbox**, and **improve themselves** through gated champion/challenger loops. The same loop governs the CNN, the credit model and the agents' own playbooks.
 
-See [docs/RESEARCH_BRIEF.md](docs/RESEARCH_BRIEF.md) for the evidence base (about 45 verified citations) and the prototype results.
+See [hackathon-info/RESEARCH_BRIEF.md](hackathon-info/RESEARCH_BRIEF.md) for the evidence base (about 45 verified citations) and the prototype results.
 
 ```
                        ┌──────────── Director (Opus 5.5) ─────────────┐   progress ledger, final brief

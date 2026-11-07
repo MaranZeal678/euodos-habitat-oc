@@ -3,7 +3,7 @@
 The page's clock is virtual (the same clock scripts/record_demo.py uses), so every frame is rendered at exactly
 1/fps of film time however slow the machine is.
 
-  .venv/bin/python scripts/record_film.py --url http://localhost:8010/scenario?film --out docs/euodos_30s.mp4
+  .venv/bin/python scripts/record_film.py --url http://localhost:8010/scenario?film --out hackathon-info/euodos_30s.mp4
   .venv/bin/python scripts/record_film.py --stills 1.5,6,13,20,25,28 --out /tmp/stills   # check shots as PNGs
 """
 import argparse
@@ -21,7 +21,7 @@ FILM_SECONDS = 30.0
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8010/scenario?film")
-    ap.add_argument("--out", default="docs/euodos_30s.mp4")
+    ap.add_argument("--out", default="hackathon-info/euodos_30s.mp4")
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--height", type=int, default=1080)
