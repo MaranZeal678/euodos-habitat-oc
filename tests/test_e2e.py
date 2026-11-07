@@ -272,6 +272,7 @@ def test_scenario_walkthrough_signed_in(page, base_url, monkeypatch):
     page.click("#explainBtn")
     expect(page.locator("#exBody")).to_contain_text("critical path")
     page.click("#exClose")
+    expect(page.locator("#askQ")).to_be_visible()  # the agents take a typed question from the clock and path steps
     page.uncheck("[data-lever=sb4_ministerial]")
     expect(page.locator("#hv")).not_to_have_text("2.4 years", timeout=15_000)
     for label in ("4 · Families", "5 · Who pays", "6 · Ten years"):

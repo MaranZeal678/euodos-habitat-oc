@@ -511,8 +511,12 @@ def scenario_policy(request):
     return "auto" if trusted or os.environ.get("KEYSTONE_SCENARIO_CLAUDE") == "1" else "scripted"
 
 
+class MissionAsk(BaseModel):
+    question: str | None = Field(None, max_length=400)
+
+
 @app.post("/api/scenario/mission")
-async def scenario_mission(request: Request):
+async def scenario_mission(request: Request, body: MissionAsk | None = None):
     _limit(request)
     s = _session(request)["scenario"]
     if sum(1 for t in _tasks.values() if not t.done()) >= 3:
@@ -524,6 +528,8 @@ async def scenario_mission(request: Request):
             "families": [{"name": h["name"], "income": h["income"], "household_size": h["household_size"],
                           "savings": h["savings"], "monthly_debts": h["monthly_debts"],
                           "income_volatility": h["income_volatility"]} for h in picks]}
+    if body and body.question and body.question.strip():
+        spec["question"] = body.question.strip()  # the user's own ask, handed to the director with the mission
     rid = time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:4]
     policy = scenario_policy(request)
 

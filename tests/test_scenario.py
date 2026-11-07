@@ -233,3 +233,5 @@ def test_remote_scenario_missions_use_the_offline_policy(client, demo, monkeypat
     monkeypatch.setattr(server.runtime, "Hierarchy", Quick)
     r = client.post("/api/scenario/mission").json()
     assert r["policy"] == "scripted"  # TestClient's peer is not loopback: no paid Claude runs for remote visitors
+    assert client.post("/api/scenario/mission", json={"question": "Evaluate SB 4 for this parcel."}).status_code == 200
+    assert client.post("/api/scenario/mission", json={"question": "x" * 401}).status_code == 422
