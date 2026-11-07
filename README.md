@@ -1,27 +1,112 @@
-# Keystone: an agentic operating system for Habitat OC's Keys to 100
+# Keystone
 
-UCI Paul Merage School of Business Center for Real Estate × Habitat for Humanity of Orange County Impact Lab.
+> For a nonprofit project manager handed a land offer: Keystone finds the fastest legal path for that address, shows offer-to-move-in in 2.4 years instead of 4.2, and proves the families can afford and keep the homes.
 
-**Keystone is the operating system for nonprofit homeownership.** It finds buildable land, designs mortgages families can keep, and keeps them in their homes, with a team of AI agents that a small affiliate staff supervises. Product strategy, business model and the judge demo script are in [docs/PRODUCT.md](docs/PRODUCT.md).
+**Team:** [team name]
+**Members:** [names]
+**Lane:** 2 Clear it
+**Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
 
-**For engineers:** flowcharts and the system design (containers, request lifecycle, timeline engine, agents, model governance, security, deployment, scale path) are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## The real user
 
-**See it:** `make serve`, then open <http://localhost:8000/demo?autoplay>, a two-minute 3D mission-control demo of Orange County. A recorded 1080p copy is at `docs/keystone_demo.mp4`; re-record with `.venv/bin/python scripts/record_demo.py`, which renders frame-exact on a virtual clock.
-- **Act 1:** the CNN scans church parking lots and townhomes rise out of them.
-- **Act 2:** 100 families live 10 years under three ways of financing.
-- **Act 3:** the capital waterfall and the agent-drafted follow-through.
+Maria Reyes (a made-up persona) runs real estate at Habitat for Humanity of Orange County. Crossline Church in Laguna Hills (APN 588-081-21, a real public parcel) offers part of its parking lot. She has to answer a board question fast: can 30 families move in within two years, under which law, and who pays?
 
-A replay of a real graded agent run streams alongside throughout.
+**Before:** she works out which of seven legal paths might apply from city pages and statutes (some still cite renumbered law), assumes the usual sequence of about four years, and only finds out whether families qualify and what the gap is after approval.
+**After:** she signs in, sees every path tested against this parcel with its statute, clock and open checks, watches the critical path drop to 2.4 years, and gets the family and funding answer in the same session, with a source behind every number.
 
-| Module | Ships |
+## What we built
+
+A Mac app (also a web server) that runs one land offer end to end in six steps:
+
+1. **The offer.** A U-Net CNN reads the parking lot from 0.6 m NAIP aerial imagery: 45,450 m², room for 30 townhomes. SB 4 screen marked met or "to verify".
+2. **The path.** Seven legal paths (SB 4, SB 35/423, SB 684, SB 9 duplex, SB 9 lot split, ADU, rezone) tested against the project. Each shows its current statute (ADU law cited as 66314, formerly 65852.2), review type, clock and every test as met / to verify / fails. Change homes, zoning or city status and the verdicts update; pick a path and the clock follows.
+3. **The clock.** The project as a dependency graph; the clock is its critical path. 4.2 years the usual way, 2.4 with the site pre-screened, a ministerial path and funding started on day one.
+4. **Families.** 30 households with incomes sampled from real 2024 HMDA records: chance a bank says no, and chance they keep the home for 10 years under a mortgage design optimized for them. Edit an income and it recomputes live.
+5. **Who pays.** Capital stack summed home by home: $5.4M philanthropy versus $6.8M with standard 0% loans.
+6. **Ten years.** The same families under three ways of financing, same shocks: 22.0 of 30 expected to keep their homes versus 7.5 on market loans.
+
+Plus a one-page printable summary, a source dialog on every headline, and a team of Claude agents you can run on the offer.
+
+**Demo video:** uploaded on the hub
+**Mac app:** [Keystone for Mac (Apple Silicon)](https://github.com/MaranZeal678/keystone-releases/releases/latest). Demo sign-in `maria@habitat-oc.demo` / `keys-to-100`.
+**For engineers:** flowcharts and system design in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## How Claude is used
+
+- **Building it:** Claude Code wrote and reviewed the code, the models, the tests and the CI that builds the Mac app, and drafted the demo script.
+- **Inside the tool:** a hierarchy of Claude agents (Opus 5.5 leads, Sonnet 5.5 workers) works the offer through an MCP server: land, family and capital leads delegate to site analysts and underwriters, run analysis code in an OS sandbox, and write a brief that code graders check (every URL must be real, every assumption disclosed). Without an API key the same hierarchy runs on a deterministic offline policy.
+- **What a person checks:** every "to verify" item (title, hazard screens, the city's streamlining status, zoning), the labelled assumptions, and the final brief. Keystone files nothing and contacts no one.
+
+## Try it
+
+Needs macOS or Linux, Python 3.13 and [uv](https://docs.astral.sh/uv/).
+
+```bash
+git clone https://github.com/MaranZeal678/keystone-habitat-oc.git
+cd keystone-habitat-oc
+uv venv --python 3.13 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+KEYSTONE_DEMO_LOGIN=1 .venv/bin/uvicorn keystone.app.server:app --port 8000
+```
+
+Open <http://localhost:8000/scenario> and sign in with `maria@habitat-oc.demo` / `keys-to-100`. Use ← → to move between steps, **P** for the one-page summary.
+
+The sample data and trained models ship in the repo (`data/processed`, `artifacts/`, `keystone/app/static/demo/scenario_seed.json`), so no account is needed. Optional environment variables are listed in `.env.example`; `ANTHROPIC_API_KEY` switches the agents from the offline policy to Claude. Tests: `uv pip install --python .venv/bin/python -r requirements-dev.txt && .venv/bin/python -m pytest -q tests`.
+
+## Sources and assumptions
+
+| Item | Source or assumption | Date checked |
+|---|---|---|
+| SB 4: ownership as of Jan 1, 2024, 100% lower income, all zones, hazard exclusions, 60-day conflict notice, 90-day design review | [HCD SB 4 fact sheet, Gov 65913.16](https://www.hcd.ca.gov/sites/default/files/docs/planning-and-community/aff-hsg-faith-higher-ed-sb-4.pdf) (April 2026) | 2026-11-07 |
+| SB 35 / SB 423: consistency in 60 days, approval in 90 days (150 homes or fewer) | [HCD SB 35 Guidelines §301(b)](https://www.hcd.ca.gov/policy-research/docs/SB-35-Guidelines-Update-Final.pdf), Gov 65913.4 | 2026-11-07 |
+| SB 684 / SB 1123 map for 10 or fewer parcels; SB 9 (65852.21, 66411.7, 60-day lot split); ADU 66314 (60 days, formerly 65852.2) | Impact Lab Lane 2 DATA-SOURCES (leginfo, HCD); SB 684 clock shown as unknown | 2026-11-07 |
+| City subject to SB 35 streamlining, parcel zoning, title, fire/flood/fault screens | Not checked: shown as "to verify" | — |
+| Baseline about 4 years; rezone ~1 year + entitlements ~1 year | Impact Lab brief and timeline.json (ASSUMPTION) | 2026-11-07 |
+| SB 4 approval in practice 90–180 days | [SF Planning](https://sfplanning.org/node/3069) | 2026-11-01 |
+| Discretionary approval 6 to 25+ months | [Pew 2024](https://pewtrusts.org/it/research-and-analysis/issue-briefs/2024/08/reforms-spur-faster-housing-approvals-in-california) | 2026-11-01 |
+| Funding application to award 10+ months | Terner Center 2025 via [Davis Vanguard](https://davisvanguard.org/2025/05/california-affordable-housing-finance/) | 2026-11-01 |
+| Site screen 6 mo, land deal 4, permits 4, construction 14, family selection 6 | ASSUMPTION (editable in the app) | — |
+| Parking area and homes per site | CNN on [NAIP](https://planetarycomputer.microsoft.com/dataset/naip) imagery, labels from OpenStreetMap; homes = 16 per acre on half the parking plus half the lawn, capped at 30 (ASSUMPTION) | 2026-10-31 |
+| Bank denial model | [CFPB HMDA](https://ffiec.cfpb.gov/data-browser/) Orange County 2022–2024 | 2026-11-01 |
+| Household incomes | Sampled from 2024 HMDA applicants at or under 80% AMI; savings, debts, job-loss and repair risks are ASSUMPTIONS | 2026-11-01 |
+| Income limits | CA HCD 2026 Orange County limits | 2026-10-31 |
+| Hard cost per sq ft, CalHome $60k and AHP $40k per home, 5% note discount rate, $750k home value | ASSUMPTION (editable in the app) | — |
+
+Every assumed number is labelled ASSUMPTION or "estimate" here and in the app.
+
+## What is real and what is mocked
+
+| Part | Status |
 |---|---|
-| Land Radar | CNN-scored faith parcels, generated site plans, outreach drafts |
-| Mortgage Designer | per-family term sheets that keep P(still home at year 10) ≥ 95% |
-| HomeKeeper + Steward agent | early-warning watchlist and workouts for existing homeowners |
-| Capital Planner | per-home funding waterfall, sensitivity range, application drafts |
-| Agent Console + MCP | `/mcp` endpoint (Streamable HTTP, bearer auth) for Claude Desktop, Claude Code or any MCP host |
+| Parcel, CNN parking scan, SB 4 density check | working (real data; scan stored, live re-scan on the server build) |
+| Legal path tests and clocks | working for the facts listed above; zoning, city status, title and hazards are inputs marked "to verify" |
+| Timeline critical path | working; durations are sourced or labelled estimates |
+| Bank-denial and 10-year models | working on real HMDA incomes; households are synthetic and the hazard rates are assumptions |
+| Capital stack | working; per-home program amounts are assumptions |
+| Agent hierarchy | working offline; with a key it runs on Claude |
+| Sign-in | demo account only |
 
-**Deploy:** `docker build -t keystone .` then run the image with `-e KEYSTONE_API_TOKEN=<secret>`, or use the Render blueprint in `render.yaml` (it generates the token). `/mcp` and `POST /api/mission` fail closed: without a token they answer only to loopback clients. One container serves `/`, `/demo`, `/api` and `/mcp`. Choose the market with `KEYSTONE_REGION` (configs live in `keystone/regions/`). Onboarding a new county means filling in `_template.json` and running `python -m keystone.pipeline`.
+## Where it gets things wrong
+
+- It cannot see zoning for this parcel (the county field is empty) or whether Laguna Hills is subject to SB 35 streamlining, so those paths stay "to verify".
+- The OpenStreetMap place-of-worship tag is not a title record; SB 4 needs ownership as of January 1, 2024.
+- SB 684's clock and its zone and lot-size tests were not read in detail, so the app says "unknown".
+- It does not yet model plan-check correction rounds, utility and fire sign-offs, annual funding cycles, the condo map or tenant relocation as separate delays.
+- Household finances and loan-performance hazards are assumptions; no public Habitat loan data exists.
+
+## Next steps
+
+Next month a Habitat project manager could use it to triage land offers. With one more week: city-by-city checklists and fees for all 34 OC cities, measured approval times from HCD's Annual Progress Report data, a stale-statute checker for city forms, and the other delays as phases with their cost per month.
+
+## Data and privacy
+
+This project uses only public or provided data. It contains no personal information about real tenants, buyers or residents; the persona and households are made up. It does not file applications or contact any city or person. Not legal, financial or lending advice.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
+
+## Under the hood
 
 Keystone uses AI on the three technical problems between Habitat OC and 100 more homes:
 

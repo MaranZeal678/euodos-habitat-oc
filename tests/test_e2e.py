@@ -262,13 +262,19 @@ def test_scenario_walkthrough_signed_in(page, base_url, monkeypatch):
     expect(page.locator("#hv")).to_have_text("30 homes", timeout=15_000)
     expect(page.locator("#login")).to_be_hidden()
     page.keyboard.press("ArrowRight")
+    expect(page.locator("#hv")).to_have_text("SB 4")
+    page.fill("#homes", "8")
+    page.click("#pathGo")
+    expect(page.locator("#status")).to_have_text("updated from the live models", timeout=15_000)
+    expect(page.locator("#label")).to_contain_text("3 of 7 paths ruled out")  # SB 684 opens up at 10 homes or fewer
+    page.keyboard.press("ArrowRight")
     expect(page.locator("#hv")).to_have_text("2.4 years")
     page.click("#explainBtn")
     expect(page.locator("#exBody")).to_contain_text("critical path")
     page.click("#exClose")
     page.uncheck("[data-lever=sb4_ministerial]")
     expect(page.locator("#hv")).not_to_have_text("2.4 years", timeout=15_000)
-    for label in ("3 · Families", "4 · Who pays", "5 · Ten years"):
+    for label in ("4 · Families", "5 · Who pays", "6 · Ten years"):
         page.click(f"#beats >> text={label}")
         expect(page.locator("#beats button.on")).to_have_text(label)
     page.click("#resetBtn")

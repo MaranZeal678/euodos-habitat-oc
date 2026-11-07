@@ -91,18 +91,22 @@ def main():
         # 2. the offer
         caption("Keystone scans the lot from aerial imagery: room for 30 homes")
         page.wait_for_timeout(2800)
-        # 3. the clock (Lane 2: Clear it)
-        caption("Clear it: offer to move-in in 2.4 years, not 4.2")
+        # 3. the legal path for this address (Lane 2: Clear it)
+        caption("Seven legal paths tested: SB 4 by right fits; four are ruled out")
         click("#beats button[data-i='1']", steps=14)
+        page.wait_for_timeout(2600)
+        # 4. the clock
+        caption("Clear it: offer to move-in in 2.4 years, not 4.2")
+        click("#beats button[data-i='2']", steps=14)
         page.wait_for_timeout(2900)
         caption("Switch off SB 4 by-right approval: the project slips")
         click("[data-lever=sb4_ministerial]", steps=14)
         page.wait_for_timeout(1500)
         click("[data-lever=sb4_ministerial]", steps=4)
         page.wait_for_timeout(900)
-        # 4. families: edit one live
+        # 5. families: edit one live
         caption("30 families banks turn away. She edits one family's income: live recompute")
-        click("#beats button[data-i='2']", steps=12)
+        click("#beats button[data-i='3']", steps=12)
         page.wait_for_timeout(1300)
         click("#hhSel", steps=12)
         page.select_option("#hhSel", "1")
@@ -112,13 +116,13 @@ def main():
         click("#hhGo", steps=8)
         page.wait_for_function("document.querySelector('#status')?.textContent.includes('updated')", timeout=15_000)
         page.wait_for_timeout(700)
-        # 5. who pays
+        # 6. who pays
         caption("Who closes the gap, home by home")
-        click("#beats button[data-i='3']", steps=12)
-        page.wait_for_timeout(2600)
-        # 6. ten years
-        caption("Ten years later: who still owns their home")
         click("#beats button[data-i='4']", steps=12)
+        page.wait_for_timeout(2600)
+        # 7. ten years
+        caption("Ten years later: who still owns their home")
+        click("#beats button[data-i='5']", steps=12)
         remaining = 30.0 - (time.monotonic() - t0)
         page.wait_for_timeout(max(remaining, 0) * 1000 + 300)
         video = page.video

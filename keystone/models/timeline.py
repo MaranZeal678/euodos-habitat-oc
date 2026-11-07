@@ -40,14 +40,17 @@ ESTIMATES = {  # editable planning inputs (months), labelled as estimates wherev
 }
 
 
-def phases(levers=None, estimates=None):
-    """The project graph for a lever setting. Baseline = every lever off."""
+def phases(levers=None, estimates=None, approval=None):
+    """The project graph for a lever setting. Baseline = every lever off. `approval` names the ministerial path
+    (from models.pathways) when it is not SB 4; its 6-month duration is then an estimate, not SF Planning's SB 4 range."""
     lv = {"instant_screen": False, "sb4_ministerial": False, "parallel_funding": False} | (levers or {})
     est = ESTIMATES | (estimates or {})
     screen = Phase("screen", "Find and screen a site", 0.25, (), None, "instant_screen") if lv["instant_screen"] \
         else Phase("screen", "Find and screen a site", est["screen"])
     land = Phase("land_deal", "Agreement with the congregation", est["land_deal"], ("screen",))
-    approval = Phase("entitlement", "SB 4 ministerial approval", 6.0, ("land_deal",), "sf_sb4", "sb4_ministerial") if lv["sb4_ministerial"] \
+    named = approval if approval and approval != "SB 4 ministerial approval" else None
+    approval = Phase("entitlement", named or "SB 4 ministerial approval", 6.0, ("land_deal",),
+                     None if named else "sf_sb4", "sb4_ministerial") if lv["sb4_ministerial"] \
         else Phase("entitlement", "Discretionary entitlement + CEQA", est["entitlement"], ("land_deal",), "pew")
     funding = Phase("funding", "CalHome + AHP applications to award", 10.0,
                     ("screen",) if lv["parallel_funding"] else ("entitlement",), "terner_finance",
@@ -59,9 +62,9 @@ def phases(levers=None, estimates=None):
     return [screen, land, approval, funding, permits, build, families]
 
 
-def schedule(levers=None, estimates=None):
+def schedule(levers=None, estimates=None, approval=None):
     """Earliest start/finish per phase and the critical path (the chain that sets the finish date)."""
-    ps = {p.key: p for p in phases(levers, estimates)}
+    ps = {p.key: p for p in phases(levers, estimates, approval)}
     finish, start, prev = {}, {}, {}
 
     def fin(k):
@@ -86,10 +89,10 @@ def schedule(levers=None, estimates=None):
     return {"months": round(finish[end_key], 1), "years": round(finish[end_key] / 12, 1), "critical_path": path[::-1], "phases": rows}
 
 
-def compare(levers=None, estimates=None):
+def compare(levers=None, estimates=None, approval=None):
     """Baseline (no levers) against the chosen lever setting, plus what each lever saves on its own."""
     on = {"instant_screen": True, "sb4_ministerial": True, "parallel_funding": True} | (levers or {})
-    base, keystone = schedule({}, estimates), schedule(on, estimates)
+    base, keystone = schedule({}, estimates), schedule(on, estimates, approval)
     alone = {k: round(base["months"] - schedule({k: True}, estimates)["months"], 1) for k in on}
     return {"baseline": base, "keystone": keystone, "saved_months": round(base["months"] - keystone["months"], 1),
             "lever_savings_alone": alone, "levers": on, "estimates": ESTIMATES | (estimates or {}),

@@ -16,8 +16,8 @@ import json
 
 from keystone import config, tools
 from keystone.models import capital as capital_model
+from keystone.models import pathways, timeline
 from keystone.models import sustainability as sus
-from keystone.models import timeline
 
 DEMO = config.ROOT / "keystone" / "app" / "static" / "demo"
 SEED = DEMO / "scenario_seed.json"
@@ -127,13 +127,31 @@ def headlines(s):
                    "formula": "expected counts as in the mortgages beat; the animation shows one simulated decade per household",
                    "inputs": {k: exp[k] for k in REGIMES},
                    "source": "Same simulation, same shocks across the three regimes (common random numbers)", "tool": "family_simulate"},
+        "path": _path_headline(s["path"]),
     }
+
+
+def _path_headline(path):
+    res, chosen = path["results"], pathways.BY_KEY[path["choice"]]
+    row = next(r for r in res["paths"] if r["key"] == chosen["key"])
+    ruled_out = sum(r["verdict"] == "no" for r in res["paths"])
+    checks = f"{row['to_verify']} check{'s' if row['to_verify'] != 1 else ''} to verify" if row["to_verify"] else "every test met"
+    return {"value": chosen["short"], "label": f"{chosen['name']}: {chosen['review']}, {row['clock'][0].lower() + row['clock'][1:]}; {checks}; {ruled_out} of {len(res['paths'])} paths ruled out",
+            "formula": "each path's statutory tests applied to the project; a missing fact is 'to verify', never assumed; fastest viable ministerial path recommended",
+            "inputs": res["project"], "source": f"{row['clock_source']['label']} (checked {res['checked']})", "tool": "pathways.evaluate"}
 
 
 def finish(s):
     s.setdefault("levers", {"instant_screen": True, "sb4_ministerial": True, "parallel_funding": True})
     s.setdefault("estimates", dict(timeline.ESTIMATES))
-    s["timeline"] = timeline.compare(s["levers"], s["estimates"])
+    path = s.setdefault("path", {"project": {"homes": s["site"]["homes"]}, "choice": None})
+    path["results"] = pathways.evaluate(path["project"])
+    viable = {r["key"] for r in path["results"]["paths"] if r["verdict"] != "no"}
+    if path["choice"] not in viable:
+        path["choice"] = path["results"]["recommended"]
+    chosen = pathways.BY_KEY[path["choice"]]
+    s["levers"]["sb4_ministerial"] = chosen["review"] == "ministerial"  # the clock follows the chosen path
+    s["timeline"] = timeline.compare(s["levers"], s["estimates"], chosen["phase"] if chosen["review"] == "ministerial" else None)
     s["capital"] = capital(s["households"], **s["assumptions"])
     s["headlines"] = headlines(s)
     return s
@@ -160,7 +178,20 @@ def edit_household(s, i, **changes):
 
 def edit_levers(s, levers=None, estimates=None):
     s["levers"].update(levers or {})
+    if levers and "sb4_ministerial" in levers:  # the approval lever and the chosen path are one decision
+        s["path"]["choice"] = None if levers["sb4_ministerial"] else "discretionary"
     s["estimates"].update(estimates or {})
+    return finish(s)
+
+
+def edit_path(s, project=None, choice=None):
+    """Re-test the legal paths for a different project (size, zoning, city status) and/or choose one."""
+    proposed = s["path"]["project"] | (project or {})
+    if choice and next(r for r in pathways.evaluate(proposed)["paths"] if r["key"] == choice)["verdict"] == "no":
+        raise ValueError(f"{pathways.BY_KEY[choice]['name']} does not fit this project")
+    s["path"]["project"] = proposed
+    if choice:
+        s["path"]["choice"] = choice
     return finish(s)
 
 

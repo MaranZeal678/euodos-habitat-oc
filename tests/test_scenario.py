@@ -1,12 +1,13 @@
 """The Crossline scenario (Lane 2, Clear it): timeline engine, capital aggregation, provenance, sign-in and the API."""
 import itertools
 import json
+import re
 
 import pytest
 
 from keystone import config, scenario
 from keystone.app import server
-from keystone.models import timeline
+from keystone.models import pathways, timeline
 
 # ---- timeline engine (Clear it)
 
@@ -87,6 +88,49 @@ def test_turning_off_sb4_lengthens_the_scenario_clock(seed):
     assert "Discretionary entitlement + CEQA" in names and "SB 4 ministerial approval" not in names
 
 
+# ---- legal paths (Clear it: pick the path for one address)
+
+def test_crossline_recommends_sb4_and_rules_out_small_paths():
+    r = pathways.evaluate({"homes": 30})
+    by = {p["key"]: p for p in r["paths"]}
+    assert r["recommended"] == "sb4"
+    assert by["sb4"]["verdict"] == "verify" and by["discretionary"]["verdict"] == "fits"
+    assert {k for k, p in by.items() if p["verdict"] == "no"} == {"sb684", "sb9_units", "sb9_split", "adu"}
+
+
+def test_missing_facts_are_to_verify_never_assumed():
+    by = {p["key"]: p for p in pathways.evaluate({"homes": 30})["paths"]}
+    owner = next(c for c in by["sb4"]["checks"] if "religious institution" in c["test"])
+    assert owner["status"] == "verify"
+    assert pathways.evaluate({"faith_owner_since_2024": "no"})["paths"][0]["key"] != "sb4"
+
+
+def test_path_verdicts_follow_project_size_and_zoning():
+    small = {p["key"]: p["verdict"] for p in pathways.evaluate({"homes": 8})["paths"]}
+    assert small["sb684"] == "verify"
+    tiny = pathways.evaluate({"homes": 3, "zoning": "single_family"})
+    assert tiny["recommended"] == "sb9_split"
+    stuck = pathways.evaluate({"faith_owner_since_2024": "no", "city_streamlining": "no"})
+    assert stuck["recommended"] == "discretionary"  # only when no ministerial path survives
+
+
+def test_every_path_cites_current_law_and_a_clock_source():
+    for p in pathways.evaluate()["paths"]:
+        assert p["clock_source"]["url"] and p["statute"]
+        assert not re.search(r"65852\.2(?!\d)", p["statute"])  # ADU law was renumbered to 66310-66342 (65852.21 is SB 9)
+        assert p["days"] is None or "unknown" not in p["clock"].lower()
+
+
+def test_choosing_the_discretionary_path_slows_the_clock(seed):
+    s = scenario.edit_path(seed, choice="discretionary")
+    assert s["timeline"]["keystone"]["months"] > 28.2 and s["levers"]["sb4_ministerial"] is False
+    s = scenario.edit_path(s, choice="sb35")
+    assert s["timeline"]["keystone"]["months"] == 28.2
+    assert any(p["name"] == "SB 35 / SB 423 streamlined approval" for p in s["timeline"]["keystone"]["phases"])
+    with pytest.raises(ValueError):
+        scenario.edit_path(s, choice="sb9_units")
+
+
 # ---- numbers quoted in the brief and the film stay pinned
 
 def test_pinned_portfolio_and_capital_numbers():
@@ -160,6 +204,16 @@ def test_household_edit_recomputes_that_family(client, demo):
     before = client.get("/api/scenario").json()["households"][0]
     after = client.post("/api/scenario/household", json={"index": 0, "income": before["income"] + 40_000}).json()["households"][0]
     assert after["income"] == before["income"] + 40_000 and after["p"]["keystone"] >= before["p"]["keystone"]
+
+
+def test_path_route_retests_and_rejects_paths_that_do_not_fit(client, demo):
+    _signin(client)
+    s = client.post("/api/scenario/path", json={"homes": 8}).json()
+    assert {p["key"]: p["verdict"] for p in s["path"]["results"]["paths"]}["sb684"] == "verify"
+    assert client.post("/api/scenario/path", json={"choice": "adu"}).status_code == 422
+    assert client.post("/api/scenario/path", json={"zoning": "castle"}).status_code == 422
+    s = client.post("/api/scenario/path", json={"choice": "discretionary"}).json()
+    assert s["headlines"]["path"]["value"] == "Rezone" and s["timeline"]["keystone"]["months"] > 28.2
 
 
 def test_remote_scenario_missions_use_the_offline_policy(client, demo, monkeypatch):

@@ -92,6 +92,8 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
 #summary .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 #summary .src { font-size: 12px; color: #555; }
 #summary .bar { display: flex; gap: 10px; margin-bottom: 18px; }
+.checks { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; font-size: 14px; }
+.checks small { display: block; color: var(--ink-3); margin-left: 18px; }
 #summary #printBtn { background: #0f6b5c; color: #fff; border-color: #0f6b5c; }
 @media (max-width: 700px) { #summary { padding: 24px 16px; } #summary .grid { grid-template-columns: 1fr; } #summary h1 { font-size: 24px; } }
 @media print { header, #panel, #toasts, footer, #stage, #summary .bar { display: none !important; } #summary { position: static; padding: 0; } body { background: #fff; color: #000; } }
@@ -156,17 +158,19 @@ function text(x, y, str, attrs = {}, parent) {
   return t;
 }
 
-// ---------------------------------------------------------------- the five beats: build() once, update(p) per frame
+// ---------------------------------------------------------------- the six beats: build() once, update(p) per frame
 const BEATS = [
   {id: "site", name: "1 · The offer", head: "site",
    why: "<b>Find it, in minutes.</b> A CNN read this lot from real aerial imagery; SB 4 makes faith land buildable by right."},
-  {id: "clock", name: "2 · The clock", head: "clock",
+  {id: "path", name: "2 · The path", head: "path",
+   why: "<b>Pick the path.</b> Seven legal paths, each with its own statute, clock and tests. A missing fact is \"to verify\", never assumed; the clock follows the path you pick."},
+  {id: "clock", name: "3 · The clock", head: "clock",
    why: "<b>Clear it.</b> SB 4 skips discretionary approval and CEQA; the funding package and family pre-qualification start on day one, not after approval."},
-  {id: "families", name: "3 · Families", head: "mortgages",
+  {id: "families", name: "4 · Families", head: "mortgages",
    why: "<b>Families banks turn away.</b> Each mortgage is priced on whether the family keeps the home for 10 years, not on debt-to-income at closing."},
-  {id: "funding", name: "4 · Who pays", head: "capital",
+  {id: "funding", name: "5 · Who pays", head: "capital",
    why: "<b>Fund it.</b> Notes valued at present value, every home underwritten on its own family's design; only real shortfalls need philanthropy."},
-  {id: "decade", name: "5 · Ten years", head: "decade",
+  {id: "decade", name: "6 · Ten years", head: "decade",
    why: "<b>They stay.</b> The same shocks hit every household under three ways of financing; the Steward reaches out before a missed payment."},
 ];
 
@@ -222,6 +226,48 @@ function updateSite(p) {
   V.checks.forEach((g, i) => g.setAttribute("opacity", seg(p, .55 + i * .07, .65 + i * .07)));
 }
 
+const VERDICT = {fits: ["✓", "#2ee6be", "fits"], verify: ["?", "#f5b04c", "fits if verified"], no: ["✕", "#ff7a69", "ruled out"]};
+function buildPath() {
+  const R = S.path.results, pr = R.project, x0 = 660, x1 = 1150, maxD = 730, y0 = 132, rh = 86;
+  const zone = {unknown: "zoning unknown", single_family: "single-family zone", multifamily: "multifamily zone", nonresidential: "non-residential zone"}[pr.zoning];
+  text(70, 52, `Seven legal paths for APN ${S.site.apn}`, {"font-size": 30, "font-family": "Sora", "font-weight": 700});
+  text(70, 84, `${pr.homes} for-sale homes · ${zone} · statutes checked ${R.checked} (current numbering)`, {"font-size": 17, fill: "#b4c9c3"});
+  [0, 90, 365, 730].forEach(d => {
+    const x = x0 + d / maxD * (x1 - x0);
+    svg("line", {x1: x, x2: x, y1: 104, y2: y0 + R.paths.length * rh - 20, stroke: "#12302b"});
+    text(x, 100, d === 0 ? "0" : d === 730 ? "2 years" : d === 365 ? "1 year" : "90 days", {"font-size": 14, fill: "#8aa7a0", "text-anchor": "middle", "font-family": "JetBrains Mono"});
+  });
+  V.paths = R.paths.map((r, i) => {
+    const y = y0 + i * rh, [mk, col, word] = VERDICT[r.verdict], chosen = r.key === S.path.choice;
+    const g = svg("g", {opacity: 0});
+    if (chosen) svg("rect", {x: 50, y: y - 8, width: 1510, height: rh - 10, rx: 12, fill: "rgba(46,230,190,.08)", stroke: "#2ee6be", "stroke-width": 2}, g);
+    svg("circle", {cx: 90, cy: y + 28, r: 17, fill: r.verdict === "fits" ? col : "none", stroke: col, "stroke-width": 2.5}, g);
+    text(90, y + 35, mk, {"font-size": 19, fill: r.verdict === "fits" ? "#061012" : col, "font-weight": 800, "text-anchor": "middle"}, g);
+    text(125, y + 26, r.name, {"font-size": 23, "font-family": "Sora", "font-weight": 700, fill: r.verdict === "no" ? "#8aa7a0" : "#e9f5f2"}, g);
+    text(125, y + 52, `${r.statute}${r.formerly ? ` (formerly ${r.formerly})` : ""} · ${r.review}`, {"font-size": 15, fill: "#8aa7a0", "font-family": "JetBrains Mono"}, g);
+    const bar = svg("rect", {x: x0, y: y + 12, height: 28, rx: 7, width: 0, fill: r.verdict === "no" ? "#33403d" : (r.review === "ministerial" ? "#2ee6be" : "#8aa7a0")}, g);
+    const w = r.days ? Math.max(6, r.days / maxD * (x1 - x0)) : 0;
+    const inside = r.days > 400;  // long bars carry their label inside, clear of the verdict column
+    text(!r.days ? x0 : inside ? x0 + w - 12 : x0 + w + 12, y + 33, r.days ? `${r.days} days` : "clock unknown: read the statute",
+         {"font-size": 16, fill: !r.days ? "#f5b04c" : inside ? "#061012" : "#b4c9c3", "font-family": "JetBrains Mono", "text-anchor": inside ? "end" : "start", "font-weight": inside ? 700 : 400}, g);
+    const why = r.verdict === "no" ? r.failing[0] : r.verdict === "verify" ? `${r.to_verify} to verify` : "every test met";
+    text(1190, y + 26, chosen ? "chosen path" : word, {"font-size": 17, fill: chosen ? "#2ee6be" : col, "font-weight": 700}, g);
+    text(1190, y + 50, why.length > 44 ? why.slice(0, 43) + "…" : why, {"font-size": 15, fill: "#8aa7a0"}, g);
+    if (!FILM && r.verdict !== "no" && !chosen) {
+      g.style.cursor = "pointer"; g.setAttribute("tabindex", 0); g.setAttribute("role", "button"); g.setAttribute("aria-label", `Use ${r.name}`);
+      const pick = () => change("/api/scenario/path", {choice: r.key});
+      g.addEventListener("click", pick); g.addEventListener("keydown", e => { if (e.key === "Enter") pick(); });
+    }
+    return {g, bar, w};
+  });
+}
+function updatePath(p) {
+  V.paths.forEach((r, i) => {
+    r.g.setAttribute("opacity", seg(p, .04 + i * .07, .16 + i * .07));
+    r.bar.setAttribute("width", r.w * seg(p, .2 + i * .07, .5 + i * .07));
+  });
+}
+
 function buildClock() {
   const T = S.timeline, rows = T.baseline.phases.map(b => ({b, k: T.keystone.phases.find(x => x.key === b.key)}));
   const x0 = 380, x1 = 1520, max = 52, y0 = 120, rh = 78, X = m => x0 + m / max * (x1 - x0);
@@ -239,7 +285,7 @@ function buildClock() {
   V.endLine = svg("line", {y1: 90, y2: y0 + rows.length * rh + 6, stroke: "#2ee6be", "stroke-width": 3, "stroke-dasharray": "6 6"});
   V.endLabel = text(0, y0 + rows.length * rh + 34, "", {"font-size": 24, "font-family": "Sora", "font-weight": 800, fill: "#2ee6be", "text-anchor": "middle"});
   V.clockX = X;
-  V.LEVER = {instant_screen: "CNN: minutes", sb4_ministerial: "SB 4: by right", parallel_funding: "day one"};
+  V.LEVER = {instant_screen: "CNN: minutes", sb4_ministerial: `${S.headlines.path.value}: by right`, parallel_funding: "day one"};
 }
 function updateClock(p) {
   const e = seg(p, .18, .62), X = V.clockX;
@@ -370,8 +416,8 @@ function updateDecade(p) {
   });
 }
 
-const BUILD = {site: buildSite, clock: buildClock, families: buildFamilies, funding: buildFunding, decade: buildDecade};
-const UPDATE = {site: updateSite, clock: updateClock, families: updateFamilies, funding: updateFunding, decade: updateDecade};
+const BUILD = {site: buildSite, path: buildPath, clock: buildClock, families: buildFamilies, funding: buildFunding, decade: buildDecade};
+const UPDATE = {site: updateSite, path: updatePath, clock: updateClock, families: updateFamilies, funding: updateFunding, decade: updateDecade};
 
 function showBeat(i, {animate = true} = {}) {
   beat = i;
@@ -401,6 +447,7 @@ function summary() {
       <div><div class="big">${esc(H.mortgages.value)}</div>${esc(H.mortgages.label)}</div>
       <div><div class="big">${esc(H.capital.value)}</div>${esc(H.capital.label)}</div>
     </div>
+    <h2>The legal path</h2><p><b>${esc(S.headlines.path.value)}</b>: ${esc(S.headlines.path.label)}. ${S.path.results.paths.map(r => `${esc(r.short)} (${esc(r.statute)}): ${r.verdict === "no" ? "ruled out, " + esc(r.failing[0]) : r.verdict === "verify" ? r.to_verify + " to verify" : "fits"}`).join("; ")}. Statutes checked ${esc(S.path.results.checked)}. Not legal advice.</p>
     <h2>The clock: critical path</h2><p>${crit}</p>
     <table style="width:100%;border-collapse:collapse" border="0"><tr style="text-align:left"><th>Phase</th><th>Starts (month)</th><th>Months</th><th>Source</th></tr>${rows}</table>
     <h2>Who closes the gap (${c.homes} homes)</h2><p>Cost ${usd(c.cost)} · mortgages families repay (present value) ${usd(c.mortgage_capital)} · down payments ${usd(c.down_payments)} · CalHome ${usd(c.calhome)} · AHP ${usd(c.ahp)} · <b>philanthropy ${usd(c.philanthropy)}</b> (standard 0% loans: ${usd(S.capital.standard.philanthropy)}).</p>
@@ -439,8 +486,26 @@ async function change(path, body) {
 function panel(id) {
   const P = $("#panel");
   if (id === "site") P.innerHTML = `<h3>The land offer</h3><p>${esc(S.site.address)}, ${esc(S.site.city)}. The CNN scan is stored with the app; live re-scans run on the server build.</p><p class="mono" style="color:var(--ink-3)">Fire, flood and title screens are marked "to verify": Keystone never assumes them.</p>`;
+  if (id === "path") {
+    const R = S.path.results, pr = R.project, chosen = R.paths.find(r => r.key === S.path.choice);
+    const opt = (id, label, vals) => `<label>${label}<select id="${id}">${vals.map(([v, t]) => `<option value="${v}" ${pr[id] === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
+    const yn = [["unknown", "unknown"], ["yes", "yes"], ["no", "no"]];
+    const ST = {met: ["✓", "var(--teal)"], verify: ["?", "var(--amber)"], fails: ["✕", "var(--red)"]};
+    P.innerHTML = `<h3>Test the project</h3><label>Homes<input type="number" id="homes" min="1" max="500" step="1" value="${pr.homes}"></label>
+      ${opt("zoning", "Zoning", [["unknown", "unknown (not in county data)"], ["single_family", "single-family residential"], ["multifamily", "multifamily residential"], ["nonresidential", "non-residential"]])}
+      ${opt("faith_owner_since_2024", "Owned by a religious institution on Jan 1, 2024", yn)}
+      ${opt("city_streamlining", "City subject to SB 35 / 423 streamlining", yn)}
+      ${opt("hazards_clear", "Clear of fire, flood and fault zones", yn)}
+      <button class="btn" id="pathGo">Re-test the paths</button><div id="status" role="status"></div>
+      <h3>${esc(chosen.name)} · ${esc(chosen.statute)}</h3>
+      <ul class="checks">${chosen.checks.map(c => `<li><b style="color:${ST[c.status][1]}">${ST[c.status][0]}</b> ${esc(c.test)}<small>${esc(c.note)}${c.source ? ` · ${esc(c.source.label)}` : ""}</small></li>`).join("")}</ul>
+      <p class="mono" style="color:var(--ink-3)">Clock: ${esc(chosen.clock)}. ${esc(chosen.note)} Not legal advice.</p>`;
+    $("#pathGo").onclick = () => change("/api/scenario/path", {homes: +$("#homes").value, zoning: $("#zoning").value, faith_owner_since_2024: $("#faith_owner_since_2024").value, city_streamlining: $("#city_streamlining").value, hazards_clear: $("#hazards_clear").value});
+    return;
+  }
   if (id === "clock") {
-    const L = [["instant_screen", "Site already CNN-scored", "screening takes days, not months"], ["sb4_ministerial", "SB 4 ministerial approval", "no discretionary or CEQA review"], ["parallel_funding", "Funding + families on day one", "applications drafted from the capital plan"]];
+    const chosen = S.path.results.paths.find(r => r.key === S.path.choice), mini = chosen.review === "ministerial";
+    const L = [["instant_screen", "Site already CNN-scored", "screening takes days, not months"], ["sb4_ministerial", mini ? chosen.phase : "Ministerial approval (SB 4)", "no discretionary or CEQA review"], ["parallel_funding", "Funding + families on day one", "applications drafted from the capital plan"]];
     P.innerHTML = `<h3>Keystone's levers</h3>${L.map(([k, n, d]) => `<label class="lever"><input type="checkbox" data-lever="${k}" ${S.levers[k] ? "checked" : ""}><span>${n}<small>${d}</small></span></label>`).join("")}
       <label>Construction (estimate, months)<input type="number" id="constr" min="0.25" max="60" step="0.5" value="${S.estimates.construction}"></label>
       <h3>Agents</h3><button class="btn" id="runAgents">Run the agents on this offer</button><div id="status" role="status"></div>`;

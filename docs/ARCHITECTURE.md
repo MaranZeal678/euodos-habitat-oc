@@ -32,7 +32,7 @@ Everything a user sees is computed from public data that the pipeline has alread
 ```mermaid
 flowchart TB
   subgraph client[Client]
-    scen[scenario.html<br/>sign-in, 5 beats, SVG, summary, film mode]
+    scen[scenario.html<br/>sign-in, 6 beats, SVG, summary, film mode]
     dash[index.html dashboard / demo.html mission control]
   end
   subgraph server[FastAPI app: keystone/app/server.py]
@@ -79,7 +79,7 @@ flowchart TB
 
 | Container | Code | Responsibility |
 |---|---|---|
-| Scenario app | `keystone/app/scenario.html` | Single-file UI. Five beats (offer, clock, families, who pays, ten years), live controls, provenance dialogs, one-page summary, frame-exact film mode. |
+| Scenario app | `keystone/app/scenario.html` | Single-file UI. Six beats (offer, path, clock, families, who pays, ten years), live controls, provenance dialogs, one-page summary, frame-exact film mode. |
 | HTTP server | `keystone/app/server.py` | FastAPI. Sessions, scenario API, dashboard API, mission runner, mounts the MCP server and static assets. |
 | Scenario engine | `keystone/scenario.py` | Builds and edits one scenario: households, levers, assumptions, timeline, capital, headlines with provenance. |
 | Tools | `keystone/tools.py` | One implementation behind three front doors: MCP, the sandbox, the offline planner. Namespaced `<domain>_<action>`, compact JSON, no side effects outside `artifacts/`. |
@@ -100,16 +100,18 @@ flowchart TD
   C -->|wrong credentials| C
   C -->|ok: cookie ks_session,<br/>private copy of the seed| D
   B -- yes --> D[Beat 1: The offer<br/>CNN parking scan of APN 588-081-21,<br/>SB 4 checklist: met / to verify]
-  D --> E[Beat 2: The clock<br/>critical-path Gantt, baseline 4.2 y vs 2.4 y]
+  D --> P[Beat 2: The path<br/>7 legal paths tested: statute, clock, met / to verify / fails]
+  P -->|change homes, zoning, city status<br/>or pick a path| P1[POST /api/scenario/path] --> P
+  P --> E[Beat 3: The clock<br/>critical-path Gantt, baseline 4.2 y vs 2.4 y]
   E -->|toggle a lever or<br/>change an estimate| E1[POST /api/scenario/levers] --> E
-  E --> F[Beat 3: Families<br/>30 households from 2024 HMDA,<br/>P banks deny, P keep home]
+  E --> F[Beat 4: Families<br/>30 households from 2024 HMDA,<br/>P banks deny, P keep home]
   F -->|edit one income| F1[POST /api/scenario/household<br/>re-optimize that family's mortgage] --> F
   F -->|Run agents| F2[POST /api/scenario/mission<br/>agent hierarchy, live trace toasts] --> F
-  F --> G[Beat 4: Who pays<br/>capital stack aggregated home by home]
+  F --> G[Beat 5: Who pays<br/>capital stack aggregated home by home]
   G -->|change hard cost, CalHome, AHP| G1[POST /api/scenario/assumptions] --> G
-  G --> H[Beat 5: Ten years<br/>market vs standard vs Keystone,<br/>expected homes still owned]
+  G --> H[Beat 6: Ten years<br/>market vs standard vs Keystone,<br/>expected homes still owned]
   H --> I[One-page summary<br/>print or save as PDF]
-  D & E & F & G & H -.->|source button| X[Provenance dialog<br/>formula, inputs, source URL, tool]
+  D & P & E & F & G & H -.->|source button| X[Provenance dialog<br/>formula, inputs, source URL, tool]
 ```
 
 Every headline number carries `value, label, formula, inputs, source, tool`, so the "source" button on any beat answers *where did this come from* without leaving the app.
@@ -155,6 +157,7 @@ Pydantic bounds reject bad input before any model runs (income must be positive,
 | Market gap | `models/market_gap.py` | `HistGradientBoostingClassifier`, protected attributes excluded from features but kept for a calibration fairness audit | HMDA OC 2022-2024 | P(conventional lender denies) per family. AUC 0.779, Brier 0.067, max group calibration gap 0.069, n_test 15,489. |
 | Sustainability | `models/sustainability.py` | Two layers: vectorized monthly Monte Carlo of household cash flow over 10 years (job loss, repairs, insurance shocks); outer search for the cheapest design meeting P(sustained) | Labelled assumptions, cited literature | Each family's mortgage design and P(keeps home 10 y). Common random numbers, so designs differ by design, not luck. |
 | Capital | `models/capital.py` | Unit cost x underwriting x funding stack | Cost assumptions, CalHome, AHP | Philanthropy gap, summed only over real per-home shortfalls. |
+| Legal paths | `models/pathways.py` | Seven paths (SB 4, SB 35/423, SB 684, SB 9 duplex, SB 9 split, ADU, rezone), each a list of statutory tests returning met / to verify / fails; ranked viable first, ministerial before discretionary | HCD SB 4 fact sheet, HCD SB 35 Guidelines, Impact Lab DATA-SOURCES (current statute numbering) | Recommended path (SB 4 for Crossline), its clock and open checks; the chosen path names the approval phase on the clock. |
 | Timeline | `models/timeline.py` | Phases as a dependency graph; the clock is the critical path | HCD SB 4, SF Planning, Pew 2024, Terner Center 2025, Impact Lab brief | 4.2 y baseline vs 2.4 y; savings per lever. |
 | HomeKeeper | `models/homekeeper.py` | 100 synthetic families from real HMDA incomes, same shocks under three regimes | HMDA | Homes still owned after 10 years, watchlist. |
 

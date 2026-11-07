@@ -482,6 +482,24 @@ def edit_levers(body: LeverEdit, request: Request):
     return _edit(request, lambda s: scenario_model.edit_levers(s, body.levers, body.estimates))
 
 
+class PathEdit(BaseModel):
+    homes: int | None = Field(None, ge=1, le=500)
+    zoning: Literal["unknown", "single_family", "multifamily", "nonresidential"] | None = None
+    city_streamlining: Literal["unknown", "yes", "no"] | None = None
+    faith_owner_since_2024: Literal["unknown", "yes", "no"] | None = None
+    hazards_clear: Literal["unknown", "yes", "no"] | None = None
+    choice: Literal["sb4", "sb35", "sb684", "sb9_units", "sb9_split", "adu", "discretionary"] | None = None
+
+
+@app.post("/api/scenario/path")
+def edit_path(body: PathEdit, request: Request):
+    project = body.model_dump(exclude={"choice"}, exclude_none=True)
+    try:
+        return _edit(request, lambda s: scenario_model.edit_path(s, project, body.choice))
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from None
+
+
 @app.post("/api/scenario/reset")
 def reset_scenario(request: Request):
     return _edit(request, lambda s: scenario_model.fresh())
