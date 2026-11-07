@@ -24,18 +24,18 @@ from playwright.sync_api import sync_playwright
 
 W, H = 1536, 864           # the app's native layout, recorded 1:1
 OUT_W, OUT_H = 1920, 1080  # scaled to fill the frame
-BAND = 96                  # px of subtitle band under the app (120 px in the output)
+BAND = 120                 # px of subtitle band under the app (150 px in the output)
 VOICE = "Reed (English (US))"
 FONT = ("/System/Library/Fonts/Avenir Next.ttc", 0)  # Avenir Next Bold, the app's fallback face for Sora
-ACTS = [  # (start s, slot s, spoken line, subtitle phrases with **teal** words)
-    (0.0, 6.5, "Knowing if Habitat can build on a land offer takes years of legal triage. Until now.",
-     ["Knowing if Habitat can build on a land offer", "takes **years** of legal triage.", "Until now."]),
-    (6.5, 5.5, "Meet Keystone. A hierarchy of Claude agents and live models works the parcel.",
-     ["Meet **Keystone**.", "A hierarchy of **Claude agents** and live models", "works the parcel."]),
-    (12.0, 9.5, "It tests seven legal paths, flags SB 4 as the fastest fit with what's left to verify, and cuts the timeline from over four years to two point four.",
-     ["It tests **seven legal paths**,", "flags **SB 4** as the fastest fit", "with what's left to verify,", "and cuts the timeline", "from over four years to **2.4**."]),
-    (21.5, 8.5, "It models whether families keep their homes and sizes the capital gap. Months of triage, in one session. Keys to one hundred starts here.",
-     ["It models whether families **keep their homes**", "and sizes the **capital gap**.", "Months of triage, in **one session**.", "**Keys to 100** starts here."]),
+ACTS = [  # (start s, slot s, spoken line, subtitle phrases with **teal** words): short lines, spoken unhurried
+    (0.0, 6.5, "Knowing if Habitat can build on a land offer takes years. Until now.",
+     ["Knowing if Habitat can build on a land offer", "takes **years**. Until now."]),
+    (6.5, 5.5, "Meet Keystone: Claude agents and live models, working the parcel.",
+     ["Meet **Keystone**:", "**Claude agents** and live models, working the parcel."]),
+    (12.0, 9.5, "Seven legal paths, tested. SB 4 is the fastest fit, with three facts to verify. Four years becomes two point four.",
+     ["**Seven legal paths**, tested.", "**SB 4** is the fastest fit, with three facts to verify.", "Four years becomes **2.4**."]),
+    (21.5, 8.5, "Families who keep their homes, and the capital gap, home by home. Keys to one hundred starts here.",
+     ["Families who **keep their homes**,", "and the **capital gap**, home by home.", "**Keys to 100** starts here."]),
 ]
 
 OVERLAY = """
@@ -81,7 +81,7 @@ OVERLAY = """
     };
     // the camera: scale and move a full-screen root (#stage, #login or #summary) so `target` fills the frame
     window.__cam = (rootSel, target, opts = {}) => {
-      const root = document.querySelector(rootSel), pad = opts.pad ?? .05, dur = opts.dur ?? 600, max = opts.max ?? 2.4;
+      const root = document.querySelector(rootSel), pad = opts.pad ?? .05, dur = opts.dur ?? 850, max = opts.max ?? 2.4;
       const prev = root.style.transform;
       root.style.transition = "none"; root.style.transformOrigin = "0 0"; root.style.transform = "none";
       const r = target ? rectOf(target) : null;
@@ -208,20 +208,20 @@ def record(url, workdir):
 
         # 4. the legal paths (2.5 s), then SB 4's open checks (2.0 s)
         page.keyboard.press("Escape")
-        shot(2.5, lambda: (js("showBeat(1)"), cam("#stage", [40, 20, 1530, 720], dur=450),
-                           spot([46, 118, 1518, 82], "Fastest path that fits: <b>SB 4</b>, a 90-day statutory clock", delay=750, side="above")))
+        shot(2.5, lambda: (js("showBeat(1)"), cam("#stage", [40, 20, 1530, 720], dur=750),
+                           spot([46, 118, 1518, 82], "Fastest path that fits: <b>SB 4</b>, a 90-day statutory clock", delay=850, side="above")))
         shot(2.0, lambda: (js("document.querySelector('#panel .checks').scrollIntoView({block: 'center'})"),
                            cam("#stage", "#panel .checks", max=2.3, pad=.08, dur=450),
                            spot("#panel .checks li", "<b>Never assumed:</b> a map tag is not a title record", delay=500)))
 
         # 5. the clock (5.0 s)
-        shot(5.0, lambda: (js("showBeat(2)"), cam("#stage", [90, 55, 1430, 625], dur=450),
+        shot(5.0, lambda: (js("showBeat(2)"), cam("#stage", [90, 55, 1430, 625], dur=750),
                            spot([366, 610, 1010, 68], "Pre-screened site · <b>SB 4</b> by right · funding from day one", delay=1900)))
 
         # 6. capital (2.5 s) and 7. families (2.5 s)
-        shot(2.5, lambda: (js("showBeat(4)"), cam("#stage", [100, 70, 1300, 450], dur=400),
+        shot(2.5, lambda: (js("showBeat(4)"), cam("#stage", [100, 70, 1300, 450], dur=750),
                            spot([112, 466, 660, 34], "Only <b>real per-home shortfalls</b> need philanthropy", delay=1000)))
-        shot(2.5, lambda: (js("showBeat(3)"), cam("#stage", [110, 115, 1440, 420], dur=400),
+        shot(2.5, lambda: (js("showBeat(3)"), cam("#stage", [110, 115, 1440, 420], dur=750),
                            spot([1070, 282, 430, 100], "Expected value over <b>1,500 simulated decades</b> per family", delay=1200)))
 
         # 8. the one-page summary (3.5 s)
@@ -251,9 +251,14 @@ def subtitle_png(text, path):
     band = round(BAND * OUT_H / H)
     img = Image.new("RGBA", (OUT_W, band), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(FONT[0], 46, index=FONT[1])
     parts = [(seg, i % 2 == 1) for i, seg in enumerate(re.split(r"\*\*", text)) if seg]
-    widths = [draw.textlength(seg, font=font) for seg, _ in parts]
+    size = 56
+    while True:  # one line, as large as fits
+        font = ImageFont.truetype(FONT[0], size, index=FONT[1])
+        widths = [draw.textlength(seg, font=font) for seg, _ in parts]
+        if sum(widths) <= OUT_W - 160 or size <= 36:
+            break
+        size -= 2
     x = (OUT_W - sum(widths)) / 2
     for (seg, teal), w in zip(parts, widths, strict=True):
         draw.text((x, band / 2 + 2), seg, font=font, fill=(46, 230, 190) if teal else (255, 255, 255), anchor="lm")
@@ -266,7 +271,7 @@ def voiceover(workdir):
     inputs, filters, subs = [], [], []
     for i, (start, slot, line, phrases) in enumerate(ACTS):
         clip = workdir / f"vo{i}.aiff"
-        subprocess.run(["say", "-v", VOICE, "-r", "205", "-o", str(clip), line], check=True)
+        subprocess.run(["say", "-v", VOICE, "-r", "180", "-o", str(clip), line], check=True)
         dur = duration(clip)
         tempo = min(max(dur / (slot - 0.3), 1.0), 1.4)
         inputs += ["-i", str(clip)]
@@ -296,9 +301,10 @@ def cut(raw, cuts, workdir, out):
     for k, (text, t0, t1) in enumerate(subs):
         png = workdir / f"sub{k}.png"
         subtitle_png(text, png)
-        s_inputs += ["-i", str(png)]
+        s_inputs += ["-loop", "1", "-t", f"{t1 - t0:.3f}", "-i", str(png)]
         nxt = "v" if k == len(subs) - 1 else f"o{k}"
-        vf.append(f"[{last}][{1 + n_audio + k}:v]overlay=0:{OUT_H - round(BAND * OUT_H / H)}:enable='between(t,{t0:.3f},{t1:.3f})'[{nxt}]")
+        vf.append(f"[{1 + n_audio + k}:v]format=rgba,fade=in:st=0:d=0.18:alpha=1,setpts=PTS+{t0:.3f}/TB[t{k}]")
+        vf.append(f"[{last}][t{k}]overlay=0:{OUT_H - round(BAND * OUT_H / H)}:eof_action=pass[{nxt}]")
         last = nxt
     subprocess.run([shutil.which("ffmpeg") or "ffmpeg", "-y", "-loglevel", "error", "-i", str(raw), *a_inputs, *s_inputs,
                     "-filter_complex", ";".join(vf + af), "-map", "[v]", "-map", "[vo]", "-t", "30",
