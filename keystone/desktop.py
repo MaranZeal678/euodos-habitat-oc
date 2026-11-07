@@ -19,15 +19,17 @@ from pathlib import Path
 # launch imports nothing else from keystone: child modes must start before config is read
 from keystone import launch
 
+_HTTP = urllib.request.build_opener(urllib.request.HTTPCookieProcessor())  # keeps the scenario's session cookie
+
 
 def _get(url, timeout=120):
-    with urllib.request.urlopen(url, timeout=timeout) as r:
+    with _HTTP.open(url, timeout=timeout) as r:
         return r.read()
 
 
 def _post(url, body, timeout=120):
     req = urllib.request.Request(url, data=json.dumps(body).encode(), headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with _HTTP.open(req, timeout=timeout) as r:
         return json.loads(r.read())
 
 
@@ -40,6 +42,13 @@ def smoke(url):
     checks["dashboard"] = b"Keystone" in _get(url + "/")
     checks["demo"] = b"Keystone" in _get(url + "/demo")
     checks["optimize"] = _post(url + "/api/optimize", {"income": 92_000})["best"]["p_sustained_10y"] > 0.5
+    # the scenario: sign in, load the seed, pull a lever
+    from keystone.app.server import DEMO_LOGIN
+    _post(url + "/api/session", {"email": DEMO_LOGIN["email"], "password": DEMO_LOGIN["password"]})
+    scn = json.loads(_get(url + "/api/scenario"))
+    moved = _post(url + "/api/scenario/levers", {"levers": {"sb4_ministerial": False}})
+    checks["scenario"] = scn["headlines"]["clock"]["value"] == "2.4 years" and moved["timeline"]["keystone"]["months"] > 28.2
+    checks["film"] = b"startFilm" in _get(url + "/scenario")
     rid = _post(url + "/api/mission", {"policy": "scripted"})["run_id"]
     run = {}
     for _ in range(360):  # the mission starts the MCP server as a child of the app binary
@@ -58,6 +67,7 @@ def main(argv=None):
         return 0
     os.environ.setdefault("KEYSTONE_STATE_DIR", str(Path.home() / "Library" / "Application Support" / "Keystone"))
     os.environ["KEYSTONE_HOST"] = "127.0.0.1"  # a desktop app is never a network service
+    os.environ.setdefault("KEYSTONE_DEMO_LOGIN", "1")  # the seeded demo account (sessions are private; nothing persists)
     import uvicorn
 
     from keystone.app import server
@@ -83,10 +93,11 @@ def main(argv=None):
         def go(path):
             return lambda: windows[0].load_url(url + path)
         # a desktop window has no address bar or Back button, so navigation lives in a native menu
-        menu = [Menu("Go", [MenuAction("Dashboard", go("/")), MenuAction("Mission-control demo", go("/demo")),
-                            MenuAction("Play demo from the start", go("/demo?autoplay")), MenuSeparator(),
+        menu = [Menu("Go", [MenuAction("Crossline scenario", go("/scenario")), MenuAction("Dashboard", go("/")),
+                            MenuAction("30-second film", go("/scenario?film&play")),
+                            MenuAction("Mission-control demo", go("/demo")), MenuSeparator(),
                             MenuAction("Reload", lambda: windows[0].evaluate_js("location.reload()"))])]
-        windows.append(webview.create_window("Keystone", url + "/", width=1440, height=920, min_size=(1000, 680), menu=menu))
+        windows.append(webview.create_window("Keystone", url + "/scenario", width=1440, height=920, min_size=(1000, 680), menu=menu))
         state = Path(os.environ["KEYSTONE_STATE_DIR"])
         webview.start(private_mode=False, storage_path=str(state / "webview"))  # remembers the last tab between launches
         code = 0

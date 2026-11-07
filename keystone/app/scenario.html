@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Keystone · Crossline scenario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #061012; --bg-2: #0b1a1d; --line: #1d3b36; --grid: #12302b;
+  --ink: #e9f5f2; --ink-2: #b4c9c3; --ink-3: #8aa7a0;
+  --teal: #2ee6be; --teal-dim: #15705e; --amber: #f5b04c; --red: #ff7a69; --grey: #4b5d59;
+  --display: "Sora", "Avenir Next", system-ui, sans-serif; --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }  /* author display rules must never override the hidden attribute */
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--body); }
+body.big { font-size: 21px; }
+button, input, select { font: inherit; }
+:where(a, button, input, select, [tabindex]):focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; border-radius: 6px; }
+.btn { background: rgba(46, 230, 190, .12); border: 1px solid var(--teal); color: var(--ink); border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
+.btn:hover { background: rgba(46, 230, 190, .22); }
+.btn.quiet { border-color: var(--line); background: transparent; color: var(--ink-2); }
+.mono { font-family: var(--mono); }
+/* sign-in */
+#login { position: fixed; inset: 0; display: grid; place-items: center; padding: 16px; background: radial-gradient(circle at 30% 20%, #0f2a28, var(--bg) 60%); z-index: 5; }
+#login form { width: min(420px, 100%); display: grid; gap: 14px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; padding: 28px; }
+#login h1 { margin: 0; font: 800 30px/1.1 var(--display); letter-spacing: .28em; }
+#login p { margin: 0; color: var(--ink-2); }
+#login label { display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); }
+#login input { background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 10px 12px; }
+#loginErr { color: var(--red); min-height: 1.5em; }
+.hint { font-size: 13px; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 12px; }
+/* stage */
+#stage { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+header { display: flex; align-items: center; gap: 18px; padding: 14px 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { font: 800 18px/1 var(--display); letter-spacing: .32em; }
+.brand small { display: block; font: 400 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--ink-2); margin-top: 4px; }
+#beats { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+#beats button { background: transparent; border: 1px solid var(--line); color: var(--ink-2); border-radius: 999px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
+#beats button.on { border-color: var(--teal); color: var(--ink); background: rgba(46, 230, 190, .12); }
+#user { font-size: 13px; color: var(--ink-2); display: flex; gap: 10px; align-items: center; }
+main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
+#viz { width: 100%; height: 100%; display: block; }
+#panel { border-left: 1px solid var(--line); padding: 18px; overflow: auto; display: grid; gap: 14px; align-content: start; }
+#panel h3 { margin: 0; font: 600 13px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+#panel label { display: grid; gap: 4px; font-size: 14px; color: var(--ink-2); }
+#panel input[type=number], #panel select { background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 8px 10px; }
+.lever { display: flex !important; grid-template-columns: none; gap: 10px; align-items: center; color: var(--ink) !important; }
+.lever small { color: var(--ink-3); display: block; }
+#status { min-height: 1.5em; font-size: 14px; color: var(--ink-2); }
+footer { display: flex; gap: 20px; align-items: flex-end; padding: 18px 24px 22px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+#headline { font: 800 clamp(40px, 6vw, 84px)/1 var(--display); letter-spacing: -.02em; color: var(--teal); display: flex; align-items: center; gap: 12px; }
+#headline button { font: 600 14px var(--mono); border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink-2); padding: 4px 10px; cursor: pointer; }
+#label { font: 600 clamp(17px, 1.6vw, 24px)/1.3 var(--display); max-width: 46ch; }
+#why { margin-left: auto; max-width: 52ch; font-size: 15px; color: var(--ink-2); border-left: 2px solid var(--teal); padding-left: 12px; }
+#why b { color: var(--ink); }
+#toasts { position: fixed; right: 360px; top: 76px; display: grid; gap: 6px; z-index: 3; pointer-events: none; }
+.toast { font: 13px/1.4 var(--mono); background: rgba(11, 26, 29, .92); border: 1px solid var(--line); border-left: 3px solid var(--teal); padding: 6px 10px; border-radius: 6px; color: var(--ink); }
+.toast i { color: var(--ink-3); font-style: normal; }
+dialog { background: var(--bg-2); color: var(--ink); border: 1px solid var(--line); border-radius: 12px; max-width: min(640px, 92vw); padding: 22px; }
+dialog::backdrop { background: rgba(0, 0, 0, .6); }
+dialog pre { white-space: pre-wrap; font: 13px/1.5 var(--mono); color: var(--ink-2); background: var(--bg); padding: 10px; border-radius: 8px; }
+.svgt { font-family: var(--body); }
+/* film mode: a 1920x1080 frame with nothing interactive on it */
+body.film header #beats, body.film header #user, body.film #panel, body.film #why button, body.film #headline button { display: none; }
+body.film main { grid-template-columns: 1fr; }
+body.film #toasts { right: 40px; top: 96px; }
+body.film footer { padding: 26px 48px 34px; }
+body.film #label { font-size: 40px; max-width: 46ch; }
+body.film #why { font-size: 24px; border-left-width: 3px; }
+body.film .toast { font-size: 18px; padding: 8px 14px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } #panel { border-left: 0; border-top: 1px solid var(--line); } #toasts { right: 16px; } #why { margin-left: 0; } }
+@media print { header, #panel, #toasts, footer #why { display: none; } body { background: #fff; color: #000; } }
+</style>
+</head>
+<body>
+<div id="login" hidden>
+  <form id="loginForm">
+    <h1>KEYSTONE</h1>
+    <p>Sign in to run the Crossline Church scenario.</p>
+    <label>Email<input id="email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+    <div id="loginErr" role="alert"></div>
+    <button class="btn" type="submit">Sign in</button>
+    <div class="hint" id="demoHint" hidden></div>
+  </form>
+</div>
+
+<div id="stage" hidden>
+  <header>
+    <div class="brand">KEYSTONE<small id="title">Crossline Church offers its parking lot</small></div>
+    <nav id="beats" aria-label="Scenario steps"></nav>
+    <div id="user"><span id="who"></span><button class="btn quiet" id="bigBtn" title="Large type (L)">Aa</button><button class="btn quiet" id="resetBtn" title="Reset the scenario (R)">Reset</button><button class="btn quiet" id="signOut">Sign out</button></div>
+  </header>
+  <main>
+    <svg id="viz" viewBox="0 0 1600 760" role="img" aria-label="Scenario visual"></svg>
+    <aside id="panel" aria-label="Controls"></aside>
+  </main>
+  <footer>
+    <div>
+      <div id="headline" aria-live="polite"><span id="hv"></span><button id="explainBtn" title="Where does this number come from?">ⓘ source</button></div>
+      <div id="label"></div>
+    </div>
+    <div id="why"></div>
+  </footer>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<dialog id="explain"><h3 id="exTitle" style="margin-top:0;font-family:var(--display)"></h3><div id="exBody"></div><p><button class="btn" id="exClose">Close</button></p></dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const FILM = new URLSearchParams(location.search).has("film");
+const NS = "http://www.w3.org/2000/svg";
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (p, a, b) => ease(clamp((p - a) / (b - a)));   // eased progress of p inside [a, b]
+const usd = v => v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${Math.round(v / 1e3)}k`;
+let S = null, TRACE = null, beat = 0;
+
+function svg(tag, attrs = {}, parent = $("#viz")) {
+  const el = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function text(x, y, str, attrs = {}, parent) {
+  const t = svg("text", {x, y, fill: "#e9f5f2", "font-size": 22, class: "svgt", ...attrs}, parent);
+  t.textContent = str;
+  return t;
+}
+
+// ---------------------------------------------------------------- the five beats: build() once, update(p) per frame
+const BEATS = [
+  {id: "site", name: "1 · The offer", head: "site",
+   why: "<b>Find it, in minutes.</b> A CNN read this lot from real aerial imagery; SB 4 makes faith land buildable by right."},
+  {id: "clock", name: "2 · The clock", head: "clock",
+   why: "<b>Clear it.</b> SB 4 skips discretionary approval and CEQA; the funding package and family pre-qualification start on day one, not after approval."},
+  {id: "families", name: "3 · Families", head: "mortgages",
+   why: "<b>Families banks turn away.</b> Each mortgage is priced on whether the family keeps the home for 10 years, not on debt-to-income at closing."},
+  {id: "funding", name: "4 · Who pays", head: "capital",
+   why: "<b>Fund it.</b> Notes valued at present value, every home underwritten on its own family's design; only real shortfalls need philanthropy."},
+  {id: "decade", name: "5 · Ten years", head: "decade",
+   why: "<b>They stay.</b> The same shocks hit every household under three ways of financing; the Steward reaches out before a missed payment."},
+];
+
+const V = {};  // per-beat element handles
+
+function buildSite() {
+  const s = S.site, q = s.quad;
+  const lon0 = Math.min(...q.map(p => p[0])), lon1 = Math.max(...q.map(p => p[0]));
+  const lat0 = Math.min(...q.map(p => p[1])), lat1 = Math.max(...q.map(p => p[1]));
+  const H = 700, W = Math.round(H * 740 / 879), X = 70, Y = 30;
+  const P = ([lon, lat]) => [X + (lon - lon0) / (lon1 - lon0) * W, Y + (lat1 - lat) / (lat1 - lat0) * H];
+  svg("rect", {x: X - 2, y: Y - 2, width: W + 4, height: H + 4, rx: 10, fill: "none", stroke: "#1d3b36"});
+  svg("image", {href: s.img_rgb, x: X, y: Y, width: W, height: H, preserveAspectRatio: "none"});
+  const defs = svg("defs");
+  const clip = svg("clipPath", {id: "scanClip"}, defs);
+  V.scanRect = svg("rect", {x: X, y: Y, width: 0, height: H}, clip);
+  svg("image", {href: s.img_mask, x: X, y: Y, width: W, height: H, preserveAspectRatio: "none", "clip-path": "url(#scanClip)", opacity: .85});
+  V.scanLine = svg("line", {x1: X, x2: X, y1: Y, y2: Y + H, stroke: "#2ee6be", "stroke-width": 3, opacity: 0});
+  V.homes = s.homes_polygons.map(poly => {
+    const pts = poly.map(P), cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+    const g = svg("g", {opacity: 0});
+    svg("polygon", {points: pts.map(p => p.join(",")).join(" "), fill: "#2ee6be", stroke: "#061012", "stroke-width": 1}, g);
+    return {g, cx, cy};
+  });
+  const R = X + W + 70;
+  text(R, 70, `${s.name}, ${s.city}`, {"font-size": 34, "font-family": "Sora", "font-weight": 700});
+  text(R, 104, `${s.parcel_acres} acres · APN ${s.apn} · stored CNN scan (model ${s.model_version})`, {"font-size": 17, fill: "#b4c9c3"});
+  V.parking = text(R, 190, "", {"font-size": 64, "font-family": "Sora", "font-weight": 800, fill: "#2ee6be"});
+  text(R, 222, "m² of surface parking found by the CNN", {"font-size": 19, fill: "#b4c9c3"});
+  text(R, 300, "SB 4 screen", {"font-size": 16, fill: "#b4c9c3", "font-family": "JetBrains Mono", "letter-spacing": 2});
+  V.checks = s.sb4.map((c, i) => {
+    const g = svg("g", {opacity: 0, transform: `translate(${R},${336 + i * 62})`});
+    const ok = c.status === "met";
+    svg("circle", {cx: 12, cy: -6, r: 11, fill: ok ? "#2ee6be" : "none", stroke: ok ? "#2ee6be" : "#f5b04c", "stroke-width": 2}, g);
+    text(6, 0, ok ? "✓" : "?", {"font-size": 15, fill: ok ? "#061012" : "#f5b04c", "font-weight": 700}, g);
+    text(36, 0, c.check, {"font-size": 19}, g);
+    text(36, 24, `${c.status} · ${c.note}`, {"font-size": 15, fill: ok ? "#8aa7a0" : "#f5b04c"}, g);
+    return g;
+  });
+  V.siteW = W; V.siteX = X;
+}
+function updateSite(p) {
+  const scan = seg(p, .05, .45);
+  V.scanRect.setAttribute("width", scan * V.siteW);
+  V.scanLine.setAttribute("x1", V.siteX + scan * V.siteW); V.scanLine.setAttribute("x2", V.siteX + scan * V.siteW);
+  V.scanLine.setAttribute("opacity", scan > 0 && scan < 1 ? 1 : 0);
+  V.parking.textContent = Math.round(S.site.parking_sqm * scan).toLocaleString("en-US");
+  V.homes.forEach((h, i) => {
+    const r = seg(p, .45 + i * .012, .55 + i * .012);
+    h.g.setAttribute("opacity", r);
+    h.g.setAttribute("transform", `translate(${h.cx},${h.cy}) scale(${.4 + .6 * r}) translate(${-h.cx},${-h.cy})`);
+  });
+  V.checks.forEach((g, i) => g.setAttribute("opacity", seg(p, .55 + i * .07, .65 + i * .07)));
+}
+
+function buildClock() {
+  const T = S.timeline, rows = T.baseline.phases.map(b => ({b, k: T.keystone.phases.find(x => x.key === b.key)}));
+  const x0 = 380, x1 = 1520, max = 52, y0 = 120, rh = 78, X = m => x0 + m / max * (x1 - x0);
+  for (let y = 0; y <= 4; y++) {
+    svg("line", {x1: X(y * 12), x2: X(y * 12), y1: 80, y2: y0 + rows.length * rh, stroke: "#12302b"});
+    text(X(y * 12), 70, `year ${y}`, {"font-size": 16, fill: "#8aa7a0", "text-anchor": "middle", "font-family": "JetBrains Mono"});
+  }
+  V.rows = rows.map((r, i) => {
+    const y = y0 + i * rh;
+    const name = text(x0 - 20, y + 34, r.b.name, {"font-size": 19, "text-anchor": "end"});
+    const bar = svg("rect", {y: y + 12, height: 34, rx: 8, fill: "#4b5d59"});
+    const chip = text(0, y + 35, "", {"font-size": 15, fill: "#061012", "font-weight": 700, "font-family": "JetBrains Mono"});
+    return {...r, bar, chip, name};
+  });
+  V.endLine = svg("line", {y1: 90, y2: y0 + rows.length * rh + 6, stroke: "#2ee6be", "stroke-width": 3, "stroke-dasharray": "6 6"});
+  V.endLabel = text(0, y0 + rows.length * rh + 34, "", {"font-size": 24, "font-family": "Sora", "font-weight": 800, fill: "#2ee6be", "text-anchor": "middle"});
+  V.clockX = X;
+  V.LEVER = {instant_screen: "CNN: minutes", sb4_ministerial: "SB 4: by right", parallel_funding: "day one"};
+}
+function updateClock(p) {
+  const e = seg(p, .18, .62), X = V.clockX;
+  V.rows.forEach(r => {
+    const s = lerp(r.b.start, r.k.start, e), m = lerp(r.b.months, r.k.months, e);
+    const crit = e > .5 ? r.k.critical : r.b.critical;
+    r.bar.setAttribute("x", X(s)); r.bar.setAttribute("width", Math.max(4, X(s + m) - X(s)));
+    r.bar.setAttribute("fill", e > .5 ? (crit ? "#2ee6be" : "#15705e") : (crit ? "#8aa7a0" : "#4b5d59"));
+    const lever = r.k.lever && V.LEVER[r.k.lever];
+    r.chip.textContent = lever && e > .7 ? lever : "";
+    r.chip.setAttribute("x", X(s) + 10);
+    r.name.textContent = e > .5 ? r.k.name : r.b.name;
+  });
+  const end = lerp(S.timeline.baseline.months, S.timeline.keystone.months, e);
+  V.endLine.setAttribute("x1", X(end)); V.endLine.setAttribute("x2", X(end));
+  V.endLabel.setAttribute("x", X(end));
+  V.endLabel.textContent = `${end.toFixed(1)} months`;
+}
+
+function house(g, x, y, s) {  // a small house glyph centred on x,y
+  return svg("path", {d: `M${x - s} ${y + s * .9}V${y - s * .1}L${x} ${y - s}L${x + s} ${y - s * .1}V${y + s * .9}Z`}, g);
+}
+function buildFamilies() {
+  const hh = S.households, cols = 10, s = 30, gx = 120, gy = 110, dx = 92, dy = 150;
+  V.hh = hh.map((h, i) => {
+    const x = gx + (i % cols) * dx + 40, y = gy + Math.floor(i / cols) * dy + 40;
+    const g = svg("g", {tabindex: FILM ? -1 : 0, role: "button", "aria-label": `${h.name}, income $${h.income.toLocaleString("en-US")}`});
+    g.style.cursor = FILM ? "default" : "pointer";
+    const glyph = house(g, x, y, s);
+    glyph.setAttribute("stroke", "#1d3b36"); glyph.setAttribute("stroke-width", 2);
+    text(x, y + s + 30, `$${Math.round(h.income / 1000)}k`, {"font-size": 16, fill: "#b4c9c3", "text-anchor": "middle", "font-family": "JetBrains Mono"}, g);
+    const mark = text(x, y + 12, "", {"font-size": 26, "text-anchor": "middle", "font-weight": 700}, g);
+    if (!FILM) g.addEventListener("click", () => { $("#hhSel").value = i; $("#hhSel").dispatchEvent(new Event("change")); });
+    return {h, g, glyph, mark};
+  });
+  const R = 1080;
+  V.denied = text(R, 170, "", {"font-size": 56, "font-family": "Sora", "font-weight": 800, fill: "#ff7a69"});
+  text(R, 204, "turned down by a conventional lender (HMDA model)", {"font-size": 18, fill: "#b4c9c3"});
+  V.keep = text(R, 330, "", {"font-size": 56, "font-family": "Sora", "font-weight": 800, fill: "#2ee6be"});
+  text(R, 364, "expected to keep their homes 10 years", {"font-size": 18, fill: "#b4c9c3"});
+  V.market = text(R, 440, "", {"font-size": 22, fill: "#e9f5f2"});
+  V.design = text(R, 520, "", {"font-size": 17, fill: "#8aa7a0"});
+}
+function updateFamilies(p) {
+  const a = seg(p, .05, .35), b = seg(p, .45, .85);
+  const denied = S.households.filter(h => h.p_denied > .5).length;
+  V.denied.textContent = `${Math.round(denied * a)} of ${S.households.length}`;
+  const exp = S.households.reduce((t, h) => t + h.p.keystone, 0), mk = S.households.reduce((t, h) => t + h.p.market, 0);
+  V.keep.textContent = b > 0 ? `${(exp * b).toFixed(1)} of ${S.households.length}` : "";
+  V.market.textContent = b > .6 ? `vs ${mk.toFixed(1)} on market-rate loans` : "";
+  const designs = {};
+  S.households.forEach(h => designs[h.design] = (designs[h.design] || 0) + 1);
+  const top = Object.entries(designs).sort((x, y) => y[1] - x[1])[0];
+  V.design.textContent = b > .8 && top ? `most common design: ${top[0]} (${top[1]} homes)` : "";
+  V.hh.forEach(({h, glyph, mark}) => {
+    const deniedNow = h.p_denied > .5 && a > .5 && b < .2;
+    glyph.setAttribute("fill", b > 0 ? `rgba(46,230,190,${(.15 + .85 * h.p.keystone * b).toFixed(3)})` : (deniedNow ? "rgba(255,122,105,.35)" : "#0b1a1d"));
+    mark.textContent = deniedNow ? "✕" : "";
+    mark.setAttribute("fill", "#ff7a69");
+  });
+}
+
+function buildFunding() {
+  const c = S.capital.keystone, std = S.capital.standard;
+  const parts = [["Mortgages families repay (present value)", c.mortgage_capital, "#15705e"], ["Family down payments", c.down_payments, "#1f8a73"],
+    ["CalHome (assumed per home)", c.calhome, "#3a6f8f"], ["FHLBank SF AHP (assumed per home)", c.ahp, "#4f7fa3"],
+    ["Philanthropy closes the gap", c.philanthropy, "#2ee6be"]];
+  const x0 = 120, W = 1360, total = parts.reduce((t, p) => t + p[1], 0), sc = W / Math.max(total, c.cost);
+  text(x0, 90, `${c.homes} homes cost ${usd(c.cost)} to build (land contributed under SB 4)`, {"font-size": 26, "font-family": "Sora", "font-weight": 700});
+  svg("rect", {x: x0, y: 130, width: c.cost * sc, height: 26, rx: 6, fill: "#12302b"});
+  text(x0 + 10, 149, "cost", {"font-size": 15, fill: "#b4c9c3", "font-family": "JetBrains Mono"});
+  let x = x0;
+  V.parts = parts.map(([name, v, color], i) => {
+    const w = v * sc, rect = svg("rect", {x, y: 190, height: 90, width: 0, rx: 6, fill: color});
+    const ly = 330 + i * 40;
+    const lab = svg("g", {opacity: 0});
+    svg("rect", {x: x0, y: ly - 16, width: 18, height: 18, rx: 4, fill: color}, lab);
+    text(x0 + 30, ly, name, {"font-size": 19}, lab);
+    const val = text(x0 + 560, ly, usd(v), {"font-size": 21, "font-family": "Sora", "font-weight": 700, "text-anchor": "end", fill: color === "#2ee6be" ? "#2ee6be" : "#e9f5f2", opacity: 0});
+    const r = {rect, lab, val, x, w};
+    x += w;
+    return r;
+  });
+  text(x0 + 640, 360, `With standard 0% loans`, {"font-size": 20, fill: "#b4c9c3"});
+  text(x0 + 640, 400, `the same homes need ${usd(std.philanthropy)}.`, {"font-size": 28, "font-family": "Sora", "font-weight": 700});
+  if (c.surplus_homes) text(x0, 560, `${c.surplus_homes} homes recover more than they cost; that surplus is not counted against other homes.`, {"font-size": 17, fill: "#8aa7a0"});
+}
+function updateFunding(p) {
+  V.parts.forEach((r, i) => {
+    const g = seg(p, .08 + i * .12, .22 + i * .12);
+    r.rect.setAttribute("width", r.w * g);
+    r.lab.setAttribute("opacity", g); r.val.setAttribute("opacity", g);
+  });
+}
+
+const STATE_FILL = ["#2ee6be", "#f5b04c", "#ff9d5c", "#ff7a69", "#33403d"];
+function buildDecade() {
+  const names = {market: "Market-rate loan, no steward", standard: "0% Habitat loan, no early warning", keystone: "Keystone design + Steward agent"};
+  V.dec = ["market", "standard", "keystone"].map((k, r) => {
+    const y = 80 + r * 210;
+    text(80, y, names[k], {"font-size": 22, "font-family": "Sora", "font-weight": 700});
+    const exp = S.households.reduce((t, h) => t + h.p[k], 0);
+    text(80, y + 28, `expected still owning at year 10: ${exp.toFixed(1)} of ${S.households.length}`, {"font-size": 17, fill: "#b4c9c3"});
+    const cells = S.households.map((h, i) => {
+      const x = 100 + i * 42, g = svg("g");
+      const glyph = house(g, x, y + 92, 18);
+      const ring = svg("circle", {cx: x, cy: y + 92, r: 26, fill: "none", stroke: "#7ab8ff", "stroke-width": 3, opacity: 0}, g);
+      return {h, glyph, ring};
+    });
+    const count = text(1540, y + 104, "", {"font-size": 40, "font-family": "Sora", "font-weight": 800, fill: "#2ee6be", "text-anchor": "end"});
+    return {k, cells, count};
+  });
+  V.month = text(1520, 40, "", {"font-size": 18, fill: "#b4c9c3", "text-anchor": "end", "font-family": "JetBrains Mono"});
+  text(80, 720, "Animation: one simulated decade per household (same shocks for all three). Headline counts are expected values over 1,500 decades.", {"font-size": 15, fill: "#8aa7a0"});
+}
+function updateDecade(p) {
+  const m = Math.min(119, Math.floor(seg(p, .02, .9) * 120));
+  V.month.textContent = `month ${m + 1} of 120`;
+  V.dec.forEach(row => {
+    let own = 0;
+    row.cells.forEach(({h, glyph, ring}) => {
+      const st = +h.decade[row.k].states[m];
+      own += st !== 4;
+      glyph.setAttribute("fill", STATE_FILL[st]);
+      ring.setAttribute("opacity", h.decade[row.k].steward.some(s => s <= m && s > m - 3) ? 1 : 0);
+    });
+    row.count.textContent = `${own} / ${row.cells.length}`;
+  });
+}
+
+const BUILD = {site: buildSite, clock: buildClock, families: buildFamilies, funding: buildFunding, decade: buildDecade};
+const UPDATE = {site: updateSite, clock: updateClock, families: updateFamilies, funding: updateFunding, decade: updateDecade};
+
+function showBeat(i, {animate = true} = {}) {
+  beat = i;
+  const b = BEATS[i], h = S.headlines[b.head];
+  $("#viz").innerHTML = "";
+  BUILD[b.id]();
+  $("#hv").textContent = h.value;
+  $("#label").textContent = h.label;
+  $("#why").innerHTML = b.why;
+  document.querySelectorAll("#beats button").forEach((x, j) => x.classList.toggle("on", j === i));
+  if (!FILM) panel(b.id);
+  if (!animate) return UPDATE[b.id](1);
+  const t0 = performance.now(), dur = b.id === "decade" ? 9000 : 2600;
+  const tick = () => { const p = clamp((performance.now() - t0) / dur); UPDATE[b.id](p); if (p < 1 && beat === i) requestAnimationFrame(tick); };
+  requestAnimationFrame(tick);
+}
+
+// ---------------------------------------------------------------- explain any headline number
+function explain() {
+  const h = S.headlines[BEATS[beat].head];
+  $("#exTitle").textContent = `${h.value} ${h.label}`;
+  $("#exBody").innerHTML = `<p><b>How it is computed.</b> ${esc(h.formula)}</p><p><b>Source.</b> ${esc(h.source)}</p>
+    <p><b>Tool.</b> <span class="mono">${esc(h.tool)}</span></p><p><b>Inputs.</b></p><pre>${esc(JSON.stringify(h.inputs, null, 2))}</pre>`;
+  $("#explain").showModal();
+}
+
+// ---------------------------------------------------------------- live controls (app mode)
+async function api(path, body, method = "POST") {
+  const res = await fetch(path, {method, headers: {"Content-Type": "application/json"}, body: body ? JSON.stringify(body) : undefined});
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401) { signedOut(); throw new Error("signed out"); }
+  if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : (data.detail?.[0]?.msg || `error ${res.status}`));
+  return data;
+}
+async function change(path, body) {
+  $("#status").textContent = "recomputing…";
+  try { S = await api(path, body); $("#status").textContent = "updated from the live models"; showBeat(beat, {animate: false}); }
+  catch (e) { $("#status").textContent = e.message; }
+}
+function panel(id) {
+  const P = $("#panel");
+  if (id === "site") P.innerHTML = `<h3>The land offer</h3><p>${esc(S.site.address)}, ${esc(S.site.city)}. The CNN scan is stored with the app; live re-scans run on the server build.</p><p class="mono" style="color:var(--ink-3)">Fire, flood and title screens are marked "to verify": Keystone never assumes them.</p>`;
+  if (id === "clock") {
+    const L = [["instant_screen", "Site already CNN-scored", "screening takes days, not months"], ["sb4_ministerial", "SB 4 ministerial approval", "no discretionary or CEQA review"], ["parallel_funding", "Funding + families on day one", "applications drafted from the capital plan"]];
+    P.innerHTML = `<h3>Keystone's levers</h3>${L.map(([k, n, d]) => `<label class="lever"><input type="checkbox" data-lever="${k}" ${S.levers[k] ? "checked" : ""}><span>${n}<small>${d}</small></span></label>`).join("")}
+      <label>Construction (estimate, months)<input type="number" id="constr" min="0.25" max="60" step="0.5" value="${S.estimates.construction}"></label>
+      <h3>Agents</h3><button class="btn" id="runAgents">Run the agents on this offer</button><div id="status" role="status"></div>`;
+    P.querySelectorAll("[data-lever]").forEach(c => c.onchange = () => change("/api/scenario/levers", {levers: {[c.dataset.lever]: c.checked}}));
+    $("#constr").onchange = e => change("/api/scenario/levers", {estimates: {construction: +e.target.value}});
+    $("#runAgents").onclick = runAgents;
+    return;
+  }
+  if (id === "families") {
+    P.innerHTML = `<h3>Try a family</h3><label>Household<select id="hhSel">${S.households.map((h, i) => `<option value="${i}">${esc(h.name)} · $${h.income.toLocaleString("en-US")}</option>`).join("")}</select></label>
+      <div id="hhInfo"></div><label>Annual income ($)<input type="number" id="hhIncome" min="1000" max="2000000" step="any"></label>
+      <button class="btn" id="hhGo">Recompute this family</button><div id="status" role="status"></div>`;
+    const info = () => { const h = S.households[+$("#hhSel").value];
+      $("#hhIncome").value = h.income;
+      $("#hhInfo").innerHTML = `<p>${h.household_size} people · ${h.pct_ami}% of AMI · P(bank denial) ${(h.p_denied * 100).toFixed(0)}%<br>Design: <b>${esc(h.design)}</b><br>Keeps home 10 yrs: <b>${(h.p.keystone * 100).toFixed(1)}%</b> (market ${(h.p.market * 100).toFixed(1)}%)</p>`; };
+    $("#hhSel").onchange = info; info();
+    $("#hhGo").onclick = () => change("/api/scenario/household", {index: +$("#hhSel").value, income: +$("#hhIncome").value});
+  }
+  if (id === "funding") {
+    P.innerHTML = `<h3>Assumptions</h3><label>Hard cost per sq ft ($, assumption)<input type="number" id="hc" min="100" max="2000" step="5" value="${S.capital.assumptions.hard_cost_per_sqft}"></label>
+      <label>CalHome per home ($, assumption)<input type="number" id="ch" min="0" step="1000" value="${S.capital.assumptions.calhome_per_home}"></label>
+      <label>AHP per home ($, assumption)<input type="number" id="ah" min="0" step="1000" value="${S.capital.assumptions.ahp_per_home}"></label>
+      <button class="btn" id="capGo">Recompute</button><div id="status" role="status"></div>`;
+    $("#capGo").onclick = () => change("/api/scenario/assumptions", {hard_cost_per_sqft: +$("#hc").value, calhome: +$("#ch").value, ahp: +$("#ah").value});
+  }
+  if (id === "decade") P.innerHTML = `<h3>Ten years</h3><p>Colours: <span style="color:#2ee6be">current</span>, <span style="color:#f5b04c">cash under one payment</span>, <span style="color:#ff9d5c">missed a payment</span>, <span style="color:#ff7a69">90+ days late</span>, grey = home lost; blue ring = the Steward reaches out.</p><button class="btn" id="replay">Replay the decade</button>`;
+  if (id === "decade") $("#replay").onclick = () => showBeat(beat);
+}
+
+function toast(html, ms = 4200) {
+  const t = document.createElement("div"); t.className = "toast"; t.innerHTML = html;
+  $("#toasts").prepend(t);
+  while ($("#toasts").children.length > 6) $("#toasts").lastChild.remove();
+  setTimeout(() => t.remove(), ms);
+}
+async function runAgents() {
+  $("#runAgents").disabled = true;
+  try {
+    const r = await api("/api/scenario/mission");
+    toast(`<b>Mission started</b> <i>(${esc(r.policy === "scripted" ? "offline policy" : "Claude when a key is set")})</i>`);
+    let seen = 0;
+    for (let i = 0; i < 240; i++) {
+      await new Promise(res => setTimeout(res, 700));
+      const run = await (await fetch(`/api/runs/${r.run_id}`)).json().catch(() => null);
+      if (!run || !run.events) continue;
+      run.events.slice(seen).filter(e => e.type === "tool").forEach(e => toast(`${esc(e.agent)} → <b>${esc(e.tool)}</b> <i>${e.secs}s</i>`));
+      seen = run.events.length;
+      if (run.grade || run.error) { toast(run.grade ? `<b>Brief graded ${run.grade.score.toFixed(2)}</b> by code graders` : `<b>Mission failed:</b> ${esc(run.error)}`, 8000); break; }
+    }
+  } catch (e) { toast(`<b>${esc(e.message)}</b>`); }
+  $("#runAgents").disabled = false;
+}
+
+// ---------------------------------------------------------------- sign-in
+function signedOut() { $("#stage").hidden = true; $("#login").hidden = false; $("#email").focus(); }
+async function start() {
+  const st = await (await fetch("/api/session")).json();
+  if (st.demo_login) { $("#demoHint").hidden = false; $("#demoHint").innerHTML = `Demo account: <span class="mono">${esc(st.demo_login.email)}</span> / <span class="mono">${esc(st.demo_login.password)}</span>`; $("#email").value = st.demo_login.email; }
+  if (!st.signed_in) return signedOut();
+  await enter(st);
+}
+async function enter(st) {
+  S = await api("/api/scenario", null, "GET");
+  $("#login").hidden = true; $("#stage").hidden = false;
+  $("#who").textContent = `${st.name}`;
+  $("#title").textContent = S.title;
+  $("#beats").innerHTML = BEATS.map((b, i) => `<button data-i="${i}">${b.name}</button>`).join("");
+  $("#beats").querySelectorAll("button").forEach(b => b.onclick = () => showBeat(+b.dataset.i));
+  showBeat(0);
+}
+$("#loginForm").onsubmit = async e => {
+  e.preventDefault(); $("#loginErr").textContent = "";
+  try { const st = await api("/api/session", {email: $("#email").value, password: $("#password").value}); await enter(st); }
+  catch (err) { $("#loginErr").textContent = err.message === "signed out" ? "Wrong email or password." : err.message; }
+};
+$("#signOut").onclick = async () => { await fetch("/api/session", {method: "DELETE"}); signedOut(); };
+$("#explainBtn").onclick = explain;
+$("#exClose").onclick = () => $("#explain").close();
+$("#bigBtn").onclick = () => document.body.classList.toggle("big");
+$("#resetBtn").onclick = async () => { S = await api("/api/scenario/reset"); showBeat(0); toast("<b>Scenario reset</b> to the seed"); };
+document.addEventListener("keydown", e => {
+  if (FILM || $("#stage").hidden || e.target.closest("input, select, textarea") || $("#explain").open) return;
+  if (e.key === "ArrowRight") showBeat(Math.min(BEATS.length - 1, beat + 1));
+  if (e.key === "ArrowLeft") showBeat(Math.max(0, beat - 1));
+  if (e.key.toLowerCase() === "l") document.body.classList.toggle("big");
+  if (e.key.toLowerCase() === "r") $("#resetBtn").click();
+});
+
+// ---------------------------------------------------------------- the hard 30-second film (?film): a pure function of time
+const SHOTS = [  // [start s, end s, kind]
+  [0, 2.8, "hook"], [2.8, 8.6, "site"], [8.6, 16.6, "clock"], [16.6, 22.6, "families"], [22.6, 26.4, "funding"], [26.4, 30, "end"]];
+const FILM_TEXT = {
+  hook: ["Habitat OC turns land into homes in about four years.", "Families can't wait that long."],
+  site: ["A church offers its parking lot.", "AI finds room for 30 homes, then screens SB 4."],
+  clock: ["Same project. Offer to move-in in 2.4 years, not 4.2.", "SB 4 by right · funding and families start on day one"],
+  families: ["30 families banks turn away.", "Mortgages priced on staying 10 years, not on closing."],
+  funding: ["And who closes the gap.", "Every home underwritten on its own family's loan."],
+};
+let shot = -1;
+function filmFrame(t) {
+  const i = SHOTS.findIndex(s => t >= s[0] && t < s[1]), k = i < 0 ? SHOTS.length - 1 : i;
+  const [a, b, kind] = SHOTS[k], p = clamp((t - a) / (b - a));
+  if (k !== shot) {
+    shot = k; $("#viz").innerHTML = "";
+    if (kind === "hook" || kind === "end") buildCard(kind); else { BUILD[kind](); }
+    const head = {site: "site", clock: "clock", families: "mortgages", funding: "capital"}[kind];
+    $("#hv").textContent = head ? S.headlines[head].value : "";
+    $("#label").textContent = head ? FILM_TEXT[kind][0] : "";
+    $("#why").textContent = head ? FILM_TEXT[kind][1] : "";
+    $("footer").style.visibility = head ? "visible" : "hidden";
+  }
+  if (kind === "hook" || kind === "end") updateCard(kind, p); else UPDATE[kind](Math.min(1, p * 1.25));
+  if (kind === "clock") {
+    filmToasts(p);  // the headline counts down with the bars (same easing as updateClock)
+    const e = seg(Math.min(1, p * 1.25), .18, .62);
+    $("#hv").textContent = `${lerp(S.timeline.baseline.years, S.timeline.keystone.years, e).toFixed(1)} years`;
+  }
+}
+function buildCard(kind) {
+  if (kind === "hook") {
+    V.c1 = text(800, 320, FILM_TEXT.hook[0], {"font-size": 54, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle"});
+    V.c2 = text(800, 420, FILM_TEXT.hook[1], {"font-size": 54, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle", fill: "#2ee6be"});
+  } else {
+    V.c1 = text(800, 230, "KEYSTONE", {"font-size": 110, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle", "letter-spacing": 26});
+    text(800, 110, "IMPACT LAB · LANE 2 · CLEAR IT", {"font-size": 22, "text-anchor": "middle", fill: "#2ee6be", "font-family": "JetBrains Mono", "letter-spacing": 6});
+    V.c2 = text(800, 340, `Offer to move-in in ${S.timeline.keystone.years} years, not ${S.timeline.baseline.years}.`, {"font-size": 44, "font-family": "Sora", "font-weight": 700, "text-anchor": "middle", fill: "#2ee6be"});
+    V.c3 = text(800, 420, "Real OC parcels · real HMDA loans · every number cites its source", {"font-size": 26, "text-anchor": "middle", fill: "#b4c9c3"});
+    V.c4 = text(800, 500, "Built for Habitat for Humanity of Orange County · Keys to 100", {"font-size": 24, "text-anchor": "middle", fill: "#b4c9c3"});
+    V.c5 = text(800, 600, "Mac app: github.com/MaranZeal678/keystone-releases", {"font-size": 24, "text-anchor": "middle", fill: "#8aa7a0", "font-family": "JetBrains Mono"});
+  }
+}
+function updateCard(kind, p) {
+  if (kind === "hook") { V.c1.setAttribute("opacity", seg(p, 0, .25)); V.c2.setAttribute("opacity", seg(p, .4, .65)); }
+  else [V.c1, V.c2, V.c3, V.c4, V.c5].forEach((c, i) => c.setAttribute("opacity", seg(p, i * .1, .2 + i * .1)));
+}
+let toastsShown = 0;
+function filmToasts(p) {
+  const tools = (TRACE?.events || []).filter(e => e.type === "tool").slice(0, 7);
+  const due = Math.floor(seg(p, .1, .9) * tools.length);
+  while (toastsShown < due) { const e = tools[toastsShown++]; toast(`${esc(e.agent)} → <b>${esc(e.tool)}</b> <i>MCP</i>`, 2400); }
+}
+async function filmInit() {
+  document.body.classList.add("film");
+  [S, TRACE] = await Promise.all([fetch("/static/demo/scenario_seed.json").then(r => r.json()), fetch("/api/demo/trace").then(r => r.json()).catch(() => null)]);
+  $("#login").hidden = true; $("#stage").hidden = false;
+  $("#title").textContent = "Habitat for Humanity of Orange County · Keys to 100";
+  await document.fonts.ready;
+  window.startFilm = () => { const t0 = performance.now(); const loop = () => { const t = (performance.now() - t0) / 1000; filmFrame(Math.min(t, 29.999)); if (t < 30) requestAnimationFrame(loop); }; requestAnimationFrame(loop); };
+  window.FILM_READY = true;
+  if (new URLSearchParams(location.search).has("play")) window.startFilm();
+}
+
+if (FILM) filmInit(); else start();
+</script>
+</body>
+</html>

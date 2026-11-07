@@ -1,4 +1,6 @@
-Keystone for Habitat for Humanity of Orange County's Keys to 100, as a Mac app: the dashboard, the mission-control demo, the agent hierarchy, the mortgage designer and the MCP server, all running locally.
+Keystone for Habitat for Humanity of Orange County's Keys to 100, as a Mac app. It opens on the **Crossline Church scenario** (Impact Lab Lane 2, Clear it): a congregation offers its parking lot, and Keystone shows how 30 families move in within 2.4 years instead of 4.2: the site screened in minutes, SB 4 by-right approval, and funding plus family pre-qualification starting on day one. The dashboard, the agent hierarchy, the mortgage designer and the MCP server are all included and run locally.
+
+**Demo sign-in:** `maria@habitat-oc.demo` / `keys-to-100` (a demo persona; each session gets its own copy of the scenario, and nothing it changes is saved). The **Go** menu also plays the 30-second film.
 
 **Install**
 

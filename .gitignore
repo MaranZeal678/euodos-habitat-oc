@@ -25,3 +25,4 @@ artifacts/memory/
 .coverage
 packaging/build/
 packaging/dist/
+artifacts/accounts.json

@@ -10,9 +10,11 @@ loopback, because a reverse proxy in front of it would make every visitor look l
 """
 import asyncio
 import contextlib
+import hashlib
 import json
 import logging
 import os
+import pathlib
 import re
 import secrets
 import threading
@@ -20,13 +22,14 @@ import time
 import uuid
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from keystone import config, tools
+from keystone import scenario as scenario_model
 from keystone.agents import evals, runtime
 from keystone.mcp_server.server import app as mcp_server
 from keystone.models import registry
@@ -325,3 +328,199 @@ async def mission(m: MissionIn):
 @app.get("/api/missions")
 def missions():
     return evals.MISSIONS
+
+
+# ---------------------------------------------------------------- scenario app (sign-in + the Crossline scenario)
+# One demo account, private per-session scenarios. The seeded login exists only where KEYSTONE_DEMO_LOGIN=1 (the Mac
+# app sets it; a hosted public demo may set it): every session gets its own copy of the scenario and nothing it does
+# is persisted, so a shared demo password exposes nothing. Real accounts live in STATE/accounts.json (scrypt hashes).
+DEMO_LOGIN = {"email": "maria@habitat-oc.demo", "password": "keys-to-100", "name": "Maria Reyes",
+              "role": "Director of Real Estate, Habitat for Humanity OC (demo persona)"}
+
+
+def accounts_path():  # read per call, so tests and the Mac app's state dir always win over the import-time default
+    return (pathlib.Path(os.environ["KEYSTONE_STATE_DIR"]) if os.environ.get("KEYSTONE_STATE_DIR") else config.STATE) / "accounts.json"
+
+
+_sessions: dict = {}
+_session_lock = threading.Lock()
+MAX_SESSIONS = 500
+scenario_limiter = RateLimiter(rate=1.0, burst=20)
+
+
+def demo_login_enabled():
+    return os.environ.get("KEYSTONE_DEMO_LOGIN") == "1"
+
+
+def _hash(password, salt):
+    return hashlib.scrypt(password.encode(), salt=salt, n=2**14, r=8, p=1).hex()
+
+
+def _accounts():
+    accounts = read_json(accounts_path()) or {}
+    if demo_login_enabled() and DEMO_LOGIN["email"] not in accounts:
+        salt = secrets.token_bytes(16)
+        accounts[DEMO_LOGIN["email"]] = {"salt": salt.hex(), "hash": _hash(DEMO_LOGIN["password"], salt),
+                                         "name": DEMO_LOGIN["name"], "role": DEMO_LOGIN["role"], "demo": True}
+        write_atomic(accounts_path(), json.dumps(accounts, indent=2))
+    if not demo_login_enabled():
+        accounts = {k: v for k, v in accounts.items() if not v.get("demo")}
+    return accounts
+
+
+def _session(request: Request):
+    token = request.cookies.get("ks_session", "")
+    with _session_lock:
+        sess = _sessions.get(token)
+        if sess:
+            sess["seen"] = time.monotonic()
+    if not sess:
+        raise HTTPException(401, "sign in to use the scenario")
+    return sess
+
+
+def _limit(request: Request):
+    if not scenario_limiter.allow(client_key(request)):
+        raise HTTPException(429, "too many requests; wait a moment", headers={"Retry-After": "2"})
+
+
+class SignIn(BaseModel):
+    email: str = Field(max_length=200)
+    password: str = Field(max_length=200)
+
+
+@app.get("/scenario")
+def scenario_page():
+    return FileResponse(HERE / "scenario.html", headers=NO_CACHE)
+
+
+@app.get("/api/session")
+def session_status(request: Request):
+    token = request.cookies.get("ks_session", "")
+    sess = _sessions.get(token)
+    hint = {k: DEMO_LOGIN[k] for k in ("email", "password")} if demo_login_enabled() else None
+    return {"signed_in": bool(sess), "name": sess and sess["name"], "role": sess and sess["role"], "demo_login": hint}
+
+
+@app.post("/api/session")
+def sign_in(body: SignIn, request: Request, response: Response):
+    _limit(request)
+    acct = _accounts().get(body.email.strip().lower())
+    if acct is None or not secrets.compare_digest(_hash(body.password, bytes.fromhex(acct["salt"])), acct["hash"]):
+        raise HTTPException(401, "wrong email or password")
+    token = secrets.token_urlsafe(32)
+    with _session_lock:
+        if len(_sessions) >= MAX_SESSIONS:  # forget the idlest session
+            del _sessions[min(_sessions, key=lambda t: _sessions[t]["seen"])]
+        _sessions[token] = {"email": body.email.strip().lower(), "name": acct["name"], "role": acct["role"],
+                            "scenario": scenario_model.fresh(), "seen": time.monotonic(), "lock": threading.Lock()}
+    response.set_cookie("ks_session", token, httponly=True, samesite="lax", secure=request.url.scheme == "https",
+                        max_age=12 * 3600)
+    return {"signed_in": True, "name": acct["name"], "role": acct["role"]}
+
+
+@app.delete("/api/session")
+def sign_out(request: Request, response: Response):
+    with _session_lock:
+        _sessions.pop(request.cookies.get("ks_session", ""), None)
+    response.delete_cookie("ks_session")
+    return {"signed_in": False}
+
+
+@app.get("/api/scenario")
+def get_scenario(request: Request):
+    return _session(request)["scenario"]
+
+
+class HouseholdEdit(BaseModel):
+    index: int = Field(ge=0, le=scenario_model.N_HOMES - 1)
+    income: float | None = Field(None, ge=1_000, le=2_000_000)
+    household_size: int | None = Field(None, ge=1, le=8)
+    savings: float | None = Field(None, ge=0, le=20_000_000)
+    monthly_debts: float | None = Field(None, ge=0, le=1_000_000)
+
+
+class AssumptionEdit(BaseModel):
+    hard_cost_per_sqft: float | None = Field(None, gt=0, le=2_000)
+    calhome: float | None = Field(None, ge=0, le=20_000_000)
+    ahp: float | None = Field(None, ge=0, le=20_000_000)
+
+
+class LeverEdit(BaseModel):
+    levers: dict[Literal["instant_screen", "sb4_ministerial", "parallel_funding"], bool] = {}
+    estimates: dict[Literal["screen", "land_deal", "entitlement", "permits", "construction", "families"],
+                    float] = {}
+
+
+def _edit(request, fn):
+    _limit(request)
+    sess = _session(request)
+    if not sess["lock"].acquire(blocking=False):
+        raise HTTPException(409, "the last change is still computing", headers={"Retry-After": "1"})
+    try:
+        sess["scenario"] = fn(sess["scenario"])
+        return sess["scenario"]
+    finally:
+        sess["lock"].release()
+
+
+@app.post("/api/scenario/household")
+def edit_household(body: HouseholdEdit, request: Request):
+    changes = body.model_dump(exclude={"index"}, exclude_none=True)
+    return _edit(request, lambda s: scenario_model.edit_household(s, body.index, **changes))
+
+
+@app.post("/api/scenario/assumptions")
+def edit_assumptions(body: AssumptionEdit, request: Request):
+    return _edit(request, lambda s: scenario_model.edit_assumptions(s, **body.model_dump()))
+
+
+@app.post("/api/scenario/levers")
+def edit_levers(body: LeverEdit, request: Request):
+    if any(not 0.25 <= v <= 60 for v in body.estimates.values()):
+        raise HTTPException(422, "each estimate must be between 0.25 and 60 months")
+    return _edit(request, lambda s: scenario_model.edit_levers(s, body.levers, body.estimates))
+
+
+@app.post("/api/scenario/reset")
+def reset_scenario(request: Request):
+    return _edit(request, lambda s: scenario_model.fresh())
+
+
+def scenario_policy(request):
+    """Claude runs cost money: only the local app (loopback) or an explicit opt-in may use it; else scripted."""
+    trusted = trust_loopback() and (request.client.host if request.client else "") in LOOPBACK
+    return "auto" if trusted or os.environ.get("KEYSTONE_SCENARIO_CLAUDE") == "1" else "scripted"
+
+
+@app.post("/api/scenario/mission")
+async def scenario_mission(request: Request):
+    _limit(request)
+    s = _session(request)["scenario"]
+    if sum(1 for t in _tasks.values() if not t.done()) >= 3:
+        raise HTTPException(429, "three missions are already running; wait for one to finish")
+    hh = sorted(s["households"], key=lambda h: h["income"])
+    picks = [hh[0], hh[len(hh) // 2], hh[-1]]  # the lowest, median and highest income in the cohort
+    spec = {"name": f"{s['site']['name']}: {s['site']['homes']} homes", "target_homes": s["site"]["homes"],
+            "city": s["site"]["city"],
+            "families": [{"name": h["name"], "income": h["income"], "household_size": h["household_size"],
+                          "savings": h["savings"], "monthly_debts": h["monthly_debts"],
+                          "income_volatility": h["income_volatility"]} for h in picks]}
+    rid = time.strftime("%Y%m%d_%H%M%S_") + uuid.uuid4().hex[:4]
+    policy = scenario_policy(request)
+
+    async def go():
+        try:
+            async with runtime.Hierarchy(policy=policy, run_id=rid) as h:
+                report = await h.mission(evals.mission_text(spec))
+                write_atomic(h.trace.dir / "grade.json", json.dumps(evals.grade(report, h.tool_results, spec), indent=2))
+        except Exception as e:  # a failed mission must say so in its run, not vanish with the task
+            msg = f"{type(e).__name__}: {e}"[:2000]
+            trace = runtime.Trace(rid)
+            trace.log(type="mission_error", policy=policy, error=msg)
+            write_atomic(trace.dir / "error.json", json.dumps({"error": msg}))
+            log.exception("scenario mission %s failed", rid)
+
+    runtime.Trace(rid).log(type="mission_queued", policy=policy, mission=spec["name"])
+    _tasks[rid] = asyncio.create_task(go())
+    return {"run_id": rid, "policy": policy}

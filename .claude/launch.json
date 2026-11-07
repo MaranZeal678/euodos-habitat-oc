@@ -4,8 +4,29 @@
     {
       "name": "keystone",
       "runtimeExecutable": "/Users/maran/Desktop/AnthropicHousing/.venv/bin/uvicorn",
-      "runtimeArgs": ["keystone.app.server:app", "--port", "8000", "--app-dir", "/Users/maran/Desktop/AnthropicHousing"],
+      "runtimeArgs": [
+        "keystone.app.server:app",
+        "--port",
+        "8000",
+        "--app-dir",
+        "/Users/maran/Desktop/AnthropicHousing"
+      ],
       "port": 8000
+    },
+    {
+      "name": "keystone-scenario",
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": [
+        "KEYSTONE_DEMO_LOGIN=1",
+        "KEYSTONE_STATE_DIR=/private/tmp/claude-501/-Users-maran-Desktop-AnthropicHousing/8c096d4d-8f03-4a23-b0be-6b48cd2b838d/scratchpad/scn_state",
+        "/Users/maran/Desktop/AnthropicHousing/.venv/bin/uvicorn",
+        "keystone.app.server:app",
+        "--port",
+        "8010",
+        "--app-dir",
+        "/Users/maran/Desktop/AnthropicHousing"
+      ],
+      "port": 8010
     }
   ]
 }
