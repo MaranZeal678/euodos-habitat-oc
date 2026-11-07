@@ -2,6 +2,8 @@ Keystone for Habitat for Humanity of Orange County's Keys to 100, as a Mac app. 
 
 **Demo sign-in:** `maria@habitat-oc.demo` / `keys-to-100` (a demo persona; each session gets its own copy of the scenario, and nothing it changes is saved). The **Go** menu also plays the 30-second film.
 
+**New in 0.2.1:** a one-page summary of the scenario (press **P** or click **Summary**), edits confirm on screen once the live models finish, and the layout holds at the smallest window size.
+
 **Install**
 
 1. Download `Keystone-<version>.dmg`, open it, and drag Keystone into Applications.

@@ -73,8 +73,28 @@ body.film footer { padding: 26px 48px 34px; }
 body.film #label { font-size: 40px; max-width: 46ch; }
 body.film #why { font-size: 24px; border-left-width: 3px; }
 body.film .toast { font-size: 18px; padding: 8px 14px; }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; } #panel { border-left: 0; border-top: 1px solid var(--line); } #toasts { right: 16px; } #why { margin-left: 0; } }
-@media print { header, #panel, #toasts, footer #why { display: none; } body { background: #fff; color: #000; } }
+#user { flex-wrap: wrap; }
+@media (max-width: 900px) {
+  /* phones and narrow windows: the page scrolls instead of squeezing the visual into the leftover height */
+  html, body { height: auto; }
+  #stage { height: auto; min-height: 100vh; grid-template-rows: auto auto auto; }
+  main { grid-template-columns: 1fr; }
+  #viz { height: auto; aspect-ratio: 1600 / 760; }
+  #panel { border-left: 0; border-top: 1px solid var(--line); }
+  header { padding: 12px 16px; } #beats { margin-left: 0; }
+  footer { padding: 16px; } #headline { font-size: 44px; } #label { font-size: 18px; }
+  #toasts { right: 16px; top: auto; bottom: 16px; } #why { margin-left: 0; }
+}
+#summary { position: fixed; inset: 0; z-index: 6; background: #fff; color: #111; overflow: auto; padding: 40px 56px; font: 15px/1.5 var(--body); }
+#summary h1 { font: 800 30px/1.15 var(--display); margin: 0 0 4px; }
+#summary h2 { font: 700 15px/1.3 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: #15705e; margin: 22px 0 6px; }
+#summary .big { font: 800 34px/1 var(--display); color: #0f6b5c; }
+#summary .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+#summary .src { font-size: 12px; color: #555; }
+#summary .bar { display: flex; gap: 10px; margin-bottom: 18px; }
+#summary #printBtn { background: #0f6b5c; color: #fff; border-color: #0f6b5c; }
+@media (max-width: 700px) { #summary { padding: 24px 16px; } #summary .grid { grid-template-columns: 1fr; } #summary h1 { font-size: 24px; } }
+@media print { header, #panel, #toasts, footer, #stage, #summary .bar { display: none !important; } #summary { position: static; padding: 0; } body { background: #fff; color: #000; } }
 </style>
 </head>
 <body>
@@ -94,7 +114,7 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
   <header>
     <div class="brand">KEYSTONE<small id="title">Crossline Church offers its parking lot</small></div>
     <nav id="beats" aria-label="Scenario steps"></nav>
-    <div id="user"><span id="who"></span><button class="btn quiet" id="bigBtn" title="Large type (L)">Aa</button><button class="btn quiet" id="resetBtn" title="Reset the scenario (R)">Reset</button><button class="btn quiet" id="signOut">Sign out</button></div>
+    <div id="user"><span id="who"></span><button class="btn quiet" id="bigBtn" title="Large type (L)">Aa</button><button class="btn quiet" id="resetBtn" title="Reset the scenario (R)">Reset</button><button class="btn quiet" id="summaryBtn" title="One-page summary (P)">Summary</button><button class="btn quiet" id="signOut">Sign out</button></div>
   </header>
   <main>
     <svg id="viz" viewBox="0 0 1600 760" role="img" aria-label="Scenario visual"></svg>
@@ -109,6 +129,7 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
   </footer>
 </div>
 <div id="toasts" aria-live="polite"></div>
+<div id="summary" hidden></div>
 <dialog id="explain"><h3 id="exTitle" style="margin-top:0;font-family:var(--display)"></h3><div id="exBody"></div><p><button class="btn" id="exClose">Close</button></p></dialog>
 
 <script>
@@ -368,6 +389,29 @@ function showBeat(i, {animate = true} = {}) {
   requestAnimationFrame(tick);
 }
 
+// ---------------------------------------------------------------- one-page summary (print or save as PDF)
+function summary() {
+  const H = S.headlines, T = S.timeline, c = S.capital.keystone;
+  const crit = T.keystone.phases.filter(p => p.critical).map(p => esc(p.name)).join(" → ");
+  const rows = T.keystone.phases.map(p => `<tr><td>${esc(p.name)}</td><td>${p.start.toFixed(1)}</td><td>${p.months}</td><td class="src">${p.source.url ? `<a href="${esc(p.source.url)}">${esc(p.source.label)}</a>` : esc(p.source.label)}</td></tr>`).join("");
+  $("#summary").innerHTML = `<div class="bar"><button class="btn" id="printBtn">Print or save as PDF</button><button class="btn quiet" id="closeSummary" style="color:#111;border-color:#bbb">Close</button></div>
+    <h1>${esc(S.title)}</h1><div class="src">Keystone scenario summary · ${esc(S.site.address)}, ${esc(S.site.city)} · APN ${esc(S.site.apn)} · Impact Lab Lane 2, Clear it</div>
+    <div class="grid" style="margin-top:18px">
+      <div><div class="big">${esc(H.clock.value)}</div>${esc(H.clock.label)}</div>
+      <div><div class="big">${esc(H.mortgages.value)}</div>${esc(H.mortgages.label)}</div>
+      <div><div class="big">${esc(H.capital.value)}</div>${esc(H.capital.label)}</div>
+    </div>
+    <h2>The clock: critical path</h2><p>${crit}</p>
+    <table style="width:100%;border-collapse:collapse" border="0"><tr style="text-align:left"><th>Phase</th><th>Starts (month)</th><th>Months</th><th>Source</th></tr>${rows}</table>
+    <h2>Who closes the gap (${c.homes} homes)</h2><p>Cost ${usd(c.cost)} · mortgages families repay (present value) ${usd(c.mortgage_capital)} · down payments ${usd(c.down_payments)} · CalHome ${usd(c.calhome)} · AHP ${usd(c.ahp)} · <b>philanthropy ${usd(c.philanthropy)}</b> (standard 0% loans: ${usd(S.capital.standard.philanthropy)}).</p>
+    <h2>The site</h2><p>${esc(H.site.value)} ${esc(H.site.label)}. SB 4 screen: ${S.site.sb4.map(x => `${esc(x.check)}: ${esc(x.status)}`).join("; ")}.</p>
+    <h2>Families</h2><p>${esc(H.families.value)} ${esc(H.families.label)}. ${esc(H.mortgages.value)} ${esc(H.mortgages.label)}.</p>
+    <p class="src">Families are synthetic, with incomes sampled from 2024 HMDA applicants in Habitat OC's band. Costs, CalHome and AHP per home, and durations marked "estimate" are planning assumptions. Counts are expected values over 1,500 simulated decades per household.</p>`;
+  $("#summary").hidden = false;
+  $("#printBtn").onclick = () => window.print();
+  $("#closeSummary").onclick = () => { $("#summary").hidden = true; };
+}
+
 // ---------------------------------------------------------------- explain any headline number
 function explain() {
   const h = S.headlines[BEATS[beat].head];
@@ -387,7 +431,9 @@ async function api(path, body, method = "POST") {
 }
 async function change(path, body) {
   $("#status").textContent = "recomputing…";
-  try { S = await api(path, body); $("#status").textContent = "updated from the live models"; showBeat(beat, {animate: false}); }
+  try {  // the panel is rebuilt by showBeat, so the confirmation is written after it, where the user can see it
+    S = await api(path, body); showBeat(beat, {animate: false}); $("#status").textContent = "updated from the live models";
+  }
   catch (e) { $("#status").textContent = e.message; }
 }
 function panel(id) {
@@ -474,13 +520,17 @@ $("#signOut").onclick = async () => { await fetch("/api/session", {method: "DELE
 $("#explainBtn").onclick = explain;
 $("#exClose").onclick = () => $("#explain").close();
 $("#bigBtn").onclick = () => document.body.classList.toggle("big");
+$("#summaryBtn").onclick = summary;
 $("#resetBtn").onclick = async () => { S = await api("/api/scenario/reset"); showBeat(0); toast("<b>Scenario reset</b> to the seed"); };
 document.addEventListener("keydown", e => {
-  if (FILM || $("#stage").hidden || e.target.closest("input, select, textarea") || $("#explain").open) return;
+  if (e.key === "Escape" && !$("#summary").hidden) { $("#summary").hidden = true; return; }
+  if (FILM || $("#stage").hidden || !$("#summary").hidden || e.target.closest("input, select, textarea") || $("#explain").open) return;
   if (e.key === "ArrowRight") showBeat(Math.min(BEATS.length - 1, beat + 1));
   if (e.key === "ArrowLeft") showBeat(Math.max(0, beat - 1));
   if (e.key.toLowerCase() === "l") document.body.classList.toggle("big");
   if (e.key.toLowerCase() === "r") $("#resetBtn").click();
+  if (e.key.toLowerCase() === "p") summary();
+  if (e.key === "Escape") $("#summary").hidden = true;
 });
 
 // ---------------------------------------------------------------- the hard 30-second film (?film): a pure function of time

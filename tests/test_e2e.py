@@ -279,3 +279,16 @@ def test_film_mode_is_ready_without_signing_in(page):
     page.goto("/scenario?film")
     page.wait_for_function("window.FILM_READY === true", timeout=20_000)
     assert page.locator("#login").is_hidden()
+
+
+def test_scenario_one_page_summary(page, monkeypatch):
+    monkeypatch.setenv("KEYSTONE_DEMO_LOGIN", "1")
+    page.goto("/scenario")
+    page.fill("#password", "keys-to-100")
+    page.click("#loginForm button[type=submit]")
+    expect(page.locator("#hv")).to_have_text("30 homes", timeout=15_000)
+    page.click("#summaryBtn")
+    expect(page.locator("#summary")).to_contain_text("critical path")
+    expect(page.locator("#summary")).to_contain_text("philanthropy")
+    page.keyboard.press("Escape")
+    expect(page.locator("#summary")).to_be_hidden()

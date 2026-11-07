@@ -4,6 +4,8 @@ UCI Paul Merage School of Business Center for Real Estate × Habitat for Humanit
 
 **Keystone is the operating system for nonprofit homeownership.** It finds buildable land, designs mortgages families can keep, and keeps them in their homes, with a team of AI agents that a small affiliate staff supervises. Product strategy, business model and the judge demo script are in [docs/PRODUCT.md](docs/PRODUCT.md).
 
+**For engineers:** flowcharts and the system design (containers, request lifecycle, timeline engine, agents, model governance, security, deployment, scale path) are in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 **See it:** `make serve`, then open <http://localhost:8000/demo?autoplay>, a two-minute 3D mission-control demo of Orange County. A recorded 1080p copy is at `docs/keystone_demo.mp4`; re-record with `.venv/bin/python scripts/record_demo.py`, which renders frame-exact on a virtual clock.
 - **Act 1:** the CNN scans church parking lots and townhomes rise out of them.
 - **Act 2:** 100 families live 10 years under three ways of financing.
