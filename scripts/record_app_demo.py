@@ -28,13 +28,15 @@ BAND = 120                 # px of subtitle band under the app (150 px in the ou
 VOICE = "Reed (English (US))"
 FONT = ("/System/Library/Fonts/Avenir Next.ttc", 0)  # Avenir Next Bold, the app's fallback face for Sora
 ACTS = [  # (start s, slot s, spoken line, subtitle phrases with **teal** words): short lines, spoken unhurried
-    (0.0, 6.5, "Knowing if Habitat can build on a land offer takes years. Until now.",
-     ["Knowing if Habitat can build on a land offer", "takes **years**. Until now."]),
-    (6.5, 5.5, "Meet Keystone: Claude agents and live models, working the parcel.",
+    (0.0, 4.5, "Knowing if Habitat can build takes years. Until now.",
+     ["Knowing if Habitat can build", "takes **years**. Until now."]),
+    (4.5, 5.0, "Public data only. A CNN reads parking lots from aerial photos.",
+     ["**Public data only.**", "A **CNN** reads parking lots from aerial photos."]),
+    (9.5, 5.0, "Meet Keystone: Claude agents and live models, working the parcel.",
      ["Meet **Keystone**:", "**Claude agents** and live models, working the parcel."]),
-    (12.0, 9.5, "Seven legal paths, tested. SB 4 is the fastest fit, with three facts to verify. Four years becomes two point four.",
-     ["**Seven legal paths**, tested.", "**SB 4** is the fastest fit, with three facts to verify.", "Four years becomes **2.4**."]),
-    (21.5, 8.5, "Families who keep their homes, and the capital gap, home by home. Keys to one hundred starts here.",
+    (14.5, 8.5, "Seven legal paths. SB 4 is the fastest fit, with three facts to verify. Four years becomes two point four.",
+     ["**Seven legal paths**.", "**SB 4** is the fastest fit, with three facts to verify.", "Four years becomes **2.4**."]),
+    (23.0, 7.0, "Families who keep their homes, and the capital gap, home by home. Keys to one hundred starts here.",
      ["Families who **keep their homes**,", "and the **capital gap**, home by home.", "**Keys to 100** starts here."]),
 ]
 
@@ -170,24 +172,30 @@ def record(url, workdir):
         page.wait_for_selector("#password", state="visible")
         page.wait_for_timeout(1200)  # fonts settle off camera
 
-        # 1. sign in (3.0 s, real time)
+        # 1. sign in (2.5 s)
         a = now()
         cam("#login", "#loginForm", max=1.6, dur=500)
         spot("#loginForm button[type=submit]", "Demo persona · each session gets its <b>own private copy</b>", delay=500)
         page.wait_for_timeout(450)
         click("#password", steps=8)
         page.keyboard.type("keys-to-100", delay=70)
-        page.wait_for_timeout(max(0, (a + 2.3 - now()) * 1000))
+        page.wait_for_timeout(max(0, (a + 1.9 - now()) * 1000))
         click("#loginForm button[type=submit]", steps=6)
         page.wait_for_selector("#stage:not([hidden])")
-        cuts.append((a, now(), 3.0))
+        cuts.append((a, now(), 2.5))
 
-        # 2. the CNN scan (3.5 s)
+        # 2. the CNN scan (3.0 s), the public data behind it (2.0 s) and the CNN's model card (2.0 s)
         park()
-        shot(3.5, lambda: (js("showBeat(0)"), cam("#stage", [50, 15, 1200, 730]),
-                           spot([715, 125, 370, 110], "A <b>U-Net CNN</b> reads parking from 0.6 m aerial imagery", delay=900)))
+        shot(3.0, lambda: (js("showBeat(0)"), cam("#stage", [50, 15, 1200, 730]),
+                           spot([715, 125, 370, 110], "A <b>U-Net CNN</b> reads parking from 0.6 m aerial imagery", delay=800)))
+        shot(2.0, lambda: (js("document.querySelector('#dataList').scrollIntoView({block: 'center'})"),
+                           cam("#stage", ["#dataH", "#dataList"], max=2.2, pad=.06, dur=500),
+                           spot("#dataList", "<b>No personal information</b> · every source is free to download", delay=550, pad=6, side="above")))
+        shot(2.0, lambda: (js("document.querySelector('#cnnCard').scrollIntoView({block: 'center'})"),
+                           cam("#stage", ["#cnnH", "#cnnCard"], max=2.2, pad=.06, dur=500),
+                           spot("#cnnCard", "Scored on held-out chips · a <b>+0.003 \u201cwin\u201d was rejected as noise</b>", delay=550, pad=6, side="above")))
 
-        # 3. ask the agents: typing (1.0 s), then the run (4.5 s, sped up)
+        # 3. ask the agents: typing (1.0 s), then the run (4.0 s, sped up)
         spot()
         js("showBeat(1, {animate: false}); document.querySelector('#askQ').scrollIntoView({block: 'center'})")
         cam("#stage", ["#askQ", "#runAgents"], max=2.3, pad=.12, dur=0)  # framed before the cut, so the shot opens steady
@@ -204,7 +212,7 @@ def record(url, workdir):
         spot("#agentTree .tf", "Run sped up · the brief is <b>graded by code</b>: real links, stated assumptions", delay=700)
         page.wait_for_function("/graded|failed/.test(document.querySelector('#treeFoot')?.textContent || '')", timeout=120_000)
         page.wait_for_timeout(1000)
-        cuts.append((b, now(), 4.5))
+        cuts.append((b, now(), 4.0))
 
         # 4. the legal paths (2.5 s), then SB 4's open checks (2.0 s)
         page.keyboard.press("Escape")
@@ -214,20 +222,20 @@ def record(url, workdir):
                            cam("#stage", "#panel .checks", max=2.3, pad=.08, dur=450),
                            spot("#panel .checks li", "<b>Never assumed:</b> a map tag is not a title record", delay=500)))
 
-        # 5. the clock (5.0 s)
-        shot(5.0, lambda: (js("showBeat(2)"), cam("#stage", [90, 55, 1430, 625], dur=750),
-                           spot([366, 610, 1010, 68], "Pre-screened site · <b>SB 4</b> by right · funding from day one", delay=1900)))
+        # 5. the clock (4.0 s)
+        shot(4.0, lambda: (js("showBeat(2)"), cam("#stage", [90, 55, 1430, 625], dur=750),
+                           spot([366, 610, 1010, 68], "Pre-screened site · <b>SB 4</b> by right · funding from day one", delay=1600)))
 
-        # 6. capital (2.5 s) and 7. families (2.5 s)
-        shot(2.5, lambda: (js("showBeat(4)"), cam("#stage", [100, 70, 1300, 450], dur=750),
-                           spot([112, 466, 660, 34], "Only <b>real per-home shortfalls</b> need philanthropy", delay=1000)))
+        # 6. capital (2.0 s) and 7. families (2.5 s)
+        shot(2.0, lambda: (js("showBeat(4)"), cam("#stage", [100, 70, 1300, 450], dur=750),
+                           spot([112, 466, 660, 34], "Only <b>real per-home shortfalls</b> need philanthropy", delay=850)))
         shot(2.5, lambda: (js("showBeat(3)"), cam("#stage", [110, 115, 1440, 420], dur=750),
                            spot([1070, 282, 430, 100], "Expected value over <b>1,500 simulated decades</b> per family", delay=1200)))
 
-        # 8. the one-page summary (3.5 s)
-        shot(3.5, lambda: (cam("#stage", None, dur=0), js("summary()"),
+        # 8. the one-page summary (2.5 s)
+        shot(2.5, lambda: (cam("#stage", None, dur=0), js("summary()"),
                            cam("#summary", "#summary .wordmark", k=1.1, dur=700),
-                           spot("#summary .grid", "Every number links to its <b>formula and source</b>", delay=900)))
+                           spot("#summary .grid", "Every number links to its <b>formula and source</b>", delay=750)))
 
         video = page.video
         assert video

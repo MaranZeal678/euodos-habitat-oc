@@ -261,6 +261,8 @@ def test_scenario_walkthrough_signed_in(page, base_url, monkeypatch):
     page.click("#loginForm button[type=submit]")
     expect(page.locator("#hv")).to_have_text("30 homes", timeout=15_000)
     expect(page.locator("#login")).to_be_hidden()
+    expect(page.locator("#dataList")).to_contain_text("HMDA")  # public data, named on screen
+    expect(page.locator("#cnnCard")).to_contain_text("IoU 0.544")  # the champion CNN, read from the live registry
     page.keyboard.press("ArrowRight")
     expect(page.locator("#hv")).to_have_text("SB 4")
     page.fill("#homes", "8")

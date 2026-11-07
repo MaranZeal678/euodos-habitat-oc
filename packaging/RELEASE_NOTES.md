@@ -2,6 +2,8 @@ Keystone for Habitat for Humanity of Orange County's Keys to 100, as a Mac app. 
 
 **Demo sign-in:** `maria@habitat-oc.demo` / `keys-to-100` (a demo persona; each session gets its own copy of the scenario, and nothing it changes is saved). The **Go** menu also plays the 30-second film.
 
+**New in 0.3.2:** the offer step lists every public dataset Keystone uses and shows the parking CNN's model card (held-out IoU, and the challenger the promotion gate rejected).
+
 **New in 0.3.1:** type a question for the agents and watch the hierarchy work live (Director, leads, workers), with the policy each run really used; the clock shows the whole project as one bar shrinking from 4.2 to 2.4 years; the summary carries the Keystone wordmark.
 
 **New in 0.3.0:** step 2, *The path*: seven legal paths (SB 4, SB 35/423, SB 684, SB 9 duplex, SB 9 lot split, ADU, rezone) tested against the parcel, each with its current statute, clock and checks marked met, to verify or fails. Change the project size, zoning or city status and the verdicts update; pick a path and the clock follows.

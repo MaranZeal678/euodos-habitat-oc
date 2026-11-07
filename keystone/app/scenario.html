@@ -103,6 +103,11 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
 #summary .bar { display: flex; gap: 10px; margin-bottom: 18px; }
 .checks { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; font-size: 14px; }
 .checks small { display: block; color: var(--ink-3); margin-left: 18px; }
+#dataList small { margin-left: 0; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; display: grid; gap: 6px; }
+.card p { margin: 0; color: var(--ink-2); }
+.card .metric b { color: var(--teal); }
+.card .gate { color: var(--ink-3); font-size: 13px; }
 #summary #printBtn { background: #0f6b5c; color: #fff; border-color: #0f6b5c; }
 @media (max-width: 700px) { #summary { padding: 24px 16px; } #summary .grid { grid-template-columns: 1fr; } #summary h1 { font-size: 24px; } }
 @media print { header, #panel, #toasts, footer, #stage, #summary .bar { display: none !important; } #summary { position: static; padding: 0; } body { background: #fff; color: #000; } }
@@ -501,7 +506,19 @@ async function change(path, body) {
 }
 function panel(id) {
   const P = $("#panel");
-  if (id === "site") P.innerHTML = `<h3>The land offer</h3><p>${esc(S.site.address)}, ${esc(S.site.city)}. The CNN scan is stored with the app; live re-scans run on the server build.</p><p class="mono" style="color:var(--ink-3)">Fire, flood and title screens are marked "to verify": Keystone never assumes them.</p>`;
+  if (id === "site") {
+    P.innerHTML = `<h3>The land offer</h3><p>${esc(S.site.address)}, ${esc(S.site.city)}. The CNN scan is stored with the app; live re-scans run on the server build. Fire, flood and title screens are marked "to verify".</p>
+      <h3 id="dataH">Public data only</h3>
+      <ul class="checks" id="dataList">
+        <li><b>NAIP aerial imagery</b>, 0.6 m, RGB + near-infrared<small>USDA, via Microsoft Planetary Computer · what the CNN reads</small></li>
+        <li><b>OpenStreetMap</b> places of worship and parking lots<small>faith sites, and the CNN's training labels</small></li>
+        <li><b>OC Public Works parcels</b><small>APN, acreage and assessed values</small></li>
+        <li><b>CFPB HMDA</b> loan records, Orange County 2022–2024<small>bank-denial model and household incomes</small></li>
+        <li><b>CA HCD</b> 2026 income limits, SB 4 and SB 35 guidance<small>eligibility and the legal paths</small></li>
+      </ul>
+      <h3 id="cnnH">The parking CNN</h3><div id="cnnCard" class="card">Loading the model card…</div>`;
+    cnnCard();
+  }
   if (id === "path") {
     const R = S.path.results, pr = R.project, chosen = R.paths.find(r => r.key === S.path.choice);
     const opt = (id, label, vals) => `<label>${label}<select id="${id}">${vals.map(([v, t]) => `<option value="${v}" ${pr[id] === v ? "selected" : ""}>${t}</option>`).join("")}</select></label>`;
@@ -551,6 +568,19 @@ function panel(id) {
   }
   if (id === "decade") P.innerHTML = `<h3>Ten years</h3><p>Colours: <span style="color:#2ee6be">current</span>, <span style="color:#f5b04c">cash under one payment</span>, <span style="color:#ff9d5c">missed a payment</span>, <span style="color:#ff7a69">90+ days late</span>, grey = home lost; blue ring = the Steward reaches out.</p><button class="btn" id="replay">Replay the decade</button>`;
   if (id === "decade") $("#replay").onclick = () => showBeat(beat);
+}
+
+async function cnnCard() {  // the champion parking model and its gate history, from the live model registry
+  const reg = await (await fetch("/api/registry")).json().catch(() => null), el = $("#cnnCard");
+  const hist = reg && reg.parking_cnn;
+  if (!el) return;
+  if (!hist) { el.textContent = "Model registry unavailable."; return; }
+  const champ = hist.find(m => m.status === "champion"), rejected = hist.filter(m => m.status === "rejected");
+  const m = champ.metrics, pr = champ.params;
+  el.innerHTML = `<p><b>U-Net</b> on 5 channels: RGB, near-infrared and NDVI (vegetation)</p>
+    <p>Trained on <b>${pr.n_train}</b> image chips, tested on <b>${pr.n_holdout}</b> held out · labels are OpenStreetMap parking polygons (noisy, free)</p>
+    <p class="metric"><b>IoU ${m.iou.toFixed(3)}</b> · pixel accuracy ${(m.pixel_acc * 100).toFixed(1)}% · champion ${esc(champ.version)}</p>
+    ${rejected.length ? `<p class="gate"><b>${rejected.length} challenger${rejected.length > 1 ? "s" : ""} rejected by the promotion gate:</b> ${esc(rejected[rejected.length - 1].decision_reasons.at(-1))}</p>` : ""}`;
 }
 
 function toast(html, ms = 4200) {
