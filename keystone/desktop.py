@@ -1,11 +1,11 @@
-"""Keystone desktop app: the whole product (dashboard, demo, agents, MCP) in a native macOS window.
+"""Euodos desktop app: the whole product (dashboard, demo, agents, MCP) in a native macOS window.
 
   python -m keystone.desktop                              # from source
-  open Keystone.app                                       # packaged (packaging/build_macos.sh)
-  Keystone.app/Contents/MacOS/Keystone --smoke            # start headless, prove the critical paths work, exit
+  open Euodos.app                                       # packaged (packaging/build_macos.sh)
+  Euodos.app/Contents/MacOS/Euodos --smoke            # start headless, prove the critical paths work, exit
 
-The app runs Keystone's own server on a private localhost port and shows it in a WebKit window. Runs, skills and agent
-lessons live in ~/Library/Application Support/Keystone, so they survive app updates.
+The app runs Euodos's own server on a private localhost port and shows it in a WebKit window. Runs, skills and agent
+lessons live in ~/Library/Application Support/Euodos, so they survive app updates.
 """
 import json
 import os
@@ -39,8 +39,8 @@ def smoke(url):
     h = json.loads(_get(url + "/healthz"))
     checks["healthz"] = h["ok"]
     checks["sandbox"] = h["sandbox"]["ok"]
-    checks["dashboard"] = b"Keystone" in _get(url + "/")
-    checks["demo"] = b"Keystone" in _get(url + "/demo")
+    checks["dashboard"] = b"Euodos" in _get(url + "/")
+    checks["demo"] = b"Euodos" in _get(url + "/demo")
     checks["optimize"] = _post(url + "/api/optimize", {"income": 92_000})["best"]["p_sustained_10y"] > 0.5
     # the scenario: sign in, load the seed, pull a lever
     from keystone.app.server import DEMO_LOGIN
@@ -65,7 +65,7 @@ def main(argv=None):
     argv = sys.argv if argv is None else argv
     if launch.dispatch(argv):  # a child process of the app (sandboxed Python, stdio MCP server), not the UI
         return 0
-    os.environ.setdefault("KEYSTONE_STATE_DIR", str(Path.home() / "Library" / "Application Support" / "Keystone"))
+    os.environ.setdefault("KEYSTONE_STATE_DIR", str(Path.home() / "Library" / "Application Support" / "Euodos"))
     os.environ["KEYSTONE_HOST"] = "127.0.0.1"  # a desktop app is never a network service
     os.environ.setdefault("KEYSTONE_DEMO_LOGIN", "1")  # the seeded demo account (sessions are private; nothing persists)
     import uvicorn
@@ -97,7 +97,7 @@ def main(argv=None):
                             MenuAction("30-second film", go("/scenario?film&play")),
                             MenuAction("Mission-control demo", go("/demo")), MenuSeparator(),
                             MenuAction("Reload", lambda: windows[0].evaluate_js("location.reload()"))])]
-        windows.append(webview.create_window("Keystone", url + "/scenario", width=1440, height=920, min_size=(1000, 680), menu=menu))
+        windows.append(webview.create_window("Euodos", url + "/scenario", width=1440, height=920, min_size=(1000, 680), menu=menu))
         state = Path(os.environ["KEYSTONE_STATE_DIR"])
         webview.start(private_mode=False, storage_path=str(state / "webview"))  # remembers the last tab between launches
         code = 0

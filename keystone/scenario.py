@@ -1,6 +1,6 @@
 """The Crossline Church scenario: one land offer run end to end, the product's 90-second demo (Lane 2, Clear it).
 
-A congregation in Laguna Hills offers part of its parking lot. Keystone answers "how do we turn four years into two?"
+A congregation in Laguna Hills offers part of its parking lot. Euodos answers "how do we turn four years into two?"
 for the 30 homes it fits: the site is screened in minutes, SB 4 replaces discretionary approval, and the funding
 package and family pre-qualification start on day one instead of after approval. The same run shows which families
 need Habitat, which mortgages they can keep for 10 years, and who closes the capital gap.
@@ -60,7 +60,7 @@ def _family(h):
 
 
 def capital(households, hard_cost_per_sqft=None, calhome=60_000, ahp=40_000):
-    """Who closes the gap, household by household: each home is underwritten on its own family's design (Keystone)
+    """Who closes the gap, household by household: each home is underwritten on its own family's design (Euodos)
     or on a standard 0% loan, and only shortfalls count toward philanthropy (one family's surplus pays no one else's)."""
     cost_inputs = dict(config.COST_ASSUMPTIONS)
     if hard_cost_per_sqft is not None:
@@ -99,7 +99,7 @@ def headlines(s):
     return {
         "clock": {"value": f"{clock['keystone']['years']} years",
                   "label": f"from offer to move-in, vs {clock['baseline']['years']} years the usual way ({clock['saved_months']} months saved)",
-                  "formula": "critical path (longest chain of dependent phases) of the project graph, with and without Keystone's levers",
+                  "formula": "critical path (longest chain of dependent phases) of the project graph, with and without Euodos's levers",
                   "inputs": {"levers": clock["levers"], "estimates": clock["estimates"], "saved_by_each_lever": clock["lever_savings_alone"]},
                   "source": "SB 4 approval: HCD + SF Planning (90-180 days); funding: Terner Center 2025; baseline: Impact Lab brief; other durations are labelled estimates",
                   "tool": "timeline.compare"},
@@ -123,7 +123,7 @@ def headlines(s):
                     "inputs": cap["assumptions"],
                     "source": "Cost, CalHome and AHP per home are labelled planning assumptions; notes valued at 5% present value",
                     "tool": "capital_plan"},
-        "decade": {"value": f"{exp['keystone']} vs {exp['market']}", "label": "expected still owning at year 10: Keystone vs market loans",
+        "decade": {"value": f"{exp['keystone']} vs {exp['market']}", "label": "expected still owning at year 10: Euodos vs market loans",
                    "formula": "expected counts as in the mortgages beat; the animation shows one simulated decade per household",
                    "inputs": {k: exp[k] for k in REGIMES},
                    "source": "Same simulation, same shocks across the three regimes (common random numbers)", "tool": "family_simulate"},

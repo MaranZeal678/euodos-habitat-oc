@@ -1,4 +1,4 @@
-# PyInstaller spec for the Keystone macOS app. Build with packaging/build_macos.sh (it also makes the icon and .dmg).
+# PyInstaller spec for the Euodos macOS app. Build with packaging/build_macos.sh (it also makes the icon and .dmg).
 # The desktop build leaves out torch/rasterio (live NAIP re-scans fall back to the stored CNN scans) and test tooling.
 from pathlib import Path
 
@@ -34,21 +34,21 @@ a = Analysis(  # noqa: F821
     noarchive=False,
 )
 pyz = PYZ(a.pure)  # noqa: F821
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Keystone", console=False,  # noqa: F821
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Euodos", console=False,  # noqa: F821
           argv_emulation=False, target_arch=None, codesign_identity=None)
-coll = COLLECT(exe, a.binaries, a.datas, name="Keystone")  # noqa: F821
+coll = COLLECT(exe, a.binaries, a.datas, name="Euodos")  # noqa: F821
 app = BUNDLE(  # noqa: F821
     coll,
-    name="Keystone.app",
-    icon=str(ROOT / "packaging" / "build" / "Keystone.icns"),
+    name="Euodos.app",
+    icon=str(ROOT / "packaging" / "build" / "Euodos.icns"),
     bundle_identifier="org.keystone.desktop",
     version=VERSION,
     info_plist={
-        "CFBundleDisplayName": "Keystone",
+        "CFBundleDisplayName": "Euodos",
         "CFBundleShortVersionString": VERSION,
         "NSHighResolutionCapable": True,
         "LSMinimumSystemVersion": "13.0",
         "LSApplicationCategoryType": "public.app-category.productivity",
-        "NSHumanReadableCopyright": "Keystone for Habitat for Humanity of Orange County · Keys to 100",
+        "NSHumanReadableCopyright": "Euodos for Habitat for Humanity of Orange County · Keys to 100",
     },
 )

@@ -1,6 +1,6 @@
-# Keystone: product strategy
+# Euodos: product strategy
 
-> **Keystone is the operating system for nonprofit homeownership.** It finds buildable land, designs mortgages families can keep, and keeps them in their homes. A team of AI agents does the work, and a five-person affiliate staff supervises it.
+> **Euodos is the operating system for nonprofit homeownership.** It finds buildable land, designs mortgages families can keep, and keeps them in their homes. A team of AI agents does the work, and a five-person affiliate staff supervises it.
 
 From parking lot to front door, and keeping families there.
 
@@ -11,7 +11,7 @@ From parking lot to front door, and keeping families there.
 **Buyer:** the executive director of a Habitat for Humanity affiliate. Affiliates operate in all 50 states, DC and Puerto Rico ([habitat.org](https://www.habitat.org/where-we-build/united-states)).
 **Expansion:** the 314 community land trusts and shared-equity programs in 46 states ([2022 CLT census, UW summary](https://research.be.uw.edu/2023/07/06/publication-of-the-largest-national-study-on-community-land-trusts-and-nonprofits-with-shared-equity-homeownership-programs)), plus the CDFIs that lend to them.
 
-| Job | Today | With Keystone |
+| Job | Today | With Euodos |
 |---|---|---|
 | Find land | Staff relationships and driving around. Habitat OC lists "acquire land" as a strategic goal | **Land Radar** scans every faith-owned parcel in the county with a CNN and returns a ranked list with a site plan and units |
 | Qualify and underwrite families | Spreadsheets and a fixed 30% rule | **Mortgage Designer** finds the cheapest loan structure that keeps P(still owning at year 10) ≥ 95% |
@@ -24,7 +24,7 @@ The evidence for the product shape: stewarded resale-restricted loans run at 1.3
 - **Why land first.** Land is what a board and a CEO lose sleep over, and it is the most visual result. In the demo, a church parking lot turns into a village of 30 townhomes.
 - **Where.** California's SB 4 makes congregation land buildable by right. In Orange County that is 1,907 developable faith-owned acres ([Terner](https://github.com/Terner-Center/SB4-Analysis)).
 - **Next markets.** Florida enacted its own YIGBY provision in SB 1730 (2025), and bills have been introduced in about ten more states ([Nat. Law Review](https://natlawreview.com/article/floridas-live-local-act-and-yigby-form-unified-affordable-housing-strategy)). Each new state is one region pack (`keystone/regions/<id>.json`), not new code.
-- **The land funnel feeds HomeKeeper.** Every home Keystone sites becomes a home Keystone stewards. HomeKeeper is the recurring relationship.
+- **The land funnel feeds HomeKeeper.** Every home Euodos sites becomes a home Euodos stewards. HomeKeeper is the recurring relationship.
 
 ## 3. Product surface
 | Module | What ships | AI under the hood |
@@ -33,7 +33,7 @@ The evidence for the product shape: stewarded resale-restricted loans run at 1.3
 | **Mortgage Designer** | Term sheet per family: rate, term, cap, income-indexed reset, reserve | Two-layer Monte Carlo optimizer; Underwriter agents stress-test designs in the sandbox |
 | **HomeKeeper** | Portfolio watchlist, early-warning alerts, workout playbooks, outreach drafts | Steward agent; event-driven risk states; human approves every message |
 | **Capital Planner** | Per-home waterfall, sensitivity range, funding stack, application drafts | HMDA demand model (fairness-gated); Capital lead agent |
-| **Agent Console + MCP** | Mission control, traces, grades, registry; the MCP endpoint plugs Keystone into Claude Desktop, Claude Code or any MCP host | Director → leads → workers hierarchy; graders; self-improvement gate |
+| **Agent Console + MCP** | Mission control, traces, grades, registry; the MCP endpoint plugs Euodos into Claude Desktop, Claude Code or any MCP host | Director → leads → workers hierarchy; graders; self-improvement gate |
 
 ## 4. Business model (hypotheses to test in the pilot)
 - **Affiliate SaaS**, priced by homes under stewardship so small affiliates pay little. *Hypothesis:* $6k–$24k per affiliate per year. Free for affiliates building fewer than 10 homes a year, as a mission tier funded by a foundation partner.
@@ -47,7 +47,7 @@ The evidence for the product shape: stewarded resale-restricted loans run at 1.3
 3. **Trust.** Agents propose and gates decide. Every number is sourced or labelled an assumption, every citation is checked, and every run is graded and logged. Lenders and boards can audit it.
 
 ## 6. Responsible AI and compliance (built in, not bolted on)
-- **Keystone never makes a credit decision.** It recommends; staff decide. Adverse-action reasons come from interpretable drivers (ECOA / Reg B).
+- **Euodos never makes a credit decision.** It recommends; staff decide. Adverse-action reasons come from interpretable drivers (ECOA / Reg B).
 - **Fairness.** Protected attributes are excluded from features. A challenger model that widens the race-group calibration gap is blocked ([Fuster et al. 2022](https://doi.org/10.1111/jofi.13090)).
 - **Homeowner privacy.** Homeowner data stays in the affiliate's deployment. The Steward drafts outreach, and nothing is sent without a person approving it and the homeowner having opted in.
 - **Agent safety.** Least-privilege tool sets per agent. Tool output is treated as data, not instructions. MCP requires a bearer token. Agent code runs in an OS sandbox with no network or secrets, and every run is audit-logged.
@@ -78,7 +78,7 @@ Homes sited → entitled → built · P(sustained) calibration error · 90+ day 
 ## Demo script (`/demo?autoplay`, about 2:15; recorded copy at `docs/keystone_demo.mp4`)
 1. **0:00 · Orange County.** The county outline lights up over the LA basin. On screen: median home $1.48M, AMI $138,600, 24% of low-income buyers denied in 2024, and only 2,719 of the 46,416 very-low-income units in OC's RHNA target reported so far. Then Habitat OC itself: 239 homes since 1988, Keys to 100.
 2. **0:20 · Act 1, Find the land.** Columns rise as the CNN scores 305 faith-owned OC parcels: room for 2,696 townhomes across 33 OC cities (Anaheim 19 sites, Orange 15, Irvine 14, Westminster 14…). The camera flies to Crossline Church in Laguna Hills, the scan paints the parking lot teal, and 30 townhomes rise. Mariners (Irvine), Needham Chapel (Costa Mesa) and Friends Church (Yorba Linda) follow, and the counter passes 100. *Talking point: real NAIP imagery, real OC parcels, real model output, not a mock-up.*
-3. **1:05 · Act 2, Keep families home.** 100 Orange County families at 30–80% of AMI live 10 years three ways. Red rings mark layoffs and blue rings mark the Steward reaching out. Year 10: 39 still home with market loans, 69 with a standard 0% loan, 85 with Keystone.
+3. **1:05 · Act 2, Keep families home.** 100 Orange County families at 30–80% of AMI live 10 years three ways. Red rings mark layoffs and blue rings mark the Steward reaching out. Year 10: 39 still home with market loans, 69 with a standard 0% loan, 85 with Euodos.
 4. **1:48 · Act 3, Fund and ship.** Who pays for a $539k OC townhome; the $16.4M gap, with the $330K Keys to 100 gala for scale; congregation letters for Laguna Hills, Irvine, Costa Mesa and Yorba Linda. The final card reads "Built for Habitat for Humanity of Orange County."
 5. **Agent rail, throughout.** A replay of a real graded run: every MCP call each agent made.
 

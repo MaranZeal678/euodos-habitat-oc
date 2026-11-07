@@ -1,4 +1,4 @@
-"""Regressions for the independent model review: each test pins a finding that made Keystone report a wrong or
+"""Regressions for the independent model review: each test pins a finding that made Euodos report a wrong or
 flattering number."""
 import numpy as np
 import pytest

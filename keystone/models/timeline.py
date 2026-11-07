@@ -1,7 +1,7 @@
 """Clear it: how long from a land offer to families moving in, and which levers shorten it.
 
 A project is a small dependency graph of phases. The clock is its critical path (the longest chain of dependent
-phases). Keystone's levers change the graph, not the laws of physics:
+phases). Euodos's levers change the graph, not the laws of physics:
 
   instant_screen   the site is already CNN-scored and SB 4-screened, so screening takes days, not months
   sb4_ministerial  SB 4's streamlined ministerial approval replaces discretionary entitlement and CEQA review

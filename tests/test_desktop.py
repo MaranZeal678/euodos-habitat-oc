@@ -17,7 +17,7 @@ def test_packaged_app_reinvokes_itself_in_a_child_mode(monkeypatch):
 
 
 def test_dispatch_runs_child_code_and_ignores_normal_launches(capsys):
-    assert launch.dispatch(["Keystone", launch.PYTHON_MODE, "print('child ran')"])
+    assert launch.dispatch(["Euodos", launch.PYTHON_MODE, "print('child ran')"])
     assert "child ran" in capsys.readouterr().out
-    assert not launch.dispatch(["Keystone"])
-    assert not launch.dispatch(["Keystone", "--smoke"])
+    assert not launch.dispatch(["Euodos"])
+    assert not launch.dispatch(["Euodos", "--smoke"])

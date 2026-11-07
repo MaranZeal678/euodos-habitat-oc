@@ -1,6 +1,6 @@
 """Hierarchical agent runtime over MCP.
 
-One stdio MCP connection to the Keystone server is shared by every agent; each agent only sees the tools its spec
+One stdio MCP connection to the Euodos server is shared by every agent; each agent only sees the tools its spec
 allows. Agents with children get a `delegate` tool; parallel delegate calls in one turn fan out concurrently
 (orchestrator-workers, Anthropic 2025). Every event goes to a JSONL trace the dashboard renders as a tree.
 
@@ -382,7 +382,7 @@ class ScriptedPolicy:
                          f"We have options that can lower your payment for a while. Can we talk this week?\""
                          for f in wl["families"][:3])
         return (f"Portfolio of {summ['n_families']} homeowners ({summ['note']}). Over 10 years, {k['still_own']} keep their homes "
-                f"with Keystone designs plus stewardship, against {m['still_own']} with market-rate loans. "
+                f"with Euodos designs plus stewardship, against {m['still_own']} with market-rate loans. "
                 f"The steward made {k['steward_contacts']} early contacts. At month {month}, {wl['n_at_risk']} families need attention. Most urgent:\n{rows}\n\n"
                 f"Why stewardship: https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/")
 

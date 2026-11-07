@@ -1,4 +1,4 @@
-"""Keystone web app: dashboard (/), demo (/demo), REST API (/api), MCP over Streamable HTTP (/mcp).
+"""Euodos web app: dashboard (/), demo (/demo), REST API (/api), MCP over Streamable HTTP (/mcp).
 
   uvicorn keystone.app.server:app --port 8000
 
@@ -47,7 +47,7 @@ async def lifespan(_app):
         yield
 
 
-app = FastAPI(title="Keystone", lifespan=lifespan)
+app = FastAPI(title="Euodos", lifespan=lifespan)
 HERE = config.ROOT / "keystone" / "app"
 
 

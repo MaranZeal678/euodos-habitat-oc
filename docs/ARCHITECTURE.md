@@ -1,6 +1,6 @@
-# Keystone: system design
+# Euodos: system design
 
-Keystone is an agentic operating system for Habitat for Humanity of Orange County's *Keys to 100*. This document is for engineers: what the parts are, how a request flows through them, where state lives, what is trusted, and how it scales to the next region.
+Euodos is an agentic operating system for Habitat for Humanity of Orange County's *Keys to 100*. This document is for engineers: what the parts are, how a request flows through them, where state lives, what is trusted, and how it scales to the next region.
 
 The demo surface is the **Crossline scenario** (Impact Lab Lane 2, *Clear it*): a church offers its parking lot; can 30 families move in within two years?
 
@@ -10,7 +10,7 @@ The demo surface is the **Crossline scenario** (Impact Lab Lane 2, *Clear it*): 
 
 ```mermaid
 flowchart LR
-  user([Habitat staff<br/>e.g. Director of Real Estate]) -->|browser or Mac app| ks[Keystone]
+  user([Habitat staff<br/>e.g. Director of Real Estate]) -->|browser or Mac app| ks[Euodos]
   claude([Claude via MCP connector<br/>or any MCP host]) -->|Streamable HTTP /mcp| ks
   ks -->|Messages API, optional| anthropic[(Anthropic API<br/>Opus 5.5 leads / Sonnet 5.5 workers)]
   subgraph public[Public data only, no personal information]
@@ -95,7 +95,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  A[Open Keystone] --> B{Signed in?}
+  A[Open Euodos] --> B{Signed in?}
   B -- no --> C[Sign in<br/>POST /api/session]
   C -->|wrong credentials| C
   C -->|ok: cookie ks_session,<br/>private copy of the seed| D
@@ -109,7 +109,7 @@ flowchart TD
   F -->|Run agents| F2[POST /api/scenario/mission<br/>agent hierarchy, live trace toasts] --> F
   F --> G[Beat 5: Who pays<br/>capital stack aggregated home by home]
   G -->|change hard cost, CalHome, AHP| G1[POST /api/scenario/assumptions] --> G
-  G --> H[Beat 6: Ten years<br/>market vs standard vs Keystone,<br/>expected homes still owned]
+  G --> H[Beat 6: Ten years<br/>market vs standard vs Euodos,<br/>expected homes still owned]
   H --> I[One-page summary<br/>print or save as PDF]
   D & P & E & F & G & H -.->|source button| X[Provenance dialog<br/>formula, inputs, source URL, tool]
 ```
@@ -168,7 +168,7 @@ flowchart LR
   subgraph baseline[Baseline: every lever off, 50.0 months]
     s0[Site screen 6] --> l0[Land deal 4] --> e0[Discretionary entitlement + CEQA 12] --> p0[Permits 4] --> c0[Construction 14] --> f0[Family selection + funding 6]
   end
-  subgraph keystone[Keystone: levers on, 28.2 months]
+  subgraph keystone[Euodos: levers on, 28.2 months]
     s1[Screen: days, CNN + SB 4 pre-screened] --> l1[Land deal]
     l1 --> e1[SB 4 ministerial approval] --> p1[Permits] --> c1[Construction] --> m1[Move-in]
     l1 --> f1[Funding + family pre-qualification<br/>in parallel from day one] --> m1
@@ -263,7 +263,7 @@ flowchart LR
   dev[git push] --> ci[GitHub Actions ci.yml<br/>ruff, pyright, pytest + coverage,<br/>Docker build]
   tag[tag v*] --> mac[desktop.yml on macos-15<br/>PyInstaller .app, dmg,<br/>launch smoke test]
   mac --> rel[Private release]
-  rel -->|packaging/publish_public.sh| pub[Public keystone-releases<br/>dmg + sha256]
+  rel -->|packaging/publish_public.sh| pub[Public euodos-releases<br/>dmg + sha256]
   ci --> render[render.yaml blueprint<br/>Docker web service]
 ```
 
@@ -303,7 +303,7 @@ Run: `make test` (or the commands in `CLAUDE.md`).
 ## 12. Known limits
 
 - Durations without a primary source are labelled `estimate` in the app. The baseline of about four years comes from the Impact Lab brief.
-- Fire, flood and title screens are shown as "to verify". Keystone never assumes them.
+- Fire, flood and title screens are shown as "to verify". Euodos never assumes them.
 - Sessions live in memory, so a multi-instance deployment would need a shared store (Redis) or sticky sessions.
 - The desktop build uses stored CNN scans; live re-scans need PyTorch on the server build.
 - Families are synthetic (real HMDA incomes, assumed savings, debts and shocks), by design: no personal information.

@@ -196,7 +196,7 @@ def homekeeper_watchlist(month: Annotated[int, Field(ge=0, le=119)] = 36,
 
 
 def homekeeper_portfolio_summary() -> dict:
-    """HomeKeeper: 10-year outcomes for the 100-family portfolio under market, standard Habitat, and Keystone regimes."""
+    """HomeKeeper: 10-year outcomes for the 100-family portfolio under market, standard Habitat, and Euodos regimes."""
     data = json.loads((config.ROOT / "keystone" / "app" / "static" / "demo" / "portfolio.json").read_text())
     return {"scenarios": data["scenarios"], "summary": data["summary"], "n_families": len(data["families"]),
             "note": "synthetic families; incomes sampled from 2024 HMDA OC applicants within Habitat OC's 30-80% AMI band"}

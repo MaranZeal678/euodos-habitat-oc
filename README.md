@@ -1,6 +1,6 @@
-# Keystone
+# Euodos
 
-> For a nonprofit project manager handed a land offer: Keystone finds the fastest legal path for that address, shows offer-to-move-in in 2.4 years instead of 4.2, and proves the families can afford and keep the homes.
+> For a nonprofit project manager handed a land offer: Euodos finds the fastest legal path for that address, shows offer-to-move-in in 2.4 years instead of 4.2, and proves the families can afford and keep the homes.
 
 **Team:** [team name]
 **Members:** [names]
@@ -28,22 +28,22 @@ A Mac app (also a web server) that runs one land offer end to end in six steps:
 Plus a one-page printable summary, a source dialog on every headline, and a team of Claude agents you can run on the offer.
 
 **Demo video:** uploaded on the hub
-**Mac app:** [Keystone for Mac (Apple Silicon)](https://github.com/MaranZeal678/keystone-releases/releases/latest). Demo sign-in `maria@habitat-oc.demo` / `keys-to-100`.
+**Mac app:** [Euodos for Mac (Apple Silicon)](https://github.com/MaranZeal678/euodos-releases/releases/latest). Demo sign-in `maria@habitat-oc.demo` / `keys-to-100`.
 **For engineers:** flowcharts and system design in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## How Claude is used
 
 - **Building it:** Claude Code wrote and reviewed the code, the models, the tests and the CI that builds the Mac app, and drafted the demo script.
 - **Inside the tool:** a hierarchy of Claude agents (Opus 5.5 leads, Sonnet 5.5 workers) works the offer through an MCP server: land, family and capital leads delegate to site analysts and underwriters, run analysis code in an OS sandbox, and write a brief that code graders check (every URL must be real, every assumption disclosed). Without an API key the same hierarchy runs on a deterministic offline policy.
-- **What a person checks:** every "to verify" item (title, hazard screens, the city's streamlining status, zoning), the labelled assumptions, and the final brief. Keystone files nothing and contacts no one.
+- **What a person checks:** every "to verify" item (title, hazard screens, the city's streamlining status, zoning), the labelled assumptions, and the final brief. Euodos files nothing and contacts no one.
 
 ## Try it
 
 Needs macOS or Linux, Python 3.13 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/MaranZeal678/keystone-habitat-oc.git
-cd keystone-habitat-oc
+git clone https://github.com/MaranZeal678/euodos-habitat-oc.git
+cd euodos-habitat-oc
 uv venv --python 3.13 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 KEYSTONE_DEMO_LOGIN=1 .venv/bin/uvicorn keystone.app.server:app --port 8000
@@ -108,9 +108,9 @@ MIT, see [LICENSE](LICENSE).
 
 ## Under the hood
 
-Keystone uses AI on the three technical problems between Habitat OC and 100 more homes:
+Euodos uses AI on the three technical problems between Habitat OC and 100 more homes:
 
-| Problem | Keystone component | AI technique | Real data |
+| Problem | Euodos component | AI technique | Real data |
 |---|---|---|---|
 | **Land.** OC land is the binding constraint | Faith-land site finder (SB 4) | **CNN** (U-Net) on aerial imagery | NAIP 2022 RGB+NIR, OSM, OC parcel GIS, Terner SB4 |
 | **Sustainability.** Families must *keep* the home | Mortgage designer | Two-layer Monte Carlo simulate-and-optimize | HCD 2026 income limits, literature-calibrated hazards |
@@ -128,7 +128,7 @@ See [docs/RESEARCH_BRIEF.md](docs/RESEARCH_BRIEF.md) for the evidence base (abou
        │ delegate         │ delegate              │
   Site analysts      Underwriters (Sonnet 5.5)    │
   (Sonnet 5.5)            │                       │
-       └───── MCP (stdio / Streamable HTTP) ──────┴──► Keystone MCP server: 13 tools + 2 resources
+       └───── MCP (stdio / Streamable HTTP) ──────┴──► Euodos MCP server: 13 tools + 2 resources
                                                         ├─ sites_* ─────► U-Net CNN on NAIP
                                                         ├─ family_*, mortgage_optimize ─► Monte Carlo
                                                         ├─ capital_plan, market_gap_report ─► HMDA model

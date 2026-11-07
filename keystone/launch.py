@@ -1,4 +1,4 @@
-"""How Keystone starts its own child processes, whether it runs from source or as the packaged desktop app.
+"""How Euodos starts its own child processes, whether it runs from source or as the packaged desktop app.
 
 From source, children are ordinary `python -I -c` / `python -m` invocations. Inside the PyInstaller bundle there is no
 Python interpreter to call, only the app binary, so the app re-invokes itself in a child mode that `dispatch` handles
@@ -16,7 +16,7 @@ def python_code_cmd(code):
 
 
 def mcp_server_cmd():
-    """(command, args) that serve the Keystone MCP server over stdio."""
+    """(command, args) that serve the Euodos MCP server over stdio."""
     return (sys.executable, [MCP_MODE]) if FROZEN else (sys.executable, ["-m", "keystone.mcp_server.server"])
 
 

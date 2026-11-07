@@ -1,6 +1,6 @@
-"""Draw the Keystone app icon (an arch whose crown is the keystone) and write a macOS .icns.
+"""Draw the Euodos app icon (an arch whose crown is the keystone) and write a macOS .icns.
 
-  python packaging/make_icon.py packaging/build/Keystone.icns
+  python packaging/make_icon.py packaging/build/Euodos.icns
 """
 import math
 import shutil
@@ -44,7 +44,7 @@ def main(out):
     base = draw()
     base.save(out.with_suffix(".png"))
     with tempfile.TemporaryDirectory() as tmp:
-        iconset = Path(tmp) / "Keystone.iconset"
+        iconset = Path(tmp) / "Euodos.iconset"
         iconset.mkdir()
         for px in (16, 32, 128, 256, 512):
             base.resize((px, px), Image.LANCZOS).save(iconset / f"icon_{px}x{px}.png")
@@ -57,4 +57,4 @@ def main(out):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1] if len(sys.argv) > 1 else "packaging/build/Keystone.icns")
+    main(sys.argv[1] if len(sys.argv) > 1 else "packaging/build/Euodos.icns")

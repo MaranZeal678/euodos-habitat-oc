@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Keystone · Keys to 100</title>
+<title>Euodos · Keys to 100</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -16,7 +16,7 @@
   --series-1: #2a78d6; --seq-low: #9ec5f4; --seq-high: #184f95;
   --good: #1a7f37; --serious: #c4321f; --accent-bg: #e3f1ed;
   --grid: #ecebe6;
-  --brand: #0f6b5c; --brand-ink: #ffffff;  /* Keystone teal, shared with the demo and the brief */
+  --brand: #0f6b5c; --brand-ink: #ffffff;  /* Euodos teal, shared with the demo and the brief */
   --display: "Sora", ui-sans-serif, system-ui, sans-serif;
   --body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
@@ -101,7 +101,7 @@ a { color: var(--brand); text-underline-offset: 2px; }
 </head>
 <body>
 <header>
-  <div class="masthead"><h1>Keystone</h1><a href="/demo" class="btn">Open the mission-control demo</a></div>
+  <div class="masthead"><h1>Euodos</h1><a href="/demo" class="btn">Open the mission-control demo</a></div>
   <p>An agentic operating system for Habitat for Humanity Orange County's <b>Keys to 100</b>. It finds land with a CNN, keeps families housed with a Monte Carlo mortgage designer, sizes the capital gap on real HMDA data, and improves itself through gated champion/challenger loops. UCI Merage Center for Real Estate × Habitat OC Impact Lab.</p>
 </header>
 <nav><div id="tabs"></div></nav>
@@ -122,7 +122,7 @@ a { color: var(--brand); text-underline-offset: 2px; }
     <div id="famOut"></div>
   </section>
   <section id="agents">
-    <div class="card"><h2>Agent hierarchy</h2><p class="sub">Director (Claude Opus 5.5) → division leads (Opus 5.5) → workers (Sonnet 5.5). Every tool call goes over MCP to the Keystone server; analysis code runs in the OS sandbox. Without API credentials the same hierarchy runs a deterministic scripted policy.</p>
+    <div class="card"><h2>Agent hierarchy</h2><p class="sub">Director (Claude Opus 5.5) → division leads (Opus 5.5) → workers (Sonnet 5.5). Every tool call goes over MCP to the Euodos server; analysis code runs in the OS sandbox. Without API credentials the same hierarchy runs a deterministic scripted policy.</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end">
         <label style="min-width:280px">Mission<select id="missionSel"></select></label>
         <label style="min-width:160px">Policy<select id="policySel"><option value="auto">auto</option><option value="claude">claude</option><option value="scripted">scripted (offline)</option></select></label>
@@ -197,8 +197,8 @@ async function overview() {
     <div class="tile"><div class="l">Agent eval score</div><div class="v">${imp.length ? imp[imp.length - 1].challenger.toFixed(2) : "—"}</div><div class="s">${imp.length ? `from ${imp[0].baseline.toFixed(2)} over ${imp.length} ${imp.length === 1 ? "generation" : "generations"}` : "run the improve loop"}</div></div>
   </div>
   <div class="grid2">
-    <div class="card"><h2>Why families lose homes, and what Keystone does about it</h2>
-      <table><tr><th>Evidence</th><th>Design response in Keystone</th></tr>
+    <div class="card"><h2>Why families lose homes, and what Euodos does about it</h2>
+      <table><tr><th>Evidence</th><th>Design response in Euodos</th></tr>
       <tr><td>Liquidity, not equity, drives default (<a href="https://doi.org/10.1257/aer.20181243" target="_blank">Ganong &amp; Noel 2020</a>). Halving the payment cuts delinquency ~55% (<a href="https://doi.org/10.1257/pol.20150007" target="_blank">Fuster &amp; Willen 2017</a>)</td><td>The optimizer searches payment structure: rate, term, cap, income-indexed payments, reserve funds</td></tr>
       <tr><td>Stewarded CLT loans: 1.3% vs 8.6% serious delinquency (<a href="https://www.lincolninst.edu/publications/working-papers/stable-home-ownership-turbulent-economy/" target="_blank">Thaden 2011</a>)</td><td>Simulator models a steward that detects 90+ DPD early and cures 82% of cases</td></tr>
       <tr><td>Insurance shocks push constrained owners into delinquency (<a href="https://doi.org/10.24149/wp2505r1" target="_blank">Ge et al., Dallas Fed</a>)</td><td>Insurance premium shocks are part of every stress test</td></tr>
@@ -273,11 +273,11 @@ $("#famGo").onclick = async () => {
     res = await fetch("/api/optimize", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
   } catch (e) {
     $("#famGo").disabled = false;
-    return famError("Couldn't reach the Keystone server. Check that it is running, then try again.");
+    return famError("Couldn't reach the Euodos server. Check that it is running, then try again.");
   }
   r = await res.json().catch(() => ({}));
   $("#famGo").disabled = false;
-  if (res.status === 429) return famError(`Keystone is busy. Wait ${res.headers.get("Retry-After") || "a few"} seconds and try again.`);
+  if (res.status === 429) return famError(`Euodos is busy. Wait ${res.headers.get("Retry-After") || "a few"} seconds and try again.`);
   if (!res.ok) {  // 422 from the request model: name the field and the rule
     const d = Array.isArray(r.detail) ? r.detail[0] : null;
     const f = d && FIELDS.find(([k]) => k === d.loc[d.loc.length - 1]);
@@ -340,7 +340,7 @@ $("#launch").onclick = async () => {
   try {
     res = await fetch("/api/mission", {method: "POST", body: JSON.stringify({mission: +$("#missionSel").value, policy: $("#policySel").value}),
       headers: {"Content-Type": "application/json", ...(tok ? {Authorization: `Bearer ${tok}`} : {})}});
-  } catch (e) { st.textContent = "Couldn't reach the Keystone server."; st.style.color = "var(--serious)"; return; }
+  } catch (e) { st.textContent = "Couldn't reach the Euodos server."; st.style.color = "var(--serious)"; return; }
   const r = await res.json().catch(() => ({}));
   if (!res.ok) { st.textContent = MISSION_REFUSED[res.status] || (typeof r.detail === "string" ? r.detail : `The server refused the mission (${res.status}).`); st.style.color = "var(--serious)"; return; }
   CUR = r.run_id; setTimeout(() => loadRuns(), 800);
@@ -408,7 +408,7 @@ async function improve() {
 $("#arch").innerHTML = `<div class="card"><h2>How the pieces fit</h2><p class="sub">Patterns adopted from the agent literature. Each one is cited in the research brief.</p>
 <div class="arch">
  <div class="card"><h3>Agent hierarchy</h3><ul><li>Director → Land / Family / Capital leads → Site analysts &amp; Underwriters</li><li>Parallel <code>delegate</code> fan-out and a progress ledger (Magentic-One; Anthropic multi-agent research)</li><li>Least-privilege tool sets per agent; depth ≤ 3</li></ul></div>
- <div class="card"><h3>MCP</h3><ul><li>13 namespaced tools and 2 resources on one Keystone MCP server (stdio or Streamable HTTP)</li><li>Read-only annotations; tool output is treated as data, never instructions</li><li>The same server plugs into Claude Desktop, Claude Code, or the API MCP connector</li></ul></div>
+ <div class="card"><h3>MCP</h3><ul><li>13 namespaced tools and 2 resources on one Euodos MCP server (stdio or Streamable HTTP)</li><li>Read-only annotations; tool output is treated as data, never instructions</li><li>The same server plugs into Claude Desktop, Claude Code, or the API MCP connector</li></ul></div>
  <div class="card"><h3>Sandbox</h3><ul><li>Agent-written Python runs under the macOS seatbelt (bubblewrap on Linux): no network, writes only to temp, secrets scrubbed</li><li>AST screen plus OS boundary; every run audit-logged</li><li>Red-team tested: an obfuscated socket import is blocked at the OS layer</li></ul></div>
  <div class="card"><h3>CNN</h3><ul><li>Compact U-Net on 4-band NAIP + NDVI (Qiam et al. 2024 show NIR helps)</li><li>Weakly supervised by 7,753 OSM parking polygons; 680 chips</li><li>Applied to 305 faith parcels to measure surplus parking</li></ul></div>
  <div class="card"><h3>Self-improving models</h3><ul><li>Temporal champion/challenger on HMDA 2022→2023→2024</li><li>CNN challengers retrained and gated on a frozen holdout</li><li>Promotion is decided by code, with a fairness guardrail (Lim et al. 2026)</li></ul></div>

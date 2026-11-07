@@ -1,4 +1,4 @@
-"""Keystone MCP server: exposes the domain tools and sourced constants over the Model Context Protocol.
+"""Euodos MCP server: exposes the domain tools and sourced constants over the Model Context Protocol.
 
   python -m keystone.mcp_server.server                 # stdio (what the agent hierarchy uses)
   python -m keystone.mcp_server.server --http 8765     # Streamable HTTP (for Claude's MCP connector / other hosts)

@@ -1,4 +1,4 @@
-# Keystone
+# Euodos
 
 Agentic operating system for Habitat for Humanity of Orange County's Keys to 100. Python 3.13 in `.venv` (uv).
 Run tests with `make test`, serve with `make serve` (dashboard `/`, demo `/demo`, MCP `/mcp`).

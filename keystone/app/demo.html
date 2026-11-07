@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Keystone · Mission Control</title>
+<title>Euodos · Mission Control</title>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -105,7 +105,7 @@ html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink)
 <div id="map"></div>
 <div id="top">
   <div>
-    <div class="brand">KEYSTONE<small>Mission control · Habitat for Humanity Orange County · Keys to 100</small></div>
+    <div class="brand">EUODOS<small>Mission control · Habitat for Humanity Orange County · Keys to 100</small></div>
     <div class="acts"><span data-a="1">01 Find the land</span><span data-a="2">02 Keep families home</span><span data-a="3">03 Fund &amp; ship</span></div>
   </div>
   <div class="counter"><div class="n" id="cnt">0</div><div class="l" id="cntl">homes sited · goal 100</div><div class="goal"><i id="goalbar"></i></div></div>
@@ -370,10 +370,10 @@ function playAct3() { document.querySelectorAll("[id^=wf]").forEach((e, i) => se
 
 function buildFinal() {
   const k = PORT.summary.keystone, m = PORT.summary.market, imp = CAP.improve, mg = CAP.champions.market_gap;
-  $("#final").innerHTML = `<div class="card"><div style="font:12px var(--mono);letter-spacing:.2em;color:var(--teal)">KEYSTONE · BUILT FOR HABITAT FOR HUMANITY OF ORANGE COUNTY</div>
+  $("#final").innerHTML = `<div class="card"><div style="font:12px var(--mono);letter-spacing:.2em;color:var(--teal)">EUODOS · BUILT FOR HABITAT FOR HUMANITY OF ORANGE COUNTY</div>
     <h1>Keys to 100, mapped, financed and kept</h1>
     <div class="stats"><div><b>120</b><span>homes sited on 4 faith-owned OC lots (goal 100)</span></div>
-    <div><b>${k.still_own}<small style="font-size:20px;color:var(--ink-2)"> vs ${m.still_own}</small></b><span>of 100 OC families still home at year 10, Keystone vs market-rate loans</span></div>
+    <div><b>${k.still_own}<small style="font-size:20px;color:var(--ink-2)"> vs ${m.still_own}</small></b><span>of 100 OC families still home at year 10, Euodos vs market-rate loans</span></div>
     <div><b>$${(CAP.philanthropy_needed_total / 1e6).toFixed(1)}M</b><span>capital gap sized, with a funding stack</span></div>
     <div><b>${imp.length ? imp[0].baseline.toFixed(2) + "→" + imp[imp.length - 1].challenger.toFixed(2) : "—"}</b><span>agent eval score after self-improvement · market-gap AUC ${mg.metrics.auc}</span></div></div>
     <div class="url">Orange County data: HMDA 2022–24 · OC Public Works parcels · NAIP 2022 · OpenStreetMap · CA HCD 2026 · C.A.R. · Terner Center · 45+ verified sources</div></div>`;
@@ -400,7 +400,7 @@ function siteSteps(k, fast) {
     { act: 1, dur: 3600 * d, enter() { fly(siteCam(k, 16.6), 3200 * d); hudSite(k, 0); anim(k, "img", 0, 1, 1800 * d); caption(fast ? `${f.name}, ${f.city}` : `${f.name}, ${f.city}. A ${f.parcel_acres}-acre parcel owned by a congregation.`, "OC Public Works parcel · NAIP 2022 aerial at 0.6 m"); } },
     { act: 1, dur: 3800 * d, enter() { anim(k, "scan", 0, 1, 3300 * d); later(() => hudSite(k, 1), 3300 * d); caption(`The CNN reads the imagery pixel by pixel and finds ${fmt(f.parking_sqm)} m² of surface parking.`, "U-Net · RGB + near-infrared + NDVI · trained on 7,753 OpenStreetMap parking lots"); } },
     { act: 1, dur: 4400 * d, enter() { hudSite(k, 2); anim(k, "rise", 0, 1, 3400 * d); fly(siteCam(k, 17.6, 40), 4300 * d); const s0 = S.homesSited; tweens.push({ obj: { set v(x) { setCount(x); } }, key: "v", from: s0, to: s0 + f.units, ms: 3400 * d, t0: performance.now() });
-      caption(fast ? `+${f.units} townhomes` : `Keystone lays out ${f.units} townhomes on half the parking, with setbacks and drive aisles. The congregation keeps the rest.`, "SB 4: by-right approval · ≥30 homes/acre allowed in OC · 45-year affordability"); } },
+      caption(fast ? `+${f.units} townhomes` : `Euodos lays out ${f.units} townhomes on half the parking, with setbacks and drive aisles. The congregation keeps the rest.`, "SB 4: by-right approval · ≥30 homes/acre allowed in OC · 45-year affordability"); } },
   ];
 }
 
@@ -417,7 +417,7 @@ function buildSteps() { STEPS = [
         "habitatoc.org · PR Newswire, Nov 2024"); } },
   { act: 1, dur: 7000, enter() { $("#hud").style.opacity = 0; animS("county", 0, 1, 5500); fly({ center: [-117.86, 33.74], zoom: 10.1, pitch: 58, bearing: 12 }, 7000);
       tweens.push({ obj: { set v(x) { setCount(x, "townhomes of capacity found in OC"); } }, key: "v", from: 0, to: COUNTY.filter(c => c.viable).reduce((a, c) => a + c.units, 0), ms: 5500, t0: performance.now() });
-      caption("The constraint is land. Keystone scanned every faith-owned parcel in Orange County.", "305 parcels · OpenStreetMap places of worship joined to OC Public Works parcel records · SB 4 (2023) lets congregations build affordable homes by right"); } },
+      caption("The constraint is land. Euodos scanned every faith-owned parcel in Orange County.", "305 parcels · OpenStreetMap places of worship joined to OC Public Works parcel records · SB 4 (2023) lets congregations build affordable homes by right"); } },
   { act: 1, dur: 5500, enter() { hudCities(); caption("Room for 2,696 townhomes across 33 OC cities, even after each congregation keeps half its parking.", "Terner Center counts 1,907 developable faith-owned acres in Orange County"); } },
   { act: 1, dur: 1200, enter() { $("#hud").style.opacity = 0; animS("countyFade", 1, 0, 1200); animS("ocLine", 1, 0, 1000); setCount(0, "homes sited · goal 100"); } },
   ...siteSteps(0, false), ...siteSteps(1, true), ...siteSteps(2, true), ...siteSteps(3, true),
@@ -426,18 +426,18 @@ function buildSteps() { STEPS = [
       caption("120 homes sited across four Orange County congregations, from Yorba Linda to Laguna Hills. Six more sites are ready behind them.", "The Land lead caps any one site at 30 homes; agents learned that rule from their own graders"); } },
   // ---- act 2
   { act: 2, dur: 5500, enter() { setAct(2); queueAct(2); $("#hud").style.opacity = 0; fly({ ...siteCam(0, 16.9, 80), pitch: 55, padding: { left: Math.min(760, innerWidth * 0.45), top: 80, right: 0, bottom: 0 } }, 4000); S.familyMode = true; S.month = 0; $("#act2").style.opacity = 1; drawGrids(); animS("beacons", 1, 0, 1500); animS("countyFade", S.countyFade, 0, 1500);
-      setCount(0, "families still home at year 10 · Keystone");
+      setCount(0, "families still home at year 10 · Euodos");
       animS("ocLine", S.ocLine, 0, 1000);
       caption("Building homes is half the job. Keeping Orange County families in them is the other half.", "More than half of low-income first-time buyers return to renting within 5 years (Reid 2005)"); } },
   { act: 2, dur: 30000, enter() { animS("month", 0, 119.99, 28000); caption("100 Orange County families earning 30–80% of area median income. Same layoffs, insurance spikes and repairs. Three ways to finance them.", "Red ring: job loss · orange ring: insurance spike · blue ring: the Steward agent reaches out before a payment is missed"); },
     tick() { drawGrids(); stewardFeed(); setCount(+$("#o_keystone").textContent.match(/\d+/)[0]); } },
   { act: 2, dur: 7500, enter() { const k = PORT.summary;
-      caption(`Year 10: ${k.market.still_own} families still home with market loans, ${k.standard.still_own} with a standard 0% loan, ${k.keystone.still_own} with Keystone.`, `Keystone pairs payments sized to cash flow (Ganong & Noel 2020) with stewardship (Thaden 2011). ${k.keystone.steward_contacts} early steward contacts`); } },
+      caption(`Year 10: ${k.market.still_own} families still home with market loans, ${k.standard.still_own} with a standard 0% loan, ${k.keystone.still_own} with Euodos.`, `Euodos pairs payments sized to cash flow (Ganong & Noel 2020) with stewardship (Thaden 2011). ${k.keystone.steward_contacts} early steward contacts`); } },
   // ---- act 3
   { act: 3, dur: 9000, enter() { setAct(3); $("#hud").style.opacity = 0; queueAct(3); $("#act2").style.opacity = 0; S.familyMode = false; buildAct3(); $("#act3").style.opacity = 1; playAct3(); animS("beacons", 0, 1, 3000, 6000); animS("countyFade", 0, 0.35, 3000, 6000);
       fly({ center: [-117.82, 33.71], zoom: 10.6, pitch: 60, bearing: 25, padding: { left: Math.min(860, innerWidth * 0.5), top: 0, right: 0, bottom: 0 } }, 9000); setCount(120, "homes sited · goal 100");
       animS("ocLine", 0, 1, 2500, 4000);
-      caption("Every Orange County home has a price. Keystone shows who pays it.", "Capital lead: capital_plan + a sandboxed sensitivity sweep · demand sized from real HMDA denials"); } },
+      caption("Every Orange County home has a price. Euodos shows who pays it.", "Capital lead: capital_plan + a sandboxed sensitivity sweep · demand sized from real HMDA denials"); } },
   { act: 3, dur: 6500, enter() { caption("The agents draft the follow-through. Graders turn mistakes into lessons, and a gate decides what ships.", "Agent eval score 0.67 → 1.00 · the CNN challenger was rejected as noise · every citation checked against verified sources"); } },
   { act: 3, dur: 14000, enter() { $("#act3").style.opacity = 0; buildFinal(); $("#final").style.opacity = 1; caption(""); animS("ocLine", S.ocLine, 1, 2000); fly({ center: [-117.82, 33.71], zoom: 10.2, pitch: 60, bearing: 80, padding: { left: 0, top: 0, right: 0, bottom: 0 } }, 14000); } },
 ]; }

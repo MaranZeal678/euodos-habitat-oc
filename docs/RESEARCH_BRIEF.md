@@ -1,4 +1,4 @@
-# Keystone: research brief
+# Euodos: research brief
 
 **UCI Paul Merage School of Business Center for Real Estate × Habitat for Humanity of Orange County Impact Lab**
 Prepared 2026-10-31. Every external fact below links to a source that was opened and checked. Model inputs that aren't sourced are labelled **assumption**.
@@ -18,10 +18,10 @@ Prepared 2026-10-31. Every external fact below links to a source that was opened
 | OC 4-person limits | Very Low $93,050 · Low $148,850 · Moderate $166,300 | same |
 | Habitat OC buyer terms | payments capped ~30–35% of income; 1–5% down; 200–500 sweat-equity hours | [Habitat OC](https://habitatoc.org/myths-facts/), [qualifications](https://habitatoc.org/review-qualifications) |
 | OC RHNA 6th cycle | 183,861 units; **very-low-income progress 5.9%**, total ~15.5% (HCD data, updated 2026-10-30) | [SCAG](https://sp.scag.ca.gov/sites/default/files/2024-05/6th_cycle_final_rhna_allocation_plan_070121.pdf), [data.ca.gov](https://data.ca.gov/dataset/rhna-progress-report) |
-| OC low-income purchase denials | **24% of ≤80% AMI applicants denied in 2024; 59% of those for debt-to-income** (Keystone analysis of HMDA loan-level data) | [FFIEC HMDA](https://ffiec.cfpb.gov/data-browser/) |
+| OC low-income purchase denials | **24% of ≤80% AMI applicants denied in 2024; 59% of those for debt-to-income** (Euodos analysis of HMDA loan-level data) | [FFIEC HMDA](https://ffiec.cfpb.gov/data-browser/) |
 | Faith-owned developable land in OC | 1,907 acres on 707 parcels, median 1.6 acres | [Terner Center SB4 data](https://github.com/Terner-Center/SB4-Analysis) |
 
-**The core insight.** The market already shows that low-income OC families fail on *monthly cash flow*, since DTI is the leading denial reason. The research shows that cash flow, not equity, is what makes ownership last. Keystone is designed around that.
+**The core insight.** The market already shows that low-income OC families fail on *monthly cash flow*, since DTI is the leading denial reason. The research shows that cash flow, not equity, is what makes ownership last. Euodos is designed around that.
 
 ---
 
@@ -37,7 +37,7 @@ Prepared 2026-10-31. Every external fact below links to a source that was opened
 - **Goodman, Seidman & Zhu (2014), Urban Institute.** The VA residual-income test helps explain lower VA defaults. [link](https://www.urban.org/research/publication/va-loans-outperform-fha-loans-why-and-what-can-we-learn)
 - **Ding et al. (2011), JRER.** Product design drives default as much as borrower traits. [link](https://doi.org/10.1080/10835547.2011.12091305)
 - **Temkin, Theodos & Price (2010); Theodos et al. (2019).** Shared-equity homes stay affordable, with low delinquency. [Urban](https://www.urban.org/research/publication/balancing-affordability-and-opportunity-evaluation-affordable-homeownership-programs-long-term-affordability-controls), [HPD](https://doi.org/10.1080/10511482.2019.1596965)
-- **Reid (2005).** More than half of low-income first-time buyers returned to renting within five years. [link](https://doi.org/10.7936/K71J998S). This is the problem Keystone targets: ownership that *lasts*, not closings.
+- **Reid (2005).** More than half of low-income first-time buyers returned to renting within five years. [link](https://doi.org/10.7936/K71J998S). This is the problem Euodos targets: ownership that *lasts*, not closings.
 
 ### B. ML credit risk and fairness
 - **Sirignano, Sadhwani & Giesecke (2021), JFEC.** Deep multi-state mortgage model on 120 million loans. [link](https://arxiv.org/abs/1607.02470)
@@ -47,19 +47,19 @@ Prepared 2026-10-31. Every external fact below links to a source that was opened
 
 ### C. Computer vision for land and housing
 - **Jo, Vallebueno, Ouyang & Ho (2025), JAPA.** CV on NAIP imagery finds about 3–4 unpermitted ADUs per permitted ADU in San José, with code and data released. [link](https://doi.org/10.1080/01944363.2024.2345730)
-- **Qiam, Devunuri & Lehe (2024).** Near-infrared improves parking-lot segmentation (84.9% mIoU). [link](https://arxiv.org/abs/2412.13179). **Design:** the Keystone U-Net takes RGB + NIR + NDVI.
+- **Qiam, Devunuri & Lehe (2024).** Near-infrared improves parking-lot segmentation (84.9% mIoU). [link](https://arxiv.org/abs/2412.13179). **Design:** the Euodos U-Net takes RGB + NIR + NDVI.
 - **Jun et al. (2024), Cities.** Deep learning detects 3,710 LA infill projects. [link](https://doi.org/10.1016/j.cities.2024.105019). **Jean et al. (2016), Science.** Transfer from cheap proxy labels. [link](https://doi.org/10.1126/science.aaf7894). **Law et al. (2019).** Imagery-based valuation. [link](https://arxiv.org/abs/1807.07155)
-- **Gap:** no published CV study targets affordable-ownership site selection in Orange County. Keystone fills it.
+- **Gap:** no published CV study targets affordable-ownership site selection in Orange County. Euodos fills it.
 
 ### D. Land supply and feasibility
 - **Terner Center (2023), faith-based and college land.** About 171,000 developable acres statewide under SB 4. [link](https://ternercenter.berkeley.edu/research-and-policy/faith-based-and-college-land-housing/)
 - **SB 4 (Gov. Code §65913.16).** By-right approval. In a metropolitan county like OC, minimum density is 30 du/ac in residential zones and 40 du/ac in non-residential zones. Ownership units carry a 45-year deed restriction. [HCD fact sheet](https://www.hcd.ca.gov/sites/default/files/docs/planning-and-community/aff-hsg-faith-higher-ed-sb-4.pdf)
-- **Terner SB 9 one-year review.** Theoretical feasibility is far above delivery (LA approved 38 of 211 unit applications). [link](https://ternercenter.berkeley.edu/?p=3232). **Design:** Keystone verifies sites, applies a buffer, and caps units per site.
+- **Terner SB 9 one-year review.** Theoretical feasibility is far above delivery (LA approved 38 of 211 unit applications). [link](https://ternercenter.berkeley.edu/?p=3232). **Design:** Euodos verifies sites, applies a buffer, and caps units per site.
 - **Bartik, Gupta & Milo (2026).** LLMs read zoning codes with 96% agreement with human coders. [link](https://conference.nber.org/conf_papers/f233049.pdf). **Next step:** a zoning-reader agent for OC's 34 cities.
 - **Welfare exemption (RTC 214.15 / 214.15.1).** [BOE LTA 2023/044](https://www.boe.ca.gov/proptaxes/pdf/lta23044.pdf). **CalHome** [link](https://www.hcd.ca.gov/funding/hosn). **FHLBank SF AHP** [link](https://www.fhlbsf.com/products/community-programs-grants/ahp)
 
 ### E. Simulation
-- **Ardon et al. (2024), ICAIF.** A two-layer simulator plus optimizer for designing mortgage-assistance products. [link](https://arxiv.org/abs/2411.00563). This is the architecture of Keystone's sustainability engine.
+- **Ardon et al. (2024), ICAIF.** A two-layer simulator plus optimizer for designing mortgage-assistance products. [link](https://arxiv.org/abs/2411.00563). This is the architecture of Euodos's sustainability engine.
 - **Garg et al. (2024)** [link](https://arxiv.org/abs/2402.17932) · **Geanakoplos et al. (2012), AER** [link](https://doi.org/10.1257/aer.102.3.53) · **Follain & Giertz (2011)** [link](https://ideas.repec.org/a/eee/jhouse/v20y2011i2p101-119.html)
 
 ### F. Agent architecture
@@ -89,7 +89,7 @@ Prepared 2026-10-31. Every external fact below links to a source that was opened
 
 - **Land.** The parking U-Net reaches holdout IoU 0.54 and pixel accuracy 0.85 against noisy OSM labels. It scored 305 OC faith parcels; **166 are viable, with capacity for about 2,700 for-sale townhomes**. That assumes 50% of parking is retained (an assumption) and 16 du/ac, well under SB 4's 30 du/ac floor. Even at 70% parking retention, the top four sites alone hold more than 100 homes.
 - **Families.** For a $92,000 family of four, the optimizer picks a 4% / 40-year / 35%-cap income-indexed design: **99.2% probability of keeping the home for 10 years**, against 85.6% for a market-rate first mortgage without stewardship, at a subsidy PV of about $153k.
-- **Capital.** At $375/sf hard cost (assumption) and a 0% first mortgage valued at a 5% discount rate, the gap is about $164k per home after an assumed $100k per home of CalHome + AHP, or about $16.4M for 100 homes. Sized for the designs Keystone recommends to the example families (4% · 40 years · 35% cap · $5k reserve), the need falls to about $7.4M. The sandbox sweep of the standard design shows a range of $5.9M–$26.4M across hard cost ($325–425/sf) and discount rate (4–6%).
+- **Capital.** At $375/sf hard cost (assumption) and a 0% first mortgage valued at a 5% discount rate, the gap is about $164k per home after an assumed $100k per home of CalHome + AHP, or about $16.4M for 100 homes. Sized for the designs Euodos recommends to the example families (4% · 40 years · 35% cap · $5k reserve), the need falls to about $7.4M. The sandbox sweep of the standard design shows a range of $5.9M–$26.4M across hard cost ($325–425/sf) and discount rate (4–6%).
 - **Self-improving models.** On real data, the HMDA market-gap model was retrained as each new year arrived (2022 → 2023 → 2024). A challenger is promoted only if the 95% bootstrap interval of its AUC gain on the newest year clears the threshold *and* its calibration gap is not significantly wider. The 2022+2023 model was promoted (AUC 0.761 → 0.779, gain CI +0.010 to +0.026); a 2023-only challenger (0.782) was rejected because its gain sat inside the noise. Measured on every race and ethnicity group with 100+ applicants, the champion's largest calibration gap is 6.9 points, for Black applicants, which an earlier 300-applicant cut-off had hidden. Habitat should treat the denial score as a screening aid, not a decision.
 
 ## 5. Limits we state openly

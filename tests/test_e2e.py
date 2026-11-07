@@ -12,7 +12,7 @@ import uvicorn
 from playwright.sync_api import expect, sync_playwright
 
 TABS = ["overview", "land", "families", "agents", "improve", "arch"]
-# third-party basemap tiles are not the product; everything served by Keystone must load cleanly
+# third-party basemap tiles are not the product; everything served by Euodos must load cleanly
 IGNORED_CONSOLE = ("favicon.ico", "basemaps.cartocdn.com", "tile.openstreetmap", "tiles.openfreemap")
 
 

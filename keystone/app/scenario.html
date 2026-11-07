@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Keystone · Crossline scenario</title>
+<title>Euodos · Crossline scenario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
@@ -116,7 +116,7 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
 <body>
 <div id="login" hidden>
   <form id="loginForm">
-    <h1>KEYSTONE</h1>
+    <h1>EUODOS</h1>
     <p>Sign in to run the Crossline Church scenario.</p>
     <label>Email<input id="email" type="email" autocomplete="username" required></label>
     <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
@@ -128,7 +128,7 @@ body.film .toast { font-size: 18px; padding: 8px 14px; }
 
 <div id="stage" hidden>
   <header>
-    <div class="brand">KEYSTONE<small id="title">Crossline Church offers its parking lot</small></div>
+    <div class="brand">EUODOS<small id="title">Crossline Church offers its parking lot</small></div>
     <nav id="beats" aria-label="Scenario steps"></nav>
     <div id="user"><span id="who"></span><button class="btn quiet" id="bigBtn" title="Large type (L)">Aa</button><button class="btn quiet" id="resetBtn" title="Reset the scenario (R)">Reset</button><button class="btn quiet" id="summaryBtn" title="One-page summary (P)">Summary</button><button class="btn quiet" id="signOut">Sign out</button></div>
   </header>
@@ -322,7 +322,7 @@ function updateClock(p) {
   const red = [255, 122, 105], teal = [46, 230, 190];
   V.total.setAttribute("fill", `rgb(${red.map((c, i) => Math.round(lerp(c, teal[i], e))).join(",")})`);
   V.endLabel.setAttribute("x", X(end) + 16);
-  V.endLabel.textContent = `${(end / 12).toFixed(1)} years ${e < .5 ? "(before)" : e < 1 ? "" : "(with Keystone)"}`;
+  V.endLabel.textContent = `${(end / 12).toFixed(1)} years ${e < .5 ? "(before)" : e < 1 ? "" : "(with Euodos)"}`;
 }
 
 function house(g, x, y, s) {  // a small house glyph centred on x,y
@@ -403,7 +403,7 @@ function updateFunding(p) {
 
 const STATE_FILL = ["#2ee6be", "#f5b04c", "#ff9d5c", "#ff7a69", "#33403d"];
 function buildDecade() {
-  const names = {market: "Market-rate loan, no steward", standard: "0% Habitat loan, no early warning", keystone: "Keystone design + Steward agent"};
+  const names = {market: "Market-rate loan, no steward", standard: "0% Habitat loan, no early warning", keystone: "Euodos design + Steward agent"};
   V.dec = ["market", "standard", "keystone"].map((k, r) => {
     const y = 80 + r * 210;
     text(80, y, names[k], {"font-size": 22, "font-family": "Sora", "font-weight": 700});
@@ -461,8 +461,8 @@ function summary() {
   const crit = T.keystone.phases.filter(p => p.critical).map(p => esc(p.name)).join(" → ");
   const rows = T.keystone.phases.map(p => `<tr><td>${esc(p.name)}</td><td>${p.start.toFixed(1)}</td><td>${p.months}</td><td class="src">${p.source.url ? `<a href="${esc(p.source.url)}">${esc(p.source.label)}</a>` : esc(p.source.label)}</td></tr>`).join("");
   $("#summary").innerHTML = `<div class="bar"><button class="btn" id="printBtn">Print or save as PDF</button><button class="btn quiet" id="closeSummary" style="color:#111;border-color:#bbb">Close</button></div>
-    <div class="wordmark">KEYSTONE<span>Keys to 100 · Habitat for Humanity of Orange County</span></div>
-    <h1>${esc(S.title)}</h1><div class="src">Keystone scenario summary · ${esc(S.site.address)}, ${esc(S.site.city)} · APN ${esc(S.site.apn)} · Impact Lab Lane 2, Clear it</div>
+    <div class="wordmark">EUODOS<span>Keys to 100 · Habitat for Humanity of Orange County</span></div>
+    <h1>${esc(S.title)}</h1><div class="src">Euodos scenario summary · ${esc(S.site.address)}, ${esc(S.site.city)} · APN ${esc(S.site.apn)} · Impact Lab Lane 2, Clear it</div>
     <div class="grid" style="margin-top:18px">
       <div><div class="big">${esc(H.clock.value)}</div>${esc(H.clock.label)}</div>
       <div><div class="big">${esc(H.mortgages.value)}</div>${esc(H.mortgages.label)}</div>
@@ -541,7 +541,7 @@ function panel(id) {
   if (id === "clock") {
     const chosen = S.path.results.paths.find(r => r.key === S.path.choice), mini = chosen.review === "ministerial";
     const L = [["instant_screen", "Site already CNN-scored", "screening takes days, not months"], ["sb4_ministerial", mini ? chosen.phase : "Ministerial approval (SB 4)", "no discretionary or CEQA review"], ["parallel_funding", "Funding + families on day one", "applications drafted from the capital plan"]];
-    P.innerHTML = `<h3>Keystone's levers</h3>${L.map(([k, n, d]) => `<label class="lever"><input type="checkbox" data-lever="${k}" ${S.levers[k] ? "checked" : ""}><span>${n}<small>${d}</small></span></label>`).join("")}
+    P.innerHTML = `<h3>Euodos's levers</h3>${L.map(([k, n, d]) => `<label class="lever"><input type="checkbox" data-lever="${k}" ${S.levers[k] ? "checked" : ""}><span>${n}<small>${d}</small></span></label>`).join("")}
       <label>Construction (estimate, months)<input type="number" id="constr" min="0.25" max="60" step="0.5" value="${S.estimates.construction}"></label>
       <div id="status" role="status"></div>${askBox()}`;
     P.querySelectorAll("[data-lever]").forEach(c => c.onchange = () => change("/api/scenario/levers", {levers: {[c.dataset.lever]: c.checked}}));
@@ -737,12 +737,12 @@ function buildCard(kind) {
     V.c1 = text(800, 320, FILM_TEXT.hook[0], {"font-size": 54, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle"});
     V.c2 = text(800, 420, FILM_TEXT.hook[1], {"font-size": 54, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle", fill: "#2ee6be"});
   } else {
-    V.c1 = text(800, 230, "KEYSTONE", {"font-size": 110, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle", "letter-spacing": 26});
+    V.c1 = text(800, 230, "EUODOS", {"font-size": 110, "font-family": "Sora", "font-weight": 800, "text-anchor": "middle", "letter-spacing": 26});
     text(800, 110, "IMPACT LAB · LANE 2 · CLEAR IT", {"font-size": 22, "text-anchor": "middle", fill: "#2ee6be", "font-family": "JetBrains Mono", "letter-spacing": 6});
     V.c2 = text(800, 340, `Offer to move-in in ${S.timeline.keystone.years} years, not ${S.timeline.baseline.years}.`, {"font-size": 44, "font-family": "Sora", "font-weight": 700, "text-anchor": "middle", fill: "#2ee6be"});
     V.c3 = text(800, 420, "Real OC parcels · real HMDA loans · every number cites its source", {"font-size": 26, "text-anchor": "middle", fill: "#b4c9c3"});
     V.c4 = text(800, 500, "Built for Habitat for Humanity of Orange County · Keys to 100", {"font-size": 24, "text-anchor": "middle", fill: "#b4c9c3"});
-    V.c5 = text(800, 600, "Mac app: github.com/MaranZeal678/keystone-releases", {"font-size": 24, "text-anchor": "middle", fill: "#8aa7a0", "font-family": "JetBrains Mono"});
+    V.c5 = text(800, 600, "Mac app: github.com/MaranZeal678/euodos-releases", {"font-size": 24, "text-anchor": "middle", fill: "#8aa7a0", "font-family": "JetBrains Mono"});
   }
 }
 function updateCard(kind, p) {

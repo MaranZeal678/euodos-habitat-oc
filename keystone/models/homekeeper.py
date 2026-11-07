@@ -22,7 +22,7 @@ OUT = config.ROOT / "keystone" / "app" / "static" / "demo"
 SCENARIOS = {
     "market": "Market-rate loan, no steward",
     "standard": "0% Habitat loan, no early warning",
-    "keystone": "Keystone design + Steward agent",
+    "keystone": "Euodos design + Steward agent",
 }
 FIRST = ["Maria", "Duc", "Ana", "Kwame", "Lucia", "Minh", "Rosa", "Tomas", "Leilani", "Omar", "Grace", "Jae",
          "Sofia", "Andre", "Priya", "Luis", "Mai", "Isaac", "Elena", "Hector"]

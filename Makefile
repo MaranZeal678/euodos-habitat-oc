@@ -9,4 +9,4 @@ record:  ; $(PY) scripts/record_demo.py --out docs/keystone_demo.mp4
 mcp:     ; $(PY) -m keystone.mcp_server.server
 improve: ; $(PY) -m keystone.agents.improve --generations 3
 docker:  ; docker build -t keystone . && docker run -p 8000:8000 -e ANTHROPIC_API_KEY keystone
-desktop: ; packaging/build_macos.sh   # Keystone.app + .dmg (needs packaging/requirements-desktop.txt)
+desktop: ; packaging/build_macos.sh   # Euodos.app + .dmg (needs packaging/requirements-desktop.txt)

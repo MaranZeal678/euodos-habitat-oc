@@ -1,4 +1,4 @@
-# Keystone: one image serves the dashboard, the demo, the REST API and the MCP server.
+# Euodos: one image serves the dashboard, the demo, the REST API and the MCP server.
 # Build with ML extras (CNN inference + ingestion pipeline):  docker build --build-arg WITH_ML=1 -t keystone .
 FROM python:3.13-slim
 

@@ -1,4 +1,4 @@
-"""Record the 30-second Keystone demo from the live app: sign-in, short zoomed shots, a spotlight, subtitles, a voiceover.
+"""Record the 30-second Euodos demo from the live app: sign-in, short zoomed shots, a spotlight, subtitles, a voiceover.
 
 Everything on screen is the running app (the Crossline scenario, signed in as the demo persona), recorded at its
 native size and scaled to fill 1920x1080. A live camera (a CSS transform, so text stays sharp) pushes into the part
@@ -8,7 +8,7 @@ phrase, timed to the audio. Shots are recorded in real time and cut to their slo
 run are sped up, and the spotlight label says so.
 
   KEYSTONE_DEMO_LOGIN=1 .venv/bin/uvicorn keystone.app.server:app --port 8010
-  .venv/bin/python scripts/record_app_demo.py --url http://localhost:8010 --out docs/keystone_30s.mp4
+  .venv/bin/python scripts/record_app_demo.py --url http://localhost:8010 --out docs/euodos_30s.mp4
 """
 import argparse
 import json
@@ -32,8 +32,8 @@ ACTS = [  # (start s, slot s, spoken line, subtitle phrases with **teal** words)
      ["Knowing if Habitat can build", "takes **years**. Until now."]),
     (4.5, 5.0, "Public data only. A CNN reads parking lots from aerial photos.",
      ["**Public data only.**", "A **CNN** reads parking lots from aerial photos."]),
-    (9.5, 5.0, "Meet Keystone: Claude agents and live models, working the parcel.",
-     ["Meet **Keystone**:", "**Claude agents** and live models, working the parcel."]),
+    (9.5, 5.0, "Meet You oh doss: Claude agents and live models, working the parcel.",  # spoken spelling of Euodos
+     ["Meet **Euodos**:", "**Claude agents** and live models, working the parcel."]),
     (14.5, 8.5, "Seven legal paths. SB 4 is the fastest fit, with three facts to verify. Four years becomes two point four.",
      ["**Seven legal paths**.", "**SB 4** is the fastest fit, with three facts to verify.", "Four years becomes **2.4**."]),
     (23.0, 7.0, "Families who keep their homes, and the capital gap, home by home. Keys to one hundred starts here.",
@@ -323,7 +323,7 @@ def cut(raw, cuts, workdir, out):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8010")
-    ap.add_argument("--out", default="docs/keystone_30s.mp4")
+    ap.add_argument("--out", default="docs/euodos_30s.mp4")
     a = ap.parse_args()
     work = Path(tempfile.mkdtemp(prefix="keystone_rec_"))
     raw, cuts = record(a.url, work)

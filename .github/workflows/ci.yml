@@ -65,7 +65,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST localhost:8000/api/mission -H 'Authorization: Bearer ci-token' -H 'content-type: application/json' -d '{"policy": "scripted"}')" = 200
       - name: Unprivileged container (Render-like) - the sandbox fails closed and says so
         run: |
-          # Docker's default seccomp/proc masking forbids new namespaces, so bubblewrap cannot start. Keystone must refuse
+          # Docker's default seccomp/proc masking forbids new namespaces, so bubblewrap cannot start. Euodos must refuse
           # to run agent code (never run it unsandboxed) and report it on /healthz.
           python3 -c "import json; h=json.load(open('healthz.json')); s=h['sandbox']; print(s); assert h['degraded'] == ['sandbox'] and not s['ok'] and s['kind'] == 'bubblewrap'"
       - name: Host that allows namespaces (VM, Fly Machines) - the sandbox works in the same image
