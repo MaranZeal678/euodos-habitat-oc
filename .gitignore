@@ -26,3 +26,4 @@ artifacts/memory/
 packaging/build/
 packaging/dist/
 artifacts/accounts.json
+.env
